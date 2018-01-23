@@ -5,6 +5,8 @@ import yaml
 class Yaml(object):
     @classmethod
     def from_file(cls, file_path: str):
+        if not os.path.exists(file_path):
+            return
         with open(file_path) as yaml_file:
             data = yaml.load(yaml_file.read())
             return data
