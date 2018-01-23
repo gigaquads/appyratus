@@ -1,5 +1,6 @@
-import  re
+import re
 
+IS_BIZOBJ_ANNOTATION = 'is_bizobj'
 
 ROOT_ATTR = '/'
 
@@ -7,23 +8,23 @@ PATCH_PATH_ANNOTATION = '_pre_patch'
 PRE_PATCH_ANNOTATION = '_pre_patch'
 POST_PATCH_ANNOTATION = '_post_patch'
 PATCH_ANNOTATION = '_patch'
-IS_BIZOBJ_ANNOTATION = 'is_bizobj'
 
 HTTP_GET = 'GET'
 HTTP_POST = 'POST'
 HTTP_PUT = 'PUT'
 HTTP_PATCH = 'PATCH'
 HTTP_DELETE = 'DELETE'
-HTTP_METHODS = frozenset({
-    HTTP_GET, HTTP_POST, HTTP_PUT, HTTP_PATCH, HTTP_DELETE
-    })
+HTTP_METHODS = frozenset(
+    {HTTP_GET, HTTP_POST, HTTP_PUT, HTTP_PATCH, HTTP_DELETE})
 
 OP_DELTA_ADD = 'add'
 OP_DELTA_REMOVE = 'remove'
 OP_DELTA_REPLACE = 'replace'
 RECOGNIZED_DELTA_OPS = frozenset({
-    OP_DELTA_ADD, OP_DELTA_REMOVE, OP_DELTA_REPLACE,
-    })
+    OP_DELTA_ADD,
+    OP_DELTA_REMOVE,
+    OP_DELTA_REPLACE,
+})
 
 OP_LOAD = 'load'
 OP_DUMP = 'dump'

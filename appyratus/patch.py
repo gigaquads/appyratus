@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from . import util
+from .util import bizobj_util
 
 from .const import (
     ROOT_ATTR,
@@ -11,8 +11,7 @@ from .const import (
     OP_DELTA_REMOVE,
     OP_DELTA_ADD,
     OP_DELTA_REPLACE,
-    RECOGNIZED_DELTA_OPS,
-    )
+    RECOGNIZED_DELTA_OPS, )
 
 # TODO: write JsonPatch patch method test
 # TODO: write JsonPatch hook method tests
@@ -35,7 +34,8 @@ class JsonPatchMixin(object):
         for (i, (idx, bizobj)) in enumerate(reversed(ctx['bizobjs'])):
             # avoid trying to patch a bizobj that we simply want to remove or
             # replace from its parent object or list:
-            if (op != OP_DELTA_ADD) and (len(ctx['tokenized_path'][idx:]) == 1):
+            if (op !=
+                    OP_DELTA_ADD) and (len(ctx['tokenized_path'][idx:]) == 1):
                 continue
 
             relative_path = self._build_relative_path(ctx, idx)
@@ -52,10 +52,9 @@ class JsonPatchMixin(object):
     @staticmethod
     def _build_relative_path(ctx, idx) -> list:
         return [
-            JsonPatchPathComponent(k, v) for (k, v) in
-            zip(ctx['tokenized_path'][idx:],
-                ctx['objs'][idx:])
-            ]
+            JsonPatchPathComponent(k, v)
+            for (k, v) in zip(ctx['tokenized_path'][idx:], ctx['objs'][idx:])
+        ]
 
     def _apply_delta(self, idx, bizobj, ctx, op, relative_path, value):
         custom_apply_delta = self.get_patch_hook(ctx['path'])
@@ -121,14 +120,14 @@ class JsonPatchMixin(object):
                 if not isinstance(obj, list):
                     die('{} not a valid list', obj)
                 idx = int(key)
-                new_obj = obj[:idx] + obj[idx+1:]
+                new_obj = obj[:idx] + obj[idx + 1:]
                 obj.clear()
                 obj.extend(new_obj)
             elif isinstance(obj, dict):
                 if key not in obj:
                     die('key "{}" not found in {}', key, obj)
                 obj[key] = None
-            elif util.is_bizobj(obj):
+            elif bizobj_util.is_bizobj(obj):
                 attr = getattr(obj, key, None)
                 if attr is None:
                     die('{} has no attribute "{}"', obj, key)
@@ -145,7 +144,7 @@ class JsonPatchMixin(object):
                 if key in obj:
                     die('key "{}" already in {}', key, obj)
                 obj[key] = value
-            elif util.is_bizobj(obj):
+            elif bizobj_util.is_bizobj(obj):
                 attr = getattr(obj, key, None)
                 if attr is not None:
                     die('{} already has attribute "{}"', obj, key)
@@ -163,7 +162,7 @@ class JsonPatchMixin(object):
                 if key not in obj:
                     die('key "{}" not found in {}', key, obj)
                 obj[key] = value
-            elif util.is_bizobj(obj):
+            elif bizobj_util.is_bizobj(obj):
                 if not hasattr(obj, key):
                     die('{} has no attribute "{}"', obj, key)
                 setattr(obj, key, value)
@@ -179,7 +178,7 @@ class JsonPatchMixin(object):
                 continue
             if obj is None:
                 break
-            is_bizobj = util.is_bizobj(obj)
+            is_bizobj = bizobj_util.is_bizobj(obj)
             if is_bizobj:
                 sub_obj = getattr(obj, token, None)
             elif token.isdigit():
@@ -195,7 +194,7 @@ class JsonPatchMixin(object):
 
             objs.append(sub_obj)
 
-            if util.is_bizobj(sub_obj):
+            if bizobj_util.is_bizobj(sub_obj):
                 bizobjs.append((i, sub_obj))
 
             obj = sub_obj
@@ -205,7 +204,7 @@ class JsonPatchMixin(object):
             'tokenized_path': tokenized_path,
             'bizobjs': bizobjs,
             'objs': objs,
-            }
+        }
 
     def _parse_path(self, path: str):
         path_crumbs = [ROOT_ATTR]

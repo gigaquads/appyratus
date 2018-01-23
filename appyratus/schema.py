@@ -10,22 +10,22 @@ from abc import ABCMeta, abstractmethod
 
 from Crypto import Random
 
-from .util import to_timestamp
+from .util.datetime_util import to_timestamp
 from .const import (
-    RE_EMAIL, RE_UUID, RE_FLOAT,
-    OP_LOAD, OP_DUMP,
-    )
+    RE_EMAIL,
+    RE_UUID,
+    RE_FLOAT,
+    OP_LOAD,
+    OP_DUMP, )
 
 
 class ValidationError(Exception):
-
-    def __init__(self, reasons: dict = None):
+    def __init__(self, reasons: dict=None):
         self.reasons = reasons or {}
         super(ValidationError, self).__init__(str(self.reasons))
 
 
 class Field(object, metaclass=ABCMeta):
-
     def __init__(
             self,
             allow_none=False,
@@ -35,8 +35,7 @@ class Field(object, metaclass=ABCMeta):
             required=False,
             load_required=False,
             dump_required=False,
-            default=None,
-            ):
+            default=None, ):
         """
         Kwargs:
             - allow_none: the field may have a value of None.
@@ -58,9 +57,9 @@ class Field(object, metaclass=ABCMeta):
         self.default = default
 
     def __repr__(self):
-        return '<Field({}{})>'.format(
-                self.__class__.__name__,
-                ', name="{}"'.format(self.name) if self.name else '')
+        return '<Field({}{})>'.format(self.__class__.__name__,
+                                      ', name="{}"'.format(self.name)
+                                      if self.name else '')
 
     @property
     def default_value(self):
@@ -85,7 +84,6 @@ class Field(object, metaclass=ABCMeta):
 
 
 class Anything(Field):
-
     def load(self, value):
         return FieldResult(value=value)
 
@@ -94,7 +92,6 @@ class Anything(Field):
 
 
 class Object(Field):
-
     def __init__(self, nested, *args, **kwargs):
         super(Object, self).__init__(*args, **kwargs)
         assert isinstance(nested, Schema)
@@ -116,7 +113,6 @@ class Object(Field):
 
 
 class List(Field):
-
     def __init__(self, nested, *args, **kwargs):
         super(List, self).__init__(*args, **kwargs)
         self.nested = nested
@@ -146,7 +142,6 @@ class List(Field):
 
 
 class Regexp(Field):
-
     def __init__(self, pattern, re_flags=None, *args, **kwargs):
         super(Regexp, self).__init__(*args, **kwargs)
         self.pattern = pattern
@@ -165,9 +160,7 @@ class Regexp(Field):
         return self.load(data)
 
 
-
 class Str(Field):
-
     def load(self, value):
         if isinstance(value, UUID):
             return FieldResult(value.hex)
@@ -175,15 +168,13 @@ class Str(Field):
             return FieldResult(value)
         else:
             return FieldResult(error='expected a string but got {}'.format(
-                type(value).__name__
-                ))
+                type(value).__name__))
 
     def dump(self, data):
         return self.load(data)
 
 
 class Dict(Field):
-
     def load(self, value):
         if isinstance(value, dict):
             return FieldResult(value)
@@ -195,7 +186,6 @@ class Dict(Field):
 
 
 class Enum(Field):
-
     def __init__(self, nested, allowed_values, *args, **kwargs):
         super(Enum, self).__init__(*args, **kwargs)
         self.is_nested_field = isinstance(nested, Field)
@@ -210,15 +200,13 @@ class Enum(Field):
         else:
             schema_result = self.nested.load(value)
             return FieldResult(
-                    value=schema_result.data,
-                    error=schema_result.errors)
+                value=schema_result.data, error=schema_result.errors)
 
     def dump(self, data):
         return self.load(data)
 
 
 class Email(Field):
-
     def load(self, value):
         if isinstance(value, str):
             value = value.lower()
@@ -253,7 +241,7 @@ class Uuid(Field):
                 return FieldResult(value=value)
         if isinstance(value, int):
             hex_str = hex(value)[2:]
-            return FieldResult(value=('0'*(32 - len(hex_str))) + hex_str)
+            return FieldResult(value=('0' * (32 - len(hex_str))) + hex_str)
         return FieldResult(error='expected a UUID')
 
     def dump(self, value):
@@ -261,7 +249,6 @@ class Uuid(Field):
 
 
 class Int(Field):
-
     def load(self, value):
         if isinstance(value, int):
             return FieldResult(value=value)
@@ -277,7 +264,6 @@ class Int(Field):
 
 
 class Float(Field):
-
     def load(self, value):
         if isinstance(value, float):
             return FieldResult(value=value)
@@ -292,8 +278,8 @@ class Float(Field):
     def dump(self, data):
         return self.load(data)
 
-class DateTime(Field):
 
+class DateTime(Field):
     def load(self, value):
         if isinstance(value, (datetime, date)):
             return FieldResult(value=value.replace(tzinfo=pytz.utc))
@@ -309,8 +295,7 @@ class DateTime(Field):
             except ValueError:
                 return FieldResult(error='unrecongized datetime string')
         else:
-            return FieldResult(
-                    error='expected a datetime string or timestamp')
+            return FieldResult(error='expected a datetime string or timestamp')
 
     def dump(self, data):
         result = self.load(data)
@@ -319,7 +304,6 @@ class DateTime(Field):
 
 
 class SchemaMeta(type):
-
     def __init__(cls, name, bases, dict_):
         type.__init__(cls, name, bases, dict_)
 
@@ -349,9 +333,7 @@ class SchemaMeta(type):
         venusian.attach(cls, callback, category='schema')
 
 
-
 class AbstractSchema(object):
-
     def __init__(self, strict=False, allow_additional=True):
         """
         Kwargs:
@@ -436,7 +418,6 @@ class AbstractSchema(object):
 
 
 class Schema(AbstractSchema, metaclass=SchemaMeta):
-
     @classmethod
     def load_keys(cls, keys) -> list:
         loaded_keys = []
@@ -461,20 +442,20 @@ class SchemaResult(object):
 
     def __repr__(self):
         return '<SchemaResult("{}", has_errors={})>'.format(
-                self.op, True if self.errors else False)
+            self.op, True if self.errors else False)
 
     def raise_validation_error(self):
         raise ValidationError(reasons=self.errors)
 
 
 class FieldResult(object):
-    def __init__(self, value=None, error: str = None):
+    def __init__(self, value=None, error: str=None):
         self.value = value
         self.error = error
 
     def __repr__(self):
-        return '<FieldResult(has_error={})>'.format(
-                True if self.error else False)
+        return '<FieldResult(has_error={})>'.format(True
+                                                    if self.error else False)
 
 
 if __name__ == '__main__':
@@ -494,18 +475,20 @@ if __name__ == '__main__':
         race = Enum(Str(), ('white', 'asian', 'black'), required=True)
         friends = List(Str())
 
-
     schema = UserSchema()
     data = {
         'age': 5,
         'id': None,
         'rating': '5.2',
-        'name': {'first': 'Bob', 'last': 999},
+        'name': {
+            'first': 'Bob',
+            'last': 999
+        },
         'sex': 'm',
         'race': 'indian',
         'created_at': datetime.now(),
         'friends': ['Brian', 'KC', 5],
-        }
+    }
 
     load_result = schema.load(data)
     dump_result = schema.dump(data)
