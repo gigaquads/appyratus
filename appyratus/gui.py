@@ -2,21 +2,37 @@ import tkinter as tk
 
 
 class Node(object):
+    def __repr__(self):
+        value = getattr(self, 'value', None)
+        parent = self.parent
+        return "<Node({})/value={}>".format(self.__class__.__name__, value)
+
+    def __str__(self):
+        return getattr(self, 'value', None)
+
     def __init__(self, parent=None, *args, **kwargs):
         self.nodes = []
         self.parent = parent
         if self.parent:
             self.parent.nodes.append(self)
 
+    @property
+    def object(self):
+        if not self._object:
+            import ipdb
+            ipdb.set_trace()
+        return self._object
+
     def render(self):
         for node in self.nodes:
             node.render()
 
 
-class Window(Node):
+class Gui(Node):
     def __init__(self, parent=None, title: str = None, binds=None):
         super().__init__(parent=parent)
         self.title = title
+        self.binds = binds
 
     def render(self):
         self._object = tk.Tk()
@@ -29,6 +45,15 @@ class Window(Node):
 
     def bind(self, a, b):
         self._object.bind(a, b)
+
+
+class Window(Node):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+    def render(self):
+        self._object = tk.Frame(self.parent._object)
+        super().render()
 
 
 class Frame(Node):
@@ -94,15 +119,34 @@ class Button(Node):
 
 
 class Form(Node):
-    def __init__(self, fields: dict, parent: str = None):
+    def __init__(self, data: dict, parent: str = None):
         super().__init__(parent=parent)
         self.frame = Frame(parent=parent)
-        self.entries = []
-        for field, value in fields.items():
-            row = Frame(parent=self.frame)
-            lab = Label(text=field, parent=row)
-            ent = Entry(value=value, parent=row)
-            self.entries.append((field, ent))
+        self.entries = self.build(data, parent=self.frame)
+
+        import ipdb
+        ipdb.set_trace()
+        pass
+
+    def build(self, data=None, parent=None, agg=None):
+        entry = None
+        agg = agg or {}
+        if 'entries' not in agg:
+            agg['entries'] = []
+
+        if isinstance(data, dict):
+            for field, value in data.items():
+                row = Frame(parent=parent)
+                dentry, dparent, agg = self.build(value, parent=row, agg=agg)
+                lab = Label(text=field, parent=row)
+                agg['entries'].append((field, dentry))
+        elif isinstance(data, list):
+            for field in data:
+                nentry, parent, agg = self.build(field, parent=parent, agg=agg)
+        else:
+            entry = Entry(value=data, parent=parent)
+            agg['entries'].append(entry)
+        return entry, parent, agg
 
     def fetch(self, ent):
         data = {}
@@ -113,6 +157,41 @@ class Form(Node):
         return data
 
 
-class ActionBar(Node):
-    def __init__(self):
+class Listbox(Node):
+    def __init__(self, values: list = None, parent=None):
+        super().__init__(parent=parent)
+        self.values = values or []
+
+    def build(self):
         pass
+
+    def render(self):
+        self._object = tk.Listbox(self.parent._object)
+        for value in self.values:
+            self.add(value)
+        self._object.pack()
+
+    def clear(self):
+        self._object.delete(0, tk.END)
+
+    def add(self, value):
+        self._object.insert(tk.END, value)
+
+
+class Scrollbar(Node):
+    def render(self):
+        scrollbar = tk.Scrollbar(self.parent._object)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+
+class ControlBar(Node):
+    def __init__(self, buttons, parent=None):
+        super().__init__(parent=parent)
+        self.buttons = buttons
+
+    def render(self):
+        super().render()
+
+
+class View(Node):
+    pass
