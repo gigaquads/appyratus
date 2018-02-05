@@ -2,10 +2,14 @@ import tkinter as tk
 
 
 class Node(object):
+    depth = 0
+    pack_data = {}
+
     def __repr__(self):
         value = getattr(self, 'value', None)
-        parent = self.parent
-        return "<Node({})/value={}>".format(self.__class__.__name__, value)
+        return "<Node({}){}>".format(self.__class__.__name__,
+                                     ' value={}'.format(value)
+                                     if value else '')
 
     def __str__(self):
         return getattr(self, 'value', None)
@@ -14,29 +18,48 @@ class Node(object):
         self.nodes = []
         self.parent = parent
         if self.parent:
+            self.depth = self.parent.depth + 1
             self.parent.nodes.append(self)
+        self._object = self.build()
 
     @property
-    def object(self):
+    def source(self):
         if not self._object:
-            import ipdb
-            ipdb.set_trace()
+            pass
         return self._object
 
     def render(self):
+        print('{}{}'.format(('    ' * self.depth), self.__repr__()))
         for node in self.nodes:
             node.render()
+
+    def source(self):
+        if not self._object:
+            self._object = self.build()
+        return self._object
+
+    def build(self):
+        pass
+
+    def show(self):
+        self._object.pack(self.pack_data)
+
+    def hide(self):
+        self._object.pack_forget()
 
 
 class Gui(Node):
     def __init__(self, parent=None, title: str = None, binds=None):
-        super().__init__(parent=parent)
         self.title = title
         self.binds = binds
+        super().__init__(parent=parent)
+
+    def build(self):
+        obj = tk.Tk()
+        obj.title(self.title)
+        return obj
 
     def render(self):
-        self._object = tk.Tk()
-        self._object.title(self.title)
         super().render()
         self._object.mainloop()
 
@@ -124,10 +147,6 @@ class Form(Node):
         self.frame = Frame(parent=parent)
         self.entries = self.build(data, parent=self.frame)
 
-        import ipdb
-        ipdb.set_trace()
-        pass
-
     def build(self, data=None, parent=None, agg=None):
         entry = None
         agg = agg or {}
@@ -193,5 +212,107 @@ class ControlBar(Node):
         super().render()
 
 
+class Panes(Node):
+    def __init__(self, panes, parent=None):
+        super().__init__(parent=parent)
+        self.panes = panes
+
+    def render(self):
+        self._object = tk.PanedWindow(self.parent._object)
+        self._object.pack(fill=tk.BOTH, expand=1)
+        for pane in self.panes:
+            self._object.add(pane)
+
+
+class Menu(Node):
+    def __init__(self, commands, parent=None):
+        super().__init__(parent=parent)
+        if not commands:
+            commands = []
+        self.commands = commands
+
+    def render(self):
+        self._object = tk.Menu(self.parent._object)
+        for command in self.commands:
+            self._object.add_command(label='Wat', command=None)
+
+
 class View(Node):
     pass
+
+
+BASE = tk.RAISED
+SELECTED = tk.FLAT
+
+
+# a base tab class
+class Tab(Node):
+    def __init__(self, name: str, parent=None):
+        self.name = name
+        super().__init__(parent=parent)
+
+    def build(self):
+        args = []
+        if self.parent:
+            args.append(self.parent._object)
+        return tk.Frame(*args)
+
+    def render(self):
+        super().render()
+
+
+# the bulk of the logic is in the actual tab bar
+class TabBar(Node):
+    def __init__(self, name: str = None, tabs: list = None, parent=None):
+        self.tabs = {}
+        self.buttons = {}
+        self.current_tab = None
+        self.name = name
+        super().__init__(parent=parent)
+        if tabs:
+            for tab in tabs:
+                self.add(tab)
+
+    def build(self):
+        return tk.Frame(self.parent._object)
+
+    def render(self):
+        self.show()
+        super().render()
+
+    def show(self):
+        self._object.pack(side=tk.TOP, expand=tk.YES, fill=tk.X)
+        self.switch_tab(self.tabs.keys()[0])
+
+    def add(self, tab):
+        tab.hide()
+        import ipdb
+        ipdb.set_trace()
+        self.tabs[tab.name] = tab
+        cmd = (lambda name=tab.name: self.switch_tab(name))
+        b = tk.Button(self._object, text=tab.name, relief=BASE, command=cmd)
+        b.pack(side=tk.LEFT)
+        self.buttons[tab.name] = b
+
+    def delete(self, tabname):
+        if tabname == self.current_tab:
+            self.current_tab = None
+            self.tabs[tabname].hide()
+            del self.tabs[tabname]
+            self.switch_tab(self.tabs.keys()[0])
+
+        else:
+            del self.tabs[tabname]
+
+        self.buttons[tabname].hide()
+        del self.buttons[tabname]
+
+    def switch_tab(self, name):
+        if self.current_tab:
+            self.buttons[self.current_tab].config(relief=tk.BASE)
+            self.tabs[self.current_tab].hide()
+        import ipdb
+        ipdb.set_trace()
+        self.tabs[name].show(side=tk.BOTTOM)
+        self.current_tab = name
+        self.buttons[name].config(relief=SELECTED)
