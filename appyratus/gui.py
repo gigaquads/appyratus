@@ -241,10 +241,6 @@ class View(Node):
     pass
 
 
-BASE = tk.RAISED
-SELECTED = tk.FLAT
-
-
 # a base tab class
 class Tab(Node):
     def __init__(self, name: str, parent=None):
@@ -257,8 +253,8 @@ class Tab(Node):
             args.append(self.parent._object)
         return tk.Frame(*args)
 
-    def render(self):
-        super().render()
+    def show(self):
+        self._object.pack(side=tk.BOTTOM)
 
 
 # the bulk of the logic is in the actual tab bar
@@ -282,15 +278,16 @@ class TabBar(Node):
 
     def show(self):
         self._object.pack(side=tk.TOP, expand=tk.YES, fill=tk.X)
-        self.switch_tab(self.tabs.keys()[0])
+        keys = [k for k in self.tabs.keys()]
+        if keys:
+            self.switch_tab(keys[0])
 
     def add(self, tab):
         tab.hide()
-        import ipdb
-        ipdb.set_trace()
         self.tabs[tab.name] = tab
         cmd = (lambda name=tab.name: self.switch_tab(name))
-        b = tk.Button(self._object, text=tab.name, relief=BASE, command=cmd)
+        b = tk.Button(
+            self._object, text=tab.name, relief=tk.RAISED, command=cmd)
         b.pack(side=tk.LEFT)
         self.buttons[tab.name] = b
 
@@ -309,10 +306,8 @@ class TabBar(Node):
 
     def switch_tab(self, name):
         if self.current_tab:
-            self.buttons[self.current_tab].config(relief=tk.BASE)
+            self.buttons[self.current_tab].config(relief=tk.RAISED)
             self.tabs[self.current_tab].hide()
-        import ipdb
-        ipdb.set_trace()
-        self.tabs[name].show(side=tk.BOTTOM)
+        self.tabs[name].show()
         self.current_tab = name
-        self.buttons[name].config(relief=SELECTED)
+        self.buttons[name].config(relief=tk.FLAT)
