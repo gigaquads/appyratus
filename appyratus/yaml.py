@@ -34,12 +34,13 @@ class Yaml(object):
 
     @classmethod
     def to_file(cls, file_path: str, data=None, multi=False):
-        if multi:
-            yaml_data = yaml.dump_all(
-                data, explicit_start=True, explicit_end=True)
-        else:
-            yaml_data = yaml.dump(data)
-        File.write(file_path, yaml_data)
+        with open(file_path, 'wb') as yaml_file:
+            if multi:
+                data = yaml.dump_all(
+                    data, explicit_start=True, explicit_end=True)
+            else:
+                data = yaml.dump(data)
+            yaml_file.write(data.encode())
 
     @classmethod
     def format_file_name(cls, file_name):
