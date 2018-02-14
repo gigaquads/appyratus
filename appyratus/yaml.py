@@ -35,11 +35,15 @@ class Yaml(object):
     @classmethod
     def to_file(cls, file_path: str, data=None, multi=False):
         with open(file_path, 'wb') as yaml_file:
+            yaml_args = dict(
+                default_flow_style=False,
+                explicit_start=True,
+                explicit_end=True
+            )
             if multi:
-                data = yaml.dump_all(
-                    data, explicit_start=True, explicit_end=True)
+                data = yaml.dump_all(data, **yaml_args)
             else:
-                data = yaml.dump(data)
+                data = yaml.dump(data, **yaml_args)
             yaml_file.write(data.encode())
 
     @classmethod

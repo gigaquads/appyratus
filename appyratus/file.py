@@ -3,8 +3,12 @@ import os
 
 class File(object):
     @classmethod
+    def exists(cls, file_path: str):
+        return os.path.exists(file_path)
+
+    @classmethod
     def read(cls, file_path: str):
-        if not os.path.exists(file_path):
+        if not cls.exists(file_path):
             return
         with open(file_path) as contents:
             return contents.read()
