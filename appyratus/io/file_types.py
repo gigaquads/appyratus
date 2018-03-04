@@ -1,10 +1,37 @@
+from __future__ import absolute_import
+
 import os
 import yaml
 
-from .file import File
+
+class BaseFile(object):
+    pass
 
 
-class Yaml(object):
+class File(BaseFile):
+    @classmethod
+    def exists(cls, file_path: str):
+        return os.path.exists(file_path)
+
+    @classmethod
+    def read(cls, file_path: str):
+        if not cls.exists(file_path):
+            return
+        with open(file_path) as contents:
+            return contents.read()
+
+    @classmethod
+    def write(cls, file_path: str, contents=None):
+        with open(file_path, 'wb') as write_bytes:
+            write_bytes.write(contents.encode())
+
+    @classmethod
+    def dir_path(path):
+        return os.path.dirname(os.path.realpath(path))
+
+
+
+class Yaml(BaseFile):
     @classmethod
     def from_file(cls, file_path: str, multi=False):
         try:

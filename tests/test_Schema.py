@@ -1,8 +1,7 @@
 import pytest
 import mock
 
-from appyratus import schema as fields
-from appyratus.schema import Schema, ValidationError
+from appyratus.validation import Schema, ValidationError, fields
 
 # TODO: test Schema dump error
 # TODO: test Schema load ok/error

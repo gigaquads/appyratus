@@ -2,7 +2,7 @@ import os
 import re
 
 from appyratus.exc import AppyratusError
-from appyratus.schema import Schema
+from appyratus.validation import Schema
 
 
 class EnvironmentError(AppyratusError):

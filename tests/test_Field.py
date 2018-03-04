@@ -3,7 +3,7 @@ import mock
 
 from uuid import UUID
 
-from appyratus import schema as fields
+from appyratus.validation import fields
 
 # TODO: List dump ok/error
 # TODO: Enum dump, load ok/error
