@@ -3,6 +3,11 @@ from .helper_functions import (
     resolve_bin,
 )
 
+from .file_types import (
+    File,
+    Yaml,
+)
+
 from .environment import (
     Environment,
     EnvironmentError,
