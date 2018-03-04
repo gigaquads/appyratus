@@ -37,7 +37,7 @@ class Environment(Schema):
 
     def __init__(self):
         super().__init__(strict=False, allow_additional=True)
-        result = self.load({k.lower(): v for k, v in os.environ.items()})
+        result = self.load(os.environ)
 
         if result.errors:
             raise EnvironmentValidationError(result.errors)
@@ -53,7 +53,6 @@ class Environment(Schema):
         return self[key]
 
     def __getitem__(self, key):
-        key = key.lower()
         if key not in self._data:
             raise UndefinedVariableError(
                 '{} environment variable is undefined'.format(key))

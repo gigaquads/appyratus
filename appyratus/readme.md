@@ -12,3 +12,5 @@ Appyratus Table of Contents
 #### `time` - Utilities related to dates and times
 
 #### `grpc` - High-level interface to grpcio
+
+#### `decorators` - Assortment of various decorators

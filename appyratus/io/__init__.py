@@ -4,6 +4,7 @@ from .helper_functions import (
 )
 
 from .environment import (
+    Environment,
     EnvironmentError,
     UndefinedVariableError,
     EnvironmentValidationError,
