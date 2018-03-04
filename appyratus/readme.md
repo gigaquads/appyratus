@@ -1,17 +1,14 @@
 Appyratus Table of Contents
 ---------------------------------
 
-## `appyratus.io`
-### File system and IO utilities
+#### `io` - File system and IO utilities
 
-## `appyratus.validation`
-### Data structure validation and marshaling lib
+#### `validation` - Data structure validation and transformation
 
-## `appyratus.containers`
-### Generic reusable container and collection types
+#### `containers` - Generic reusable types
 
-## `appyratus.fe`
-### Front-end toolkits, like tkinter
+#### `fe` - Front-end toolkits, like tkinter
 
-## `appyratus.grpc`
-### High-level interface to grpcio
+#### `time` - Utilities related to dates and times
+
+#### `grpc` - High-level interface to grpcio
