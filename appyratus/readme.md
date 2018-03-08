@@ -5,7 +5,7 @@ Appyratus Table of Contents
 
 #### `validation` - Data structure validation and transformation
 
-#### `containers` - Generic reusable types
+#### `types` - Generic reusable types
 
 #### `fe` - Front-end toolkits, like tkinter
 
