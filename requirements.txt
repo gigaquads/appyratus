@@ -2,5 +2,5 @@ ipdb
 pytest
 pycrypto
 venusian
-yaml
+pyyaml
 pytz
