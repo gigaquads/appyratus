@@ -2,3 +2,4 @@ ipdb
 pytest
 pycrypto
 venusian
+yaml
