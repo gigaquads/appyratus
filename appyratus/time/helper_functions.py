@@ -12,7 +12,7 @@ def utc_now():
 
 def to_timestamp(datetime_obj) -> int:
     """
-    From datetime object to integer timestamp (seconds)
+    From datetime object to UTC integer timestamp (seconds)
     """
     if datetime_obj is None:
         return None
@@ -27,3 +27,10 @@ def to_timestamp(datetime_obj) -> int:
 
     epoch = datetime.fromtimestamp(0, pytz.utc)
     return int((datetime_obj - epoch).total_seconds())
+
+
+def from_timestamp(timestamp: int) -> datetime:
+    """
+    Return the timestamp int as a UTC datetime object.
+    """
+    return datetime.fromtimestamp(timestamp, tz=pytz.utc)
