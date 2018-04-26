@@ -23,15 +23,16 @@ from .consts import (
 
 class Field(object, metaclass=ABCMeta):
     def __init__(
-            self,
-            allow_none=False,
-            load_only=False,
-            load_from=None,
-            dump_to=None,
-            required=False,
-            load_required=False,
-            dump_required=False,
-            default=None, ):
+        self,
+        allow_none=False,
+        load_only=False,
+        load_from=None,
+        dump_to=None,
+        required=False,
+        load_required=False,
+        dump_required=False,
+        default=None,
+    ):
         """
         Kwargs:
             - allow_none: the field may have a value of None.
@@ -53,9 +54,10 @@ class Field(object, metaclass=ABCMeta):
         self.default = default
 
     def __repr__(self):
-        return '<Field({}{})>'.format(self.__class__.__name__,
-                                      ', name="{}"'.format(self.name)
-                                      if self.name else '')
+        return '<Field({}{})>'.format(
+            self.__class__.__name__, ', name="{}"'.format(self.name)
+            if self.name else ''
+        )
 
     @property
     def default_value(self):
@@ -90,7 +92,7 @@ class Anything(Field):
 class Object(Field):
     def __init__(self, nested, *args, **kwargs):
         super(Object, self).__init__(*args, **kwargs)
-        self.nested = nested  # expect to by type Schema
+        self.nested = nested    # expect to by type Schema
 
     def load(self, value):
         schema_result = self.nested.load(value)
@@ -162,8 +164,10 @@ class Str(Field):
         elif isinstance(value, str):
             return FieldResult(value)
         else:
-            return FieldResult(error='expected a string but got {}'.format(
-                type(value).__name__))
+            return FieldResult(
+                error='expected a string but got {}'.
+                format(type(value).__name__)
+            )
 
     def dump(self, data):
         return self.load(data)
@@ -195,7 +199,8 @@ class Enum(Field):
         else:
             schema_result = self.nested.load(value)
             return FieldResult(
-                value=schema_result.data, error=schema_result.errors)
+                value=schema_result.data, error=schema_result.errors
+            )
 
     def dump(self, data):
         return self.load(data)
@@ -276,8 +281,10 @@ class Float(Field):
 
 class DateTime(Field):
     def load(self, value):
-        if isinstance(value, (datetime, date)):
+        if isinstance(value, datetime):
             return FieldResult(value=value.replace(tzinfo=pytz.utc))
+        elif isinstance(value, date):
+            return FieldResult(value=value)
         elif isinstance(value, (int, float)):
             try:
                 return FieldResult(value=datetime.utcfromtimestamp(value))
