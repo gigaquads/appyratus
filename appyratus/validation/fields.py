@@ -32,6 +32,7 @@ class Field(object, metaclass=ABCMeta):
         load_required=False,
         dump_required=False,
         default=None,
+        dump_transform=None,
     ):
         """
         Kwargs:
@@ -39,9 +40,11 @@ class Field(object, metaclass=ABCMeta):
             - required: the field must be present when loaded and dumped.
             - load_only: do not dump this field.
             - load_from: the name of the field in the pre-loaded data.
-            - load_required: the field must be present when loaded
-            - dump_to: the name of the field in the dumped data
-            - dump_required: the field must be present when dumped
+            - load_required: the field must be present when loaded.
+            - dump_to: the name of the field in the dumped data.
+            - dump_required: the field must be present when dumped.
+            - default: the default field value when none provided.
+            - dump_transform: transformations to perform on a field when dumped.
         """
         self.load_only = load_only
         self.load_from = load_from
@@ -52,6 +55,7 @@ class Field(object, metaclass=ABCMeta):
         self.load_required = load_required
         self.name = None
         self.default = default
+        self.dump_transform = dump_transform
 
     def __repr__(self):
         return '<Field({}{})>'.format(
@@ -72,12 +76,20 @@ class Field(object, metaclass=ABCMeta):
     def has_default_value(self):
         return self.default is not None
 
+    @property
+    def load_key(self):
+        return self.load_from or self.name
+
+    @property
+    def dump_key(self):
+        return self.dump_to or self.name
+
     @abstractmethod
-    def load(self, data):
+    def load(self, value):
         pass
 
     @abstractmethod
-    def dump(self, data):
+    def dump(self, value):
         pass
 
 
@@ -85,8 +97,8 @@ class Anything(Field):
     def load(self, value):
         return FieldResult(value=value)
 
-    def dump(self, data):
-        return FieldResult(value=data)
+    def dump(self, value):
+        return FieldResult(value=value)
 
 
 class Object(Field):
@@ -134,8 +146,8 @@ class List(Field):
 
         return FieldResult(value=result_list)
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class Regexp(Field):
@@ -153,8 +165,8 @@ class Regexp(Field):
 
         return FieldResult(value=value)
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class Str(Field):
@@ -169,8 +181,12 @@ class Str(Field):
                 format(type(value).__name__)
             )
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
+
+
+class CompositeStr(Str):
+    composite = True
 
 
 class Dict(Field):
@@ -180,8 +196,8 @@ class Dict(Field):
         else:
             return FieldResult(error='expected a dict')
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class Enum(Field):
@@ -202,8 +218,8 @@ class Enum(Field):
                 value=schema_result.data, error=schema_result.errors
             )
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class Email(Field):
@@ -216,8 +232,8 @@ class Email(Field):
         else:
             return FieldResult(error='expected an e-mail address')
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class Uuid(Field):
@@ -259,8 +275,8 @@ class Int(Field):
         else:
             return FieldResult(error='expected an integer')
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class Float(Field):
@@ -275,11 +291,15 @@ class Float(Field):
             return FieldResult(value=float(value))
         return FieldResult(error='expected a float')
 
-    def dump(self, data):
-        return self.load(data)
+    def dump(self, value):
+        return self.load(value)
 
 
 class DateTime(Field):
+    def __init__(self, format_spec: str = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.format_spec = format_spec
+
     def load(self, value):
         if isinstance(value, datetime):
             return FieldResult(value=value.replace(tzinfo=pytz.utc))
@@ -299,7 +319,12 @@ class DateTime(Field):
         else:
             return FieldResult(error='expected a datetime string or timestamp')
 
-    def dump(self, data):
-        result = self.load(data)
-        result.value = to_timestamp(result.value)
+    def dump(self, value):
+        result = self.load(value)
+        # format string exists, use it with strptime
+        if self.format_spec:
+            result.value = datetime.strftime(result.value, self.format_spec)
+        # default dump format is as a unix timestamp
+        else:
+            result.value = to_timestamp(result.value)
         return result

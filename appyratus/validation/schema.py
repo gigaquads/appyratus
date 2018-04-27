@@ -77,6 +77,11 @@ class AbstractSchema(object):
         return self._apply_op(OP_DUMP, data, strict)
 
     def _apply_op(self, op, data, strict):
+        """
+        Apply operations to data
+        And be sure to make a copy of data before hand
+        """
+        data = copy.deepcopy(data)
         strict = strict if strict is not None else self.strict
         result = SchemaResult(op, {}, {})
 
@@ -111,12 +116,31 @@ class AbstractSchema(object):
                 elif op == OP_DUMP:
                     if field.load_only:
                         continue
-                    if field.dump_to:
-                        result.data[field.dump_to] = field_result.value
-                    else:
-                        result.data[field.name] = field_result.value
+                    result.data[field.dump_key] = field_result.value
                 else:
                     result.data[field.name] = field_result.value
+
+        # post-dump operations only
+        if op == OP_DUMP:
+            # transform fields allow data to be mutated into specified shapes
+            transform_fields = [
+                field for k, field in self.fields.items()
+                if getattr(field, 'dump_transform')
+            ]
+            for field in transform_fields:
+                value = result.data.get(field.name)
+                value = field.dump_transform(value)
+                result.data[field.load_key] = value
+
+            # process composite fields only upon dump, and after everything has
+            # been prepared
+            composite_fields = [
+                field for k, field in self.fields.items()
+                if hasattr(field, 'composite')
+            ]
+            for field in composite_fields:
+                value = result.data.get(field.name)
+                result.data[field.load_key] = value.format(**result.data)
 
         for k, field in self.required_fields[op].items():
             if k in result.errors:
