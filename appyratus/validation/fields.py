@@ -32,7 +32,7 @@ class Field(object, metaclass=ABCMeta):
         load_required=False,
         dump_required=False,
         default=None,
-        dump_transform=None,
+        transform=None,
     ):
         """
         Kwargs:
@@ -44,7 +44,7 @@ class Field(object, metaclass=ABCMeta):
             - dump_to: the name of the field in the dumped data.
             - dump_required: the field must be present when dumped.
             - default: the default field value when none provided.
-            - dump_transform: transformations to perform on a field when dumped.
+            - transform: transformations to perform on a field when dumped.
         """
         self.load_only = load_only
         self.load_from = load_from
@@ -55,7 +55,7 @@ class Field(object, metaclass=ABCMeta):
         self.load_required = load_required
         self.name = None
         self.default = default
-        self.dump_transform = dump_transform
+        self.transform = transform
 
     def __repr__(self):
         return '<Field({}{})>'.format(

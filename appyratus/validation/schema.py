@@ -29,6 +29,10 @@ class SchemaMeta(type):
         cls.fields = {}
         cls.required_fields = {OP_DUMP: {}, OP_LOAD: {}}
         cls.load_from_fields = {}
+        # transform fields allow data to be mutated into specified shapes
+        cls.transform_fields = {}
+        # composite fields allow result data to be applied to a field's format spec
+        cls.composite_fields = {}
         for k in dir(cls):
             v = getattr(cls, k)
             if isinstance(v, Field):
@@ -36,6 +40,7 @@ class SchemaMeta(type):
                 if v.load_from is not None:
                     cls.load_from_fields[v.load_from] = v
                 cls.fields[k] = v
+                # required
                 if v.required:
                     cls.required_fields[OP_DUMP][k] = v
                     cls.required_fields[OP_LOAD][k] = v
@@ -43,6 +48,12 @@ class SchemaMeta(type):
                     cls.required_fields[OP_DUMP][k] = v
                 elif v.load_required:
                     cls.required_fields[OP_LOAD][k] = v
+                # composite
+                if hasattr(v, 'composite'):
+                    cls.composite_fields[k] = v
+                # transform
+                if getattr(v, 'transform'):
+                    cls.transform_fields[k] = v
 
         # collect the schema class in a global set
         # through a venusian callback:
@@ -122,23 +133,13 @@ class AbstractSchema(object):
 
         # post-dump operations only
         if op == OP_DUMP:
-            # transform fields allow data to be mutated into specified shapes
-            transform_fields = [
-                field for k, field in self.fields.items()
-                if getattr(field, 'dump_transform')
-            ]
-            for field in transform_fields:
+            # transform fields
+            for k, field in self.transform_fields.items():
                 value = result.data.get(field.name)
-                value = field.dump_transform(value)
+                value = field.transform(value)
                 result.data[field.load_key] = value
-
-            # process composite fields only upon dump, and after everything has
-            # been prepared
-            composite_fields = [
-                field for k, field in self.fields.items()
-                if hasattr(field, 'composite')
-            ]
-            for field in composite_fields:
+            # composite fields
+            for k, field in self.composite_fields.items():
                 value = result.data.get(field.name)
                 result.data[field.load_key] = value.format(**result.data)
 
