@@ -5,27 +5,42 @@ DEFAULTS = dict(action=None)
 
 
 class ProgSchema(object):
-    pass
+    prog = None
+    name = None
+    version = None
+    tagline = None
 
 
 class Prog(object):
-    def __init__(self, prog, subparsers=None):
-        self.prog = prog
-        self.subparsers = subparsers
+    def __init__(self, data: dict=None):
+        self.data = data
+
+        self._subparsers = []
+        for attr in dir(self):
+            value = getattr(self, attr)
+            if isinstance(value, Subparser):
+                self._subparsers.append(value)
+
         self.parser = self.build_parser()
         self.args = self.parse_args()
 
     @property
     def name(self):
-        return self.prog.get('name')
+        return self.data.get('name')
 
     @property
     def defaults(self):
-        return self.prog.get('defaults', DEFAULTS)
+        return self.data.get('defaults', DEFAULTS)
 
     @property
     def version(self):
-        return self.prog.get('version')
+        return self.data.get('version')
+
+    @property
+    def subparsers(self):
+        import ipdb
+        ipdb.set_trace()
+        return self._subparsers
 
     def parse_args(self):
         args, unknown = self.parser.parse_known_args()
@@ -68,21 +83,73 @@ class Prog(object):
         if self.subparsers:
             for subparser in self.subparsers:
                 subparser_obj = subparser_groups.add_parser(
-                    subparser.get('name'), help=subparser.get('help')
+                    subparser.name, help=subparser.help
                 )
                 # set defaults for each subparser
-                subparser_obj.set_defaults(**subparser.get('defaults'))
-                for arg in subparser.get('args'):
+                subparser_obj.set_defaults(**subparser.defaults)
+                for arg in subparser.args:
                     subparser_obj.add_argument(
-                        *arg.get('flags'),
-                        type=arg.get('type'),
-                        default=arg.get('default'),
-                        help=arg.get('help')
+                        *arg.flags,
+                        type=arg.type,
+                        default=arg.default,
+                        help=arg.help
                     )
         return parser
 
     def print_usage(self):
         self.parser.print_usage()
+
+    def route_action(self, action: str):
+        """
+        The default action is to print usage
+        """
+        res = None
+        if action and hasattr(self, action):
+            res = getattr(self, action)()
+        else:
+            self.print_usage()
+        return res
+
+    def run(self):
+        action_res = self.route_action(action=self.args.action)
+
+
+class ArgSchema(object):
+    flags = None
+    type = None
+    default = None
+    help = None
+
+
+class Arg(object):
+    def __init__(self, flags=None, type=None, default=None, help=None):
+        self.flags = flags
+        self.type = type
+        self.default = default
+        self.help = help
+
+
+class StrArg(object):
+    pass
+
+
+class SubparserSchema(object):
+    name = None
+    help = None
+    defaults = None
+
+
+class Subparser(object):
+    def __init__(self):
+        self._args = []
+        for attr in dir(self):
+            value = getattr(self, attr)
+            if isinstance(value, Arg):
+                self._args.append(value)
+
+    @property
+    def args(self):
+        return self._args
 
 
 def version():
