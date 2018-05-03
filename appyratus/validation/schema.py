@@ -29,6 +29,10 @@ class SchemaMeta(type):
         cls.fields = {}
         cls.required_fields = {OP_DUMP: {}, OP_LOAD: {}}
         cls.load_from_fields = {}
+        # transform fields allow data to be mutated into specified shapes
+        cls.transform_fields = {}
+        # composite fields allow result data to be applied to a field's format spec
+        cls.composite_fields = {}
         for k in dir(cls):
             v = getattr(cls, k)
             if isinstance(v, Field):
@@ -36,6 +40,7 @@ class SchemaMeta(type):
                 if v.load_from is not None:
                     cls.load_from_fields[v.load_from] = v
                 cls.fields[k] = v
+                # required
                 if v.required:
                     cls.required_fields[OP_DUMP][k] = v
                     cls.required_fields[OP_LOAD][k] = v
@@ -43,6 +48,12 @@ class SchemaMeta(type):
                     cls.required_fields[OP_DUMP][k] = v
                 elif v.load_required:
                     cls.required_fields[OP_LOAD][k] = v
+                # composite
+                if hasattr(v, 'composite'):
+                    cls.composite_fields[k] = v
+                # transform
+                if getattr(v, 'transform'):
+                    cls.transform_fields[k] = v
 
         # collect the schema class in a global set
         # through a venusian callback:
@@ -77,6 +88,11 @@ class AbstractSchema(object):
         return self._apply_op(OP_DUMP, data, strict)
 
     def _apply_op(self, op, data, strict):
+        """
+        Apply operations to data
+        And be sure to make a copy of data before hand
+        """
+        data = copy.deepcopy(data)
         strict = strict if strict is not None else self.strict
         result = SchemaResult(op, {}, {})
 
@@ -111,12 +127,21 @@ class AbstractSchema(object):
                 elif op == OP_DUMP:
                     if field.load_only:
                         continue
-                    if field.dump_to:
-                        result.data[field.dump_to] = field_result.value
-                    else:
-                        result.data[field.name] = field_result.value
+                    result.data[field.dump_key] = field_result.value
                 else:
                     result.data[field.name] = field_result.value
+
+        # post-dump operations only
+        if op == OP_DUMP:
+            # transform fields
+            for k, field in self.transform_fields.items():
+                value = result.data.get(field.name)
+                value = field.transform(value)
+                result.data[field.load_key] = value
+            # composite fields
+            for k, field in self.composite_fields.items():
+                value = result.data.get(field.name)
+                result.data[field.load_key] = value.format(**result.data)
 
         for k, field in self.required_fields[op].items():
             if k in result.errors:
