@@ -12,7 +12,7 @@ class ProgSchema(object):
 
 
 class Prog(object):
-    def __init__(self, data: dict=None):
+    def __init__(self, data: dict = None):
         self.data = data
 
         self._subparsers = []
@@ -38,8 +38,6 @@ class Prog(object):
 
     @property
     def subparsers(self):
-        import ipdb
-        ipdb.set_trace()
         return self._subparsers
 
     def parse_args(self):
