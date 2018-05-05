@@ -46,8 +46,6 @@ class Prog(object):
 
     @property
     def subparsers(self):
-        import ipdb
-        ipdb.set_trace()
         return self._subparsers
 
     def parse_args(self):
