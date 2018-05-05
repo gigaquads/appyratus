@@ -48,6 +48,9 @@ class Prog(object):
     def subparsers(self):
         return self._subparsers
 
+    def display_version(self):
+        return VERSION_FORMAT.format(**self.data)
+
     def parse_args(self):
         args, unknown = self.parser.parse_known_args()
 
@@ -74,13 +77,13 @@ class Prog(object):
         # setup the parser with defaults and version information
         parser = argparse.ArgumentParser(prog=self.name)
         parser.set_defaults(**self.defaults)
-        if version:
+        if self.version:
             parser.add_argument(
                 '-v',
                 '--version',
                 action='version',
                 help='The version of {}'.format(self.version),
-                version=version
+                version=self.display_version()
             )
         # build subparsers for actionable requests
         subparser_groups = parser.add_subparsers(
@@ -156,7 +159,3 @@ class Subparser(object):
     @property
     def args(self):
         return self._args
-
-
-def version():
-    return VERSION_FORMAT.format(**CONFIG)
