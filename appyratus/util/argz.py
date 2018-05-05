@@ -1,3 +1,11 @@
+"""
+Argz
+Things to adopt for command line python usage
+Concepts:
+- Prog
+- Subparser
+- Arg
+"""
 import argparse
 
 VERSION_FORMAT = "{name} {version}, {tagline}"
