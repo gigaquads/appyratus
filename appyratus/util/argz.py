@@ -1,4 +1,13 @@
+"""
+Argz
+Things to adopt for command line python usage
+Concepts:
+- Prog
+- Subparser
+- Arg
+"""
 import argparse
+import ipdb
 
 VERSION_FORMAT = "{name} {version}, {tagline}"
 DEFAULTS = dict(action=None)
@@ -14,7 +23,7 @@ class ProgSchema(object):
 class Prog(object):
     def __init__(self, data: dict = None):
         self.data = data
-
+        # collect list of subparsers declared in this Prog
         self._subparsers = []
         for attr in dir(self):
             value = getattr(self, attr)
@@ -37,8 +46,26 @@ class Prog(object):
         return self.data.get('version')
 
     @property
+    def console(self):
+        return self.data.get('console')
+
+    @property
     def subparsers(self):
         return self._subparsers
+
+    def build_version(self):
+        return VERSION_FORMAT.format(**self.data)
+
+    def enter_console(self):
+        """
+        Enter a simple console, for interactive access to your applications
+        code, provided by ipdb
+        """
+        self.display_console_welcome()
+        ipdb.run('print("That\'s all folks")', globals=dict(app=self.app()))
+
+    def display_console_welcome(self):
+        print('Welcome to {} console'.format(self.__class__.__name__))
 
     def parse_args(self):
         args, unknown = self.parser.parse_known_args()
@@ -51,8 +78,11 @@ class Prog(object):
 
         for i in range(0, len(unknown), 2):
             k = unknown[i]
-            v = unknown[i + 1]
-            args_dict[k.lstrip('-')] = v
+            try:
+                v = unknown[i + 1]
+                args_dict[k.lstrip('-')] = v
+            except Exception as err:
+                print('unmatched arg "{}"'.format(k))
 
         # build a custom type with the combined argument names as attributes
         arguments = type('Arguments', (object, ), args_dict)()
@@ -66,14 +96,23 @@ class Prog(object):
         # setup the parser with defaults and version information
         parser = argparse.ArgumentParser(prog=self.name)
         parser.set_defaults(**self.defaults)
+        # support version number
         if self.version:
             parser.add_argument(
                 '-v',
                 '--version',
                 action='version',
                 help='The version of {}'.format(self.name),
-                version=self.display_version()
+                version=self.build_version()
             )
+        # support access to console
+        parser.add_argument(
+            '-c',
+            '--console',
+            action=self.enter_console(),
+            help='Console access'
+        )
+
         # build subparsers for actionable requests
         subparser_groups = parser.add_subparsers(
             title='subcommands', help='sub-command help'
@@ -96,9 +135,6 @@ class Prog(object):
 
     def print_usage(self):
         self.parser.print_usage()
-
-    def display_version(self):
-        return VERSION_FORMAT.format(**self.data)
 
     def route_action(self, action: str):
         """
