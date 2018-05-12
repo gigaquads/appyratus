@@ -1,13 +1,6 @@
-"""
-Argz
-Things to adopt for command line python usage
-Concepts:
-- Prog
-- Subparser
-- Arg
-"""
 import argparse
-import ipdb
+
+from .subparser import Subparser
 
 VERSION_FORMAT = "{name} {version}, {tagline}"
 DEFAULTS = dict(action=None)
@@ -47,8 +40,8 @@ class Prog(object):
         return self.data.get('version')
 
     @property
-    def console(self):
-        return self.data.get('console')
+    def tagline(self):
+        return self.data.get('tagline')
 
     @property
     def subparsers(self):
@@ -56,17 +49,6 @@ class Prog(object):
 
     def build_version(self):
         return VERSION_FORMAT.format(**self.data)
-
-    def enter_console(self):
-        """
-        Enter a simple console, for interactive access to your applications
-        code, provided by ipdb
-        """
-        self.display_console_welcome()
-        ipdb.run('print("That\'s all folks")', globals=dict(app=self.app()))
-
-    def display_console_welcome(self):
-        print('Welcome to {} console'.format(self.__class__.__name__))
 
     def parse_args(self):
         args, unknown = self.parser.parse_known_args()
@@ -106,14 +88,6 @@ class Prog(object):
                 help='The version of {}'.format(self.name),
                 version=self.build_version()
             )
-        # support access to console
-        parser.add_argument(
-            '-c',
-            '--console',
-            action=self.enter_console(),
-            help='Console access'
-        )
-
         # build subparsers for actionable requests
         subparser_groups = parser.add_subparsers(
             title='subcommands', help='sub-command help'
@@ -143,6 +117,9 @@ class Prog(object):
         """
         res = None
         if action and hasattr(self, action):
+            attr = getattr(self, action)
+            if not attr:
+                raise Exception('no attribute for action {}'.format(action))
             res = getattr(self, action)()
         else:
             self.print_usage()
@@ -150,41 +127,3 @@ class Prog(object):
 
     def run(self):
         action_res = self.route_action(action=self.args.action)
-
-
-class ArgSchema(object):
-    flags = None
-    type = None
-    default = None
-    help = None
-
-
-class Arg(object):
-    def __init__(self, flags=None, type=None, default=None, help=None):
-        self.flags = flags
-        self.type = type
-        self.default = default
-        self.help = help
-
-
-class StrArg(object):
-    pass
-
-
-class SubparserSchema(object):
-    name = None
-    help = None
-    defaults = None
-
-
-class Subparser(object):
-    def __init__(self):
-        self._args = []
-        for attr in dir(self):
-            value = getattr(self, attr)
-            if isinstance(value, Arg):
-                self._args.append(value)
-
-    @property
-    def args(self):
-        return self._args
