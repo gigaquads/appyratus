@@ -2,6 +2,7 @@ import copy
 
 import pytz
 import dateutil.parser
+import pickle
 
 from uuid import UUID, uuid4
 from datetime import datetime, date
@@ -169,6 +170,21 @@ class Regexp(Field):
         return self.load(value)
 
 
+class Pickle(Field):
+    def load(self, value):
+        try:
+            obj = pickle.loads(value)
+            return FieldResult(value=obj)
+        except Exception as exc:
+            return FieldResult(error=str(exc))
+
+    def dump(self, value):
+        try:
+            byte_str = pickle.dumps(value)
+            return FieldResult(value=byte_str)
+        except Exception as exc:
+            return FieldResult(error=str(exc))
+
 class Str(Field):
     def load(self, value):
         if isinstance(value, UUID):
@@ -190,9 +206,37 @@ class CompositeStr(Str):
 
 
 class Dict(Field):
+    def __init__(self, key: Field = None, value: Field = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._key_field = key
+        self._value_field = value
+
     def load(self, value):
         if isinstance(value, dict):
-            return FieldResult(value)
+            if self._key_field or self._value_field:
+                data = {}
+                for k, v in value.items():
+                    if self._key_field:
+                        key_result = self._key_field.load(k)
+                        if key_result.error:
+                            return FieldResult(
+                                error='dict key "{}" - {}'.format(
+                                    k, key_result.error
+                                ))
+                        else:
+                            k = key_result.value
+                    if self._value_field:
+                        value_result = self._value_field.load(v)
+                        if value_result.error:
+                            return FieldResult(
+                                error='dict value "{}" - {}'.format(
+                                    v, value_result.error
+                                ))
+                        else:
+                            v = value_result.value
+                    data[k] = v
+                return FieldResult(data)
+            return FieldResult(data.copy())
         else:
             return FieldResult(error='expected a dict')
 
