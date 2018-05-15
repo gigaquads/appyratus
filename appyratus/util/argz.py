@@ -53,6 +53,9 @@ class Prog(object):
     def subparsers(self):
         return self._subparsers
 
+    def app(self):
+        return
+
     def build_version(self):
         return VERSION_FORMAT.format(**self.data)
 
