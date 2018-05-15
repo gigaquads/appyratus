@@ -131,18 +131,6 @@ class AbstractSchema(object):
                 else:
                     result.data[field.name] = field_result.value
 
-        # post-dump operations only
-        if op == OP_DUMP:
-            # transform fields
-            for k, field in self.transform_fields.items():
-                value = result.data.get(field.name)
-                value = field.transform(value)
-                result.data[field.load_key] = value
-            # composite fields
-            for k, field in self.composite_fields.items():
-                value = result.data.get(field.name)
-                result.data[field.load_key] = value.format(**result.data)
-
         for k, field in self.required_fields[op].items():
             if k in result.errors:
                 continue
@@ -154,6 +142,16 @@ class AbstractSchema(object):
                 k_from = field.load_from or k
                 if k not in result.data:
                     result.errors[k_from] = 'missing'
+
+        # process composite fields
+        if op == OP_LOAD:
+            for field in self.fields.values():
+                if field.transform:
+                    value = result.data.get(field.load_key)
+                    result.data[field.load_key] = field.transform(value)
+            for k, field in self.composite_fields.items():
+                value = data.get(field.load_key)
+                data[field.load_key] = value.format(**result.data)
 
         if strict and result.errors:
             result.raise_validation_error()
