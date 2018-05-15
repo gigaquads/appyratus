@@ -1,6 +1,7 @@
 import copy
 
 import pytz
+import numpy as np
 import dateutil.parser
 import pickle
 
@@ -148,7 +149,41 @@ class List(Field):
         return FieldResult(value=result_list)
 
     def dump(self, value):
-        return self.load(value)
+        if not isinstance(value, (list, tuple, set)):
+            return FieldResult(error='expected a valid sequence')
+
+        result_list = []
+        if isinstance(self.nested, Field):
+            for i, x in enumerate(value):
+                result = self.nested.dump(x)
+                if result.error:
+                    return FieldResult(error={i: result.error})
+                result_list.append(result.value)
+        else:
+            for i, x in enumerate(value):
+                result = self.nested.dump(x)
+                if result.errors:
+                    return FieldResult(error={i: result.errors})
+                result_list.append(result.data)
+
+        return FieldResult(value=result_list)
+
+
+class Array(Field):
+    def __init__(self, nested, dtype=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.nested = nested
+        self.dtype = dtype
+
+    def load(self, value):
+        if not isinstance(value, (list, tuple, set, np.ndarray)):
+            return FieldResult(error='expected a valid sequence')
+        return FieldResult(value=np.array(value, dtype=self.dtype))
+
+    def dump(self, value):
+        if not isinstance(value, np.ndarray):
+            return FieldResult(error='expected a valid sequence')
+        return FieldResult(value=value.tolist())
 
 
 class Regexp(Field):
@@ -184,6 +219,7 @@ class Pickle(Field):
             return FieldResult(value=byte_str)
         except Exception as exc:
             return FieldResult(error=str(exc))
+
 
 class Str(Field):
     def load(self, value):
@@ -241,7 +277,33 @@ class Dict(Field):
             return FieldResult(error='expected a dict')
 
     def dump(self, value):
-        return self.load(value)
+        if isinstance(value, dict):
+            if self._key_field or self._value_field:
+                data = {}
+                for k, v in value.items():
+                    if self._key_field:
+                        key_result = self._key_field.dump(k)
+                        if key_result.error:
+                            return FieldResult(
+                                error='dict key "{}" - {}'.format(
+                                    k, key_result.error
+                                ))
+                        else:
+                            k = key_result.value
+                    if self._value_field:
+                        value_result = self._value_field.dump(v)
+                        if value_result.error:
+                            return FieldResult(
+                                error='dict value "{}" - {}'.format(
+                                    v, value_result.error
+                                ))
+                        else:
+                            v = value_result.value
+                    data[k] = v
+                return FieldResult(data)
+            return FieldResult(data.copy())
+        else:
+            return FieldResult(error='expected a dict')
 
 
 class Enum(Field):
