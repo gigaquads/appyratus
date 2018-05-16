@@ -14,9 +14,8 @@ class ProgSchema(object):
 
 
 class Prog(object):
-    def __init__(self, data: dict=None):
+    def __init__(self, data: dict = None):
         self.data = data
-
         # collect list of subparsers declared in this Prog
         self._subparsers = []
         for attr in dir(self):
@@ -46,6 +45,9 @@ class Prog(object):
     @property
     def subparsers(self):
         return self._subparsers
+
+    def app(self):
+        return
 
     def build_version(self):
         return VERSION_FORMAT.format(**self.data)
