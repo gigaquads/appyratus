@@ -23,7 +23,31 @@ from .consts import (
 )
 
 
-class Field(object, metaclass=ABCMeta):
+class FieldMeta(type, metaclass=ABCMeta):
+    def __init__(cls, name, bases, dct):
+        type.__init__(cls, name, bases, dct)
+        setattr(cls, 'dump', cls.build_pickled_dump_wrapper(cls.dump))
+        setattr(cls, 'load', cls.build_pickled_load_wrapper(cls.load))
+
+    @staticmethod
+    def build_pickled_dump_wrapper(dump):
+        def wrapper(self, value):
+            result = dump(self, value)
+            if self.pickled:
+                result.value = pickle.dumps(value)
+            return result
+        return wrapper
+
+    @staticmethod
+    def build_pickled_load_wrapper(load):
+        def wrapper(self, value):
+            result = load(self, value)
+            if self.pickled and isinstance(result.value, bytes):
+                result.value = pickle.loads(result.value)
+            return result
+        return wrapper
+
+class Field(metaclass=FieldMeta):
     def __init__(
         self,
         allow_none=False,
@@ -35,6 +59,7 @@ class Field(object, metaclass=ABCMeta):
         dump_required=False,
         default=None,
         transform=None,
+        pickled=False,
     ):
         """
         Kwargs:
@@ -47,6 +72,7 @@ class Field(object, metaclass=ABCMeta):
             - dump_required: the field must be present when dumped.
             - default: the default field value when none provided.
             - transform: transformations to perform on a field when dumped.
+            - pickled: indicates whether stored data is pickled.
         """
         self.load_only = load_only
         self.load_from = load_from
@@ -58,6 +84,7 @@ class Field(object, metaclass=ABCMeta):
         self.name = None
         self.default = default
         self.transform = transform
+        self.pickled = pickled
 
     def __repr__(self):
         return '<Field({}{})>'.format(
@@ -203,22 +230,6 @@ class Regexp(Field):
 
     def dump(self, value):
         return self.load(value)
-
-
-class Pickle(Field):
-    def load(self, value):
-        try:
-            obj = pickle.loads(value)
-            return FieldResult(value=obj)
-        except Exception as exc:
-            return FieldResult(error=str(exc))
-
-    def dump(self, value):
-        try:
-            byte_str = pickle.dumps(value)
-            return FieldResult(value=byte_str)
-        except Exception as exc:
-            return FieldResult(error=str(exc))
 
 
 class Str(Field):
