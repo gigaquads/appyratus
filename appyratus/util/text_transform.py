@@ -1,4 +1,5 @@
 import re
+import codecs
 
 AN_EMPTY_STRING = ''
 """ The least amount of text the transform normalizer will return """
@@ -88,7 +89,37 @@ class TextTransform(object):
         return cls.separator(value=cls.normalize(value), separator='.')
 
     @classmethod
-    def separator(cls, value, separator=None):
+    def unbound(cls, value):
+        """
+        Unbound, void of all separation, `suchasthis`
+        """
+        return cls.separator(value=cls.normalize(value), separator='')
+
+    @classmethod
+    def reverse(cls, value):
+        """
+        Reversed, `siht sa hcus`
+        """
+        return value[::-1]
+
+    @classmethod
+    def hex(cls, value):
+        """
+        Hex, `b'737563682061732074686973'`
+        """
+        return codecs.encode(value.encode('ascii'), 'hex')
+
+    @classmethod
+    def words(cls, value, separator=None) -> list:
+        """
+        Words, `['such', 'as', 'this']`
+        """
         if not separator:
+            separator = ' '
+        return value.split(separator)
+
+    @classmethod
+    def separator(cls, value, separator=None):
+        if separator is None:
             return
         return re.sub(r'\s', r"{}".format(separator), value)
