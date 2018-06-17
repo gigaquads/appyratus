@@ -163,11 +163,17 @@ class AbstractSchema(object):
 
 class Schema(AbstractSchema, metaclass=SchemaMeta):
     @classmethod
-    def load_keys(cls, keys) -> list:
+    def load_keys(cls, keys: list) -> list:
+        """
+        The `keys` list is expected to be a subset of the field names defined
+        by the schema prior to the load operation being performed. The return
+        value will be a list containing the result of "loading" just the field
+        names, taking into account any field's load_from kwarg.
+        """
         loaded_keys = []
         for key in keys:
             if key in cls.load_from_fields:
-                loaded_key = cls.load_from_fields(key).name
+                loaded_key = cls.load_from_fields[key].name
             else:
                 loaded_key = key
             loaded_keys.append(loaded_key)
