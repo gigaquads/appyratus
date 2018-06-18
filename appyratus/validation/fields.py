@@ -1,7 +1,9 @@
 import copy
 
 import pytz
+import numpy as np
 import dateutil.parser
+import pickle
 
 from uuid import UUID, uuid4
 from datetime import datetime, date
@@ -21,7 +23,31 @@ from .consts import (
 )
 
 
-class Field(object, metaclass=ABCMeta):
+class FieldMeta(type, metaclass=ABCMeta):
+    def __init__(cls, name, bases, dct):
+        type.__init__(cls, name, bases, dct)
+        setattr(cls, 'dump', cls.build_pickled_dump_wrapper(cls.dump))
+        setattr(cls, 'load', cls.build_pickled_load_wrapper(cls.load))
+
+    @staticmethod
+    def build_pickled_dump_wrapper(dump):
+        def wrapper(self, value):
+            result = dump(self, value)
+            if self.pickled:
+                result.value = pickle.dumps(value)
+            return result
+        return wrapper
+
+    @staticmethod
+    def build_pickled_load_wrapper(load):
+        def wrapper(self, value):
+            result = load(self, value)
+            if self.pickled and isinstance(result.value, bytes):
+                result.value = pickle.loads(result.value)
+            return result
+        return wrapper
+
+class Field(metaclass=FieldMeta):
     def __init__(
         self,
         allow_none=False,
@@ -33,6 +59,7 @@ class Field(object, metaclass=ABCMeta):
         dump_required=False,
         default=None,
         transform=None,
+        pickled=False,
     ):
         """
         Kwargs:
@@ -45,6 +72,7 @@ class Field(object, metaclass=ABCMeta):
             - dump_required: the field must be present when dumped.
             - default: the default field value when none provided.
             - transform: transformations to perform on a field when dumped.
+            - pickled: indicates whether stored data is pickled.
         """
         self.load_only = load_only
         self.load_from = load_from
@@ -56,6 +84,7 @@ class Field(object, metaclass=ABCMeta):
         self.name = None
         self.default = default
         self.transform = transform
+        self.pickled = pickled
 
     def __repr__(self):
         return '<Field({}{})>'.format(
@@ -147,7 +176,41 @@ class List(Field):
         return FieldResult(value=result_list)
 
     def dump(self, value):
-        return self.load(value)
+        if not isinstance(value, (list, tuple, set)):
+            return FieldResult(error='expected a valid sequence')
+
+        result_list = []
+        if isinstance(self.nested, Field):
+            for i, x in enumerate(value):
+                result = self.nested.dump(x)
+                if result.error:
+                    return FieldResult(error={i: result.error})
+                result_list.append(result.value)
+        else:
+            for i, x in enumerate(value):
+                result = self.nested.dump(x)
+                if result.errors:
+                    return FieldResult(error={i: result.errors})
+                result_list.append(result.data)
+
+        return FieldResult(value=result_list)
+
+
+class Array(Field):
+    def __init__(self, nested, dtype=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.nested = nested
+        self.dtype = dtype
+
+    def load(self, value):
+        if not isinstance(value, (list, tuple, set, np.ndarray)):
+            return FieldResult(error='expected a valid sequence')
+        return FieldResult(value=np.array(value, dtype=self.dtype))
+
+    def dump(self, value):
+        if not isinstance(value, np.ndarray):
+            return FieldResult(error='expected a valid sequence')
+        return FieldResult(value=value.tolist())
 
 
 class Regexp(Field):
@@ -190,14 +253,68 @@ class CompositeStr(Str):
 
 
 class Dict(Field):
+    def __init__(self, key: Field = None, value: Field = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._key_field = key
+        self._value_field = value
+
     def load(self, value):
         if isinstance(value, dict):
-            return FieldResult(value)
+            if self._key_field or self._value_field:
+                data = {}
+                for k, v in value.items():
+                    if self._key_field:
+                        key_result = self._key_field.load(k)
+                        if key_result.error:
+                            return FieldResult(
+                                error='dict key "{}" - {}'.format(
+                                    k, key_result.error
+                                ))
+                        else:
+                            k = key_result.value
+                    if self._value_field:
+                        value_result = self._value_field.load(v)
+                        if value_result.error:
+                            return FieldResult(
+                                error='dict value "{}" - {}'.format(
+                                    v, value_result.error
+                                ))
+                        else:
+                            v = value_result.value
+                    data[k] = v
+                return FieldResult(data)
+            return FieldResult(data.copy())
         else:
             return FieldResult(error='expected a dict')
 
     def dump(self, value):
-        return self.load(value)
+        if isinstance(value, dict):
+            if self._key_field or self._value_field:
+                data = {}
+                for k, v in value.items():
+                    if self._key_field:
+                        key_result = self._key_field.dump(k)
+                        if key_result.error:
+                            return FieldResult(
+                                error='dict key "{}" - {}'.format(
+                                    k, key_result.error
+                                ))
+                        else:
+                            k = key_result.value
+                    if self._value_field:
+                        value_result = self._value_field.dump(v)
+                        if value_result.error:
+                            return FieldResult(
+                                error='dict value "{}" - {}'.format(
+                                    v, value_result.error
+                                ))
+                        else:
+                            v = value_result.value
+                    data[k] = v
+                return FieldResult(data)
+            return FieldResult(data.copy())
+        else:
+            return FieldResult(error='expected a dict')
 
 
 class Enum(Field):
