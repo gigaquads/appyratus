@@ -290,30 +290,7 @@ class Dict(Field):
         return FieldResult(data)
 
     def dump(self, value):
-        if not isinstance(value, dict):
-            return FieldResult(error='expected a dict')
-        data = {}
-        for k, v in value.items():
-            if self._key_field:
-                key_result = self._key_field.dump(k)
-                if key_result.error:
-                    return FieldResult(
-                        error='dict key "{}" - {}'.format(k, key_result.error)
-                    )
-                else:
-                    k = key_result.value
-            if self._value_field:
-                value_result = self._value_field.dump(v)
-                if value_result.error:
-                    return FieldResult(
-                        error='dict value "{}" - {}'.format(
-                            v, value_result.error
-                        )
-                    )
-                else:
-                    v = value_result.value
-            data[k] = v
-        return FieldResult(data)
+        return self.load(value)
 
 
 class Enum(Field):
@@ -444,3 +421,20 @@ class DateTime(Field):
         else:
             result.value = to_timestamp(result.value)
         return result
+
+
+class Bool(Field):
+    TRUTHY = {'T', 't', 'True', 'true', 1}
+    FALSEY = {'F', 'f', 'False', 'false', 0}
+
+    def load(self, value):
+        if isinstance(value, bool):
+            return FieldResult(value=value)
+        if value in self.TRUTHY:
+            return FieldResult(value=True)
+        if value in self.FALSEY:
+            return FieldResult(value=False)
+        return FieldResult(error='unable to cast value as boolean')
+
+    def dump(self, value):
+        return self.load(value)
