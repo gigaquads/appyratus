@@ -264,66 +264,56 @@ class Dict(Field):
         self._value_field = value
 
     def load(self, value):
-        if isinstance(value, dict):
-            if self._key_field or self._value_field:
-                data = {}
-                for k, v in value.items():
-                    if self._key_field:
-                        key_result = self._key_field.load(k)
-                        if key_result.error:
-                            return FieldResult(
-                                error='dict key "{}" - {}'.format(
-                                    k, key_result.error
-                                )
-                            )
-                        else:
-                            k = key_result.value
-                    if self._value_field:
-                        value_result = self._value_field.load(v)
-                        if value_result.error:
-                            return FieldResult(
-                                error='dict value "{}" - {}'.format(
-                                    v, value_result.error
-                                )
-                            )
-                        else:
-                            v = value_result.value
-                    data[k] = v
-                return FieldResult(data)
-            return FieldResult(data.copy())
-        else:
+        if not isinstance(value, dict):
             return FieldResult(error='expected a dict')
+        data = {}
+        for k, v in value.items():
+            if self._key_field:
+                key_result = self._key_field.load(k)
+                if key_result.error:
+                    return FieldResult(
+                        error='dict key "{}" - {}'.format(k, key_result.error)
+                    )
+                else:
+                    k = key_result.value
+            if self._value_field:
+                value_result = self._value_field.load(v)
+                if value_result.error:
+                    return FieldResult(
+                        error='dict value "{}" - {}'.format(
+                            v, value_result.error
+                        )
+                    )
+                else:
+                    v = value_result.value
+            data[k] = v
+        return FieldResult(data)
 
     def dump(self, value):
-        if isinstance(value, dict):
-            if self._key_field or self._value_field:
-                data = {}
-                for k, v in value.items():
-                    if self._key_field:
-                        key_result = self._key_field.dump(k)
-                        if key_result.error:
-                            return FieldResult(
-                                error='dict key "{}" - {}'.format(
-                                    k, key_result.error
-                                )
-                            )
-                        else:
-                            k = key_result.value
-                    if self._value_field:
-                        value_result = self._value_field.dump(v)
-                        if value_result.error:
-                            return FieldResult(
-                                error='dict value "{}" - {}'.format(
-                                    v, value_result.error
-                                )
-                            )
-                        else:
-                            v = value_result.value
-                    data[k] = v
-                return FieldResult(data)
-            return FieldResult(data.copy())
-        else:
+        if not isinstance(value, dict):
             return FieldResult(error='expected a dict')
+        data = {}
+        for k, v in value.items():
+            if self._key_field:
+                key_result = self._key_field.dump(k)
+                if key_result.error:
+                    return FieldResult(
+                        error='dict key "{}" - {}'.format(k, key_result.error)
+                    )
+                else:
+                    k = key_result.value
+            if self._value_field:
+                value_result = self._value_field.dump(v)
+                if value_result.error:
+                    return FieldResult(
+                        error='dict value "{}" - {}'.format(
+                            v, value_result.error
+                        )
+                    )
+                else:
+                    v = value_result.value
+            data[k] = v
+        return FieldResult(data)
 
 
 class Enum(Field):
