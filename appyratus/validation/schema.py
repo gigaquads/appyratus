@@ -143,15 +143,17 @@ class AbstractSchema(object):
                 if k not in result.data:
                     result.errors[k_from] = 'missing'
 
-        # process composite fields
+        # transform fields are rendered upon load
         if op == OP_LOAD:
             for field in self.fields.values():
                 if field.transform:
                     value = result.data.get(field.load_key)
                     result.data[field.load_key] = field.transform(value)
+        # composite fields are rendered upon dump
+        else:
             for k, field in self.composite_fields.items():
                 value = data.get(field.load_key)
-                data[field.load_key] = value.format(**result.data)
+                result.data[field.load_key] = value.format(**result.data)
 
         if strict and result.errors:
             result.raise_validation_error()

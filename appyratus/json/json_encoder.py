@@ -5,7 +5,6 @@ import decimal
 import numpy as np
 
 from datetime import datetime, date
-from pandas import Series
 
 from appyratus.time import to_timestamp
 
@@ -22,8 +21,6 @@ class JsonEncoder(json.JSONEncoder):
             return obj.pattern
         elif isinstance(obj, decimal.Decimal):
             return str(obj)
-        elif isinstance(obj, Series):
-            return repr(list(obj))
         elif isinstance(obj, np.ndarray):
             return str(list(obj))
         else:
