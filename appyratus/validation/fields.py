@@ -36,6 +36,7 @@ class FieldMeta(type, metaclass=ABCMeta):
             if self.pickled:
                 result.value = pickle.dumps(value)
             return result
+
         return wrapper
 
     @staticmethod
@@ -45,7 +46,9 @@ class FieldMeta(type, metaclass=ABCMeta):
             if self.pickled and isinstance(result.value, bytes):
                 result.value = pickle.loads(result.value)
             return result
+
         return wrapper
+
 
 class Field(metaclass=FieldMeta):
     def __init__(
@@ -253,7 +256,9 @@ class CompositeStr(Str):
 
 
 class Dict(Field):
-    def __init__(self, key: Field = None, value: Field = None, *args, **kwargs):
+    def __init__(
+        self, key: Field = None, value: Field = None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self._key_field = key
         self._value_field = value
@@ -269,7 +274,8 @@ class Dict(Field):
                             return FieldResult(
                                 error='dict key "{}" - {}'.format(
                                     k, key_result.error
-                                ))
+                                )
+                            )
                         else:
                             k = key_result.value
                     if self._value_field:
@@ -278,7 +284,8 @@ class Dict(Field):
                             return FieldResult(
                                 error='dict value "{}" - {}'.format(
                                     v, value_result.error
-                                ))
+                                )
+                            )
                         else:
                             v = value_result.value
                     data[k] = v
@@ -298,7 +305,8 @@ class Dict(Field):
                             return FieldResult(
                                 error='dict key "{}" - {}'.format(
                                     k, key_result.error
-                                ))
+                                )
+                            )
                         else:
                             k = key_result.value
                     if self._value_field:
@@ -307,7 +315,8 @@ class Dict(Field):
                             return FieldResult(
                                 error='dict value "{}" - {}'.format(
                                     v, value_result.error
-                                ))
+                                )
+                            )
                         else:
                             v = value_result.value
                     data[k] = v
