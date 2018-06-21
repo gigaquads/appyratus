@@ -29,31 +29,53 @@ class SchemaMeta(type):
         cls.fields = {}
         cls.required_fields = {OP_DUMP: {}, OP_LOAD: {}}
         cls.load_from_fields = {}
-        # transform fields allow data to be mutated into specified shapes
         cls.transform_fields = {}
-        # composite fields allow result data to be applied to a field's format spec
         cls.composite_fields = {}
+
+        cls.pre_loaded_keys = set()
+        cls.post_dumped_keys = set()
+
+        # collect the schema Field class attributes into various data
+        # structures used internally...
         for k in dir(cls):
             v = getattr(cls, k)
-            if isinstance(v, Field):
-                v.name = k
-                if v.load_from is not None:
-                    cls.load_from_fields[v.load_from] = v
-                cls.fields[k] = v
-                # required
-                if v.required:
-                    cls.required_fields[OP_DUMP][k] = v
-                    cls.required_fields[OP_LOAD][k] = v
-                elif v.dump_required:
-                    cls.required_fields[OP_DUMP][k] = v
-                elif v.load_required:
-                    cls.required_fields[OP_LOAD][k] = v
-                # composite
-                if hasattr(v, 'composite'):
-                    cls.composite_fields[k] = v
-                # transform
-                if getattr(v, 'transform'):
-                    cls.transform_fields[k] = v
+            if not isinstance(v, Field):
+                continue
+
+            v.name = k
+            cls.fields[k] = v
+
+            # collect names of fields resulting from dump
+            if not v.load_only:
+                cls.post_dumped_keys.add(v.dump_to or k)
+
+            # collect names of fields expected by load
+            cls.pre_loaded_keys.add(v.load_from or k)
+
+            # collect fields that have load_from kwarg
+            if v.load_from is not None:
+                cls.load_from_fields[v.load_from] = v
+
+            # collect required fields for load/dump
+            if v.required:
+                cls.required_fields[OP_DUMP][k] = v
+                cls.required_fields[OP_LOAD][k] = v
+            elif v.dump_required:
+                cls.required_fields[OP_DUMP][k] = v
+            elif v.load_required:
+                cls.required_fields[OP_LOAD][k] = v
+
+            # collect composite fields
+            if hasattr(v, 'composite'):
+                cls.composite_fields[k] = v
+
+            # collect fields with transform
+            if hasattr(v, 'transform'):
+                cls.transform_fields[k] = v
+
+        # pedantically make this set constant
+        cls.post_dumped_keys = frozenset(cls.post_dumped_keys)
+        cls.pre_loaded_keys = frozenset(cls.pre_loaded_keys)
 
         # collect the schema class in a global set
         # through a venusian callback:
@@ -66,10 +88,9 @@ class SchemaMeta(type):
 class AbstractSchema(object):
     def __init__(self, strict=False, allow_additional=True):
         """
-        Kwargs:
+        # Kwargs:
             - strict: if True, then a ValidationException will be thrown if any
               errors are encountered during load (or dump).
-
             - allow_additional: if True, additional key-value pairs will be
               allowed to exist in the data loaded by this schema; however,
               these additional keys-value will not exist in the data returned
@@ -81,27 +102,41 @@ class AbstractSchema(object):
     def __repr__(self):
         return '<Schema({})>'.format(self.__class__.__name__)
 
-    def load(self, data, strict=None):
-        return self._apply_op(OP_LOAD, data, strict)
+    def load(self, data, fields=None, strict=None):
+        return self._apply_op(OP_LOAD, data, fields, strict)
 
-    def dump(self, data, strict=None):
-        return self._apply_op(OP_DUMP, data, strict)
+    def dump(self, data, fields=None, strict=None):
+        return self._apply_op(OP_DUMP, data, fields, strict)
 
-    def _apply_op(self, op, data, strict):
+    def _apply_op(self, op: str, data: dict, projection: set, strict: bool):
         """
-        Apply operations to data
-        And be sure to make a copy of data before hand
+        Apply operations to data, and be sure to make a copy of data before
+        hand.
         """
         data = copy.deepcopy(data)
         strict = strict if strict is not None else self.strict
         result = SchemaResult(op, {}, {})
 
+        # The `projection`
+        if not projection:
+            if op == OP_LOAD:
+                projection = self.pre_loaded_keys
+            else:
+                projection = self.fields.keys()
+        elif not isinstance(projection, set):
+            projection = set(projection)
+
         if op == OP_LOAD:
+            # assign default values before continuing with loading
             for k, field in self.fields.items():
                 if data.get(k) is None and field.has_default_value:
                     data[k] = field.default_value
 
         for k, v in data.items():
+            # ignore any field whose name not in projection
+            if k not in projection:
+                continue
+
             field = self.fields.get(k)
 
             if field is None:
