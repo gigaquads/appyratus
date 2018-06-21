@@ -12,7 +12,6 @@ from abc import ABCMeta, abstractmethod
 from Crypto import Random
 
 from appyratus.time import to_timestamp
-
 from .results import FieldResult
 from .consts import (
     OP_LOAD,
@@ -53,6 +52,7 @@ class FieldMeta(type, metaclass=ABCMeta):
 class Field(metaclass=FieldMeta):
     def __init__(
         self,
+        name=None,
         allow_none=False,
         load_only=False,
         load_from=None,
@@ -84,7 +84,7 @@ class Field(metaclass=FieldMeta):
         self.required = required
         self.dump_required = dump_required
         self.load_required = load_required
-        self.name = None
+        self.name = name
         self.default = default
         self.transform = transform
         self.pickled = pickled
@@ -135,8 +135,20 @@ class Anything(Field):
 
 class Object(Field):
     def __init__(self, nested, *args, **kwargs):
-        super(Object, self).__init__(*args, **kwargs)
-        self.nested = nested    # expect to by type Schema
+        """
+        # Args:
+            - nested: either a Schema instance or a dict, containing field
+              names mapped to field objects.
+        """
+        super().__init__(*args, **kwargs)
+
+        if isinstance(nested, dict):
+            # create a new schema class and instatiate it
+            from appyratus.validation.schema import Schema
+            schema_class = type('ObjectSchema', (Schema, ), nested)
+            self.nested = schema_class()
+        else:
+            self.nested = nested
 
     def load(self, value):
         schema_result = self.nested.load(value)
@@ -155,7 +167,7 @@ class Object(Field):
 
 class List(Field):
     def __init__(self, nested, *args, **kwargs):
-        super(List, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.nested = nested
 
     def load(self, value):
@@ -218,7 +230,7 @@ class Array(Field):
 
 class Regexp(Field):
     def __init__(self, pattern, re_flags=None, *args, **kwargs):
-        super(Regexp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.pattern = pattern
         self.flags = flags or ()
         self.regexp = re.compile(self.pattern, *self.flags)
@@ -328,7 +340,7 @@ class Dict(Field):
 
 class Enum(Field):
     def __init__(self, nested, allowed_values, *args, **kwargs):
-        super(Enum, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.is_nested_field = isinstance(nested, Field)
         self.allowed_values = set(allowed_values)
         self.nested = nested
