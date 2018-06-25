@@ -14,7 +14,12 @@ class ProgSchema(object):
 
 
 class Prog(object):
-    def __init__(self, data: dict = None):
+    """
+    # Prog
+    An interface to your program.
+    """
+
+    def __init__(self, data: dict=None):
         self.data = data
         # collect list of subparsers declared in this Prog
         self._subparsers = []
