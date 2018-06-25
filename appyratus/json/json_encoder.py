@@ -24,4 +24,4 @@ class JsonEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return str(list(obj))
         else:
-            return super(JSONEncoder, self).default(obj)
+            return repr(obj)
