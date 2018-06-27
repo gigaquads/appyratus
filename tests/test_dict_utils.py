@@ -13,13 +13,13 @@ class TestDictUtilsUnit(BaseTests):
     @mark.params(
         'actual, expected',
         [
-    # no depth
+    # keys without separators will not be affected
             ({
                 'data': 'android'
             }, {
                 'data': 'android'
             }),
-    # wat
+    # keys with multiple separators will be transformed into a nested dictionary
             (
                 {
                     'jean.luc.picard': 'captain'
@@ -40,7 +40,7 @@ class TestDictUtilsUnit(BaseTests):
     @mark.params(
         'data, other, expected',
         [
-    # wat
+    # unique keys are merged
             (
                 {
                     'worf': 'klingon'
@@ -51,15 +51,22 @@ class TestDictUtilsUnit(BaseTests):
                     'honor': True
                 }
             ),
-    # nested
+    # nested keys are merged
             (
                 {
-                    'geordi': 'engineer'
+                    'geordi': {
+                        'engineer': True,
+                        'visor': False
+                    }
                 }, {
-                    'visor': True
+                    'geordi': {
+                        'visor': True
+                    }
                 }, {
-                    'geordi': 'engineer',
-                    'visor': True
+                    'geordi': {
+                        'engineer': True,
+                        'visor': True
+                    }
                 }
             ),
         ]
@@ -71,8 +78,10 @@ class TestDictUtilsUnit(BaseTests):
 
     @mark.params(
         'data, other, changed', [
+            # flat keys will be compared
             (dict(a=0), dict(a=1), True),
             (dict(a=0), dict(a=0), False),
+            # nested will be recursively compared
             (dict(a=dict(b=0)), dict(a=dict(c=1)), True),
             (dict(a=dict(b=0)), dict(a=dict(b=1)), True),
             (dict(a=dict(b=0)), dict(a=dict(b=0)), False),
@@ -84,4 +93,3 @@ class TestDictUtilsUnit(BaseTests):
         has_no_change = (not result)
         assert has_no_change is not changed
 
-    #@mark.bparams([(1, 1), (2, 1), (3, 3)])
