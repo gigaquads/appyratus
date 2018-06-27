@@ -19,7 +19,7 @@ class Prog(object):
     An interface to your program.
     """
 
-    def __init__(self, data: dict=None):
+    def __init__(self, data: dict = None):
         self.data = data
         # collect list of subparsers declared in this Prog
         self._subparsers = []
