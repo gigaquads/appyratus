@@ -17,7 +17,13 @@ class DictUtils(object):
                 path = k.split(separator)
                 obj = new_data
                 for x in path[:-1]:
-                    if not isinstance(obj.get(x), dict):
+                    xval = obj.get(x)
+                    if xval and not isinstance(xval, dict):
+                        raise ValueError(
+                            'Expected value to be a dictionary, got "{}"'.
+                            format(xval)
+                        )
+                    elif not isinstance(xval, dict):
                         obj[x] = {}
                     obj = obj[x]
                 obj[path[-1]] = v
