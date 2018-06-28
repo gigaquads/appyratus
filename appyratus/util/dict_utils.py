@@ -50,12 +50,15 @@ class DictUtils(object):
         """
         changed = {}
         for data_k, data_v in data.items():
-            other_v = other.get(data_k)
+            if other:
+                other_v = other.get(data_k)
+            else:
+                other_v = None
             if isinstance(data_v, dict):
                 data_v = DictUtils.diff(data_v, other_v)
                 if data_v:
                     changed[data_k] = data_v
-            elif data_k not in other:
+            elif other and data_k not in other:
                 changed[data_k] = data_v
             elif data_v is not other_v:
                 changed[data_k] = other_v

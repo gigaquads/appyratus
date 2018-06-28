@@ -19,6 +19,16 @@ class TestDictUtilsUnit(BaseTests):
             }, {
                 'data': 'android'
             }),
+    # keys with special characters will not be split apart incorrectly
+            (
+                {
+                    'deanna-troi.mpath': 'counselor'
+                }, {
+                    'deanna-troi': {
+                        'mpath': 'counselor'
+                    }
+                }
+            ),
     # keys with multiple separators will be transformed into a nested dictionary
             (
                 {
@@ -30,12 +40,33 @@ class TestDictUtilsUnit(BaseTests):
                         }
                     }
                 }
-            )
+            ),
+    # keys with trailing separator will create an empty dict key (not good)
+            ({
+                'tasha.': 'romulan'
+            }, {
+                'tasha': {
+                    '': 'romulan'
+                }
+            }),
+    # keys with leading separator will create an empty dict key (not good)
+            (
+                {
+                    '.will.riker': 'cavalier'
+                }, {
+                    '': {
+                        'will': {
+                            'riker': 'cavalier'
+                        }
+                    }
+                }
+            ),
         ]
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
-        assert result == expected
+        diff_result = self.klass.diff(data=result, other=expected)
+        assert not diff_result
 
     @mark.params(
         'data, other, expected',
@@ -77,11 +108,12 @@ class TestDictUtilsUnit(BaseTests):
         assert not diff_result
 
     @mark.params(
-        'data, other, changed', [
-            # flat keys will be compared
+        'data, other, changed',
+        [
+    # flat keys will be compared
             (dict(a=0), dict(a=1), True),
             (dict(a=0), dict(a=0), False),
-            # nested will be recursively compared
+    # nested will be recursively compared
             (dict(a=dict(b=0)), dict(a=dict(c=1)), True),
             (dict(a=dict(b=0)), dict(a=dict(b=1)), True),
             (dict(a=dict(b=0)), dict(a=dict(b=0)), False),
@@ -92,4 +124,3 @@ class TestDictUtilsUnit(BaseTests):
         assert isinstance(result, dict)
         has_no_change = (not result)
         assert has_no_change is not changed
-
