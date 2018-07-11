@@ -1,4 +1,5 @@
 import argparse
+from inspect import isclass
 
 from .subparser import Subparser
 
@@ -19,13 +20,15 @@ class Prog(object):
     An interface to your program.
     """
 
-    def __init__(self, data: dict = None):
+    def __init__(self, data: dict=None):
         self.data = data
         # collect list of subparsers declared in this Prog
         self._subparsers = []
         for attr in dir(self):
             value = getattr(self, attr)
-            if isinstance(value, Subparser):
+            if isinstance(
+                value, Subparser
+            ) or (isclass(value) and issubclass(value, Subparser)):
                 self._subparsers.append(value)
 
         self.parser = self.build_parser()
@@ -106,6 +109,9 @@ class Prog(object):
                 )
                 # set defaults for each subparser
                 subparser_obj.set_defaults(**subparser.defaults)
+                import ipdb
+                ipdb.set_trace()
+                print('wat')
                 for arg in subparser.args:
                     subparser_obj.add_argument(
                         *arg.flags,
