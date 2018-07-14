@@ -14,53 +14,40 @@ class ProgSchema(object):
     tagline = None
 
 
-class Prog(object):
+class CliProgram(object):
     """
     # Prog
     An interface to your program.
     """
 
-    def __init__(self, data: dict=None):
-        self.data = data
-        # collect list of subparsers declared in this Prog
-        self._subparsers = []
-        for attr in dir(self):
-            value = getattr(self, attr)
-            if isinstance(
-                value, Subparser
-            ) or (isclass(value) and issubclass(value, Subparser)):
-                self._subparsers.append(value)
-
+    def __init__(self, name=None, version=None, tagline=None, defaults=None):
+        self.name = name
+        self.version = version
+        self.tagline = tagline
+        self.defaults = defaults or DEFAULTS
         self.parser = self.build_parser()
         self.args = self.parse_args()
 
-    @property
-    def name(self):
-        return self.data.get('name')
-
-    @property
-    def defaults(self):
-        return self.data.get('defaults', DEFAULTS)
-
-    @property
-    def version(self):
-        return self.data.get('version')
-
-    @property
-    def tagline(self):
-        return self.data.get('tagline')
-
-    @property
-    def subparsers(self):
-        return self._subparsers
-
-    def app(self):
-        return
-
     def build_version(self):
-        return VERSION_FORMAT.format(**self.data)
+        return VERSION_FORMAT.format(
+            **{
+                'name': self.name,
+                'version': self.version,
+                'tagline': self.tagline
+            }
+        )
+
+    @staticmethod
+    def subparsers():
+        """
+        The subparsers available to this program.
+        """
+        return []
 
     def parse_args(self):
+        """
+        Parse arguments from command-line
+        """
         args, unknown = self.parser.parse_known_args()
 
         # now combine known and unknown arguments into a single dict
@@ -102,23 +89,19 @@ class Prog(object):
         subparser_groups = parser.add_subparsers(
             title='subcommands', help='sub-command help'
         )
-        if self.subparsers:
-            for subparser in self.subparsers:
-                subparser_obj = subparser_groups.add_parser(
-                    subparser.name, help=subparser.help
+        for subparser in self.subparsers():
+            subparser_obj = subparser_groups.add_parser(
+                subparser.name, help=subparser.help
+            )
+            # set defaults for each subparser
+            subparser_obj.set_defaults(**subparser.defaults)
+            for arg in subparser.args:
+                subparser_obj.add_argument(
+                    *arg.flags,
+                    type=arg.type,
+                    default=arg.default,
+                    help=arg.help
                 )
-                # set defaults for each subparser
-                subparser_obj.set_defaults(**subparser.defaults)
-                import ipdb
-                ipdb.set_trace()
-                print('wat')
-                for arg in subparser.args:
-                    subparser_obj.add_argument(
-                        *arg.flags,
-                        type=arg.type,
-                        default=arg.default,
-                        help=arg.help
-                    )
         return parser
 
     def print_usage(self):
@@ -129,11 +112,13 @@ class Prog(object):
         The default action is to print usage
         """
         res = None
-        if action and hasattr(self, action):
-            attr = getattr(self, action)
-            if not attr:
-                raise Exception('no attribute for action {}'.format(action))
-            res = getattr(self, action)()
+        subparsers_by_name = {s.name: s for s in self.subparsers()}
+        if action in subparsers_by_name.keys():
+            subparser = subparsers_by_name[action]
+            perform = getattr(subparser, 'perform')
+            if not perform:
+                raise Exception('no perform for subparser {}'.format(action))
+            res = perform(args=self.args)
         else:
             self.print_usage()
         return res

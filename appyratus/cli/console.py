@@ -2,23 +2,14 @@ import ipdb
 
 from .subparser import Subparser
 
-
-class ConsoleSubparser(Subparser):
-    """
-    Console Subparser
-    """
-    name = 'console'
-    help = 'invoke the interactive console'
-    defaults = dict(action='console')
+console_subparser = Subparser(
+    name='console',
+    help='invoke the interactive console',
+    defaults={'action': 'console'}
+)
 
 
 class ConsoleProgMixin(object):
-
-    console_subparser = ConsoleSubparser()
-    """
-    Console subparser
-    """
-
     def console(self):
         """
         Console action
@@ -32,7 +23,8 @@ class ConsoleProgMixin(object):
         """
         self.display_console_welcome()
         ipdb.run(
-            'print("{}")'.format(self.tagline), globals=dict(app=self.app())
+            'print("{}")'.format(self.tagline
+                                 ),    #globals=dict(app=self.app())
         )
 
     def display_console_welcome(self):
