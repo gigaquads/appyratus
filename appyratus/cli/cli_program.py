@@ -3,15 +3,8 @@ from inspect import isclass
 
 from .subparser import Subparser
 
-VERSION_FORMAT = "{name} {version}, {tagline}"
+INFO_FORMAT = "{name} {version}, {tagline}"
 DEFAULTS = dict(action=None)
-
-
-class ProgSchema(object):
-    prog = None
-    name = None
-    version = None
-    tagline = None
 
 
 class CliProgram(object):
@@ -26,16 +19,9 @@ class CliProgram(object):
         self.tagline = tagline
         self.defaults = defaults or DEFAULTS
         self.parser = self.build_parser()
+        self.subparser_group = self.build_subparser_group()
+        self.build_subparsers()
         self.args = self.parse_args()
-
-    def build_version(self):
-        return VERSION_FORMAT.format(
-            **{
-                'name': self.name,
-                'version': self.version,
-                'tagline': self.tagline
-            }
-        )
 
     @staticmethod
     def subparsers():
@@ -83,33 +69,50 @@ class CliProgram(object):
                 '--version',
                 action='version',
                 help='The version of {}'.format(self.name),
-                version=self.build_version()
+                version=self.display_info()
             )
-        # build subparsers for actionable requests
-        subparser_groups = parser.add_subparsers(
-            title='subcommands', help='sub-command help'
-        )
-        for subparser in self.subparsers():
-            subparser_obj = subparser_groups.add_parser(
-                subparser.name, help=subparser.help
-            )
-            # set defaults for each subparser
-            subparser_obj.set_defaults(**subparser.defaults)
-            for arg in subparser.args:
-                subparser_obj.add_argument(
-                    *arg.flags,
-                    type=arg.type,
-                    default=arg.default,
-                    help=arg.help
-                )
+
         return parser
 
-    def print_usage(self):
+    def build_subparser_group(self):
+        """
+        Build subparser group
+        """
+        subparser_group = self.parser.add_subparsers(
+            title='sub-commands', help='sub-command help'
+        )
+        return subparser_group
+
+    def build_subparsers(self):
+        """
+        For all of the initialized subparsers, proceed to build them.
+        """
+        for subparser in self.subparsers():
+            subparser.build(self)
+
+    def display_usage(self):
+        """
+        Output program usage
+        """
         self.parser.print_usage()
+
+    def display_info(self):
+        """
+        Construct a program display line representing information about the
+        program.
+        """
+        return INFO_FORMAT.format(
+            **{
+                'name': self.name,
+                'version': self.version,
+                'tagline': self.tagline
+            }
+        )
 
     def route_action(self, action: str):
         """
-        The default action is to print usage
+        Using the provided action, locate the matching subparser and perform
+        the action bound to this method.  The default action is to print usage.
         """
         res = None
         subparsers_by_name = {s.name: s for s in self.subparsers()}
@@ -118,10 +121,13 @@ class CliProgram(object):
             perform = getattr(subparser, 'perform')
             if not perform:
                 raise Exception('no perform for subparser {}'.format(action))
-            res = perform(args=self.args)
+            res = perform(self)
         else:
             self.print_usage()
         return res
 
     def run(self):
+        """
+        Run this program
+        """
         action_res = self.route_action(action=self.args.action)

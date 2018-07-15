@@ -1,22 +1,41 @@
 from .arg import Arg
 
 
-class SubparserSchema(object):
-    """
-    Subparser schema
-    """
-    name = None
-    help = None
-    defaults = None
-
-
 class Subparser(object):
     """
     Subparser
     """
 
-    def __init__(self, name, help=None, defaults=None, args=None):
+    def __init__(
+        self, name, usage=None, defaults=None, args=None, perform=None
+    ):
         self.name = name
-        self.help = help
-        self.defaults = defaults or {}
+        self.usage = usage
+        self.defaults = defaults or {'action': self.name}
         self.args = args or []
+        if perform:
+            self.perform = perform
+
+    def perform(self, program):
+        """
+        Action that will be called upon subparser when selected
+        """
+        raise NotImplementedError('override in subclass')
+
+    def build(self, program):
+        """
+        Build a subparser and all of its arguments
+        """
+        subparser_obj = program.subparser_group.add_parser(
+            self.name, help=self.usage
+        )
+        # set defaults for each subparser
+        subparser_obj.set_defaults(**self.defaults)
+        # add arguments
+        for arg in self.args:
+            subparser_obj.add_argument(
+                *arg.flags,
+                type=arg.dtype,
+                default=arg.default,
+                help=arg.usage
+            )

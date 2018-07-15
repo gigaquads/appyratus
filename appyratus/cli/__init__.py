@@ -10,4 +10,4 @@ Concepts:
 from .arg import Arg
 from .subparser import Subparser
 from .cli_program import CliProgram
-from .console import console_subparser, ConsoleProgMixin
+from .console import console_subparser

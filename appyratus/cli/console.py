@@ -1,19 +1,18 @@
 import ipdb
 
+from appyratus.util import TextTransform
+
 from .subparser import Subparser
 
-console_subparser = Subparser(
-    name='console',
-    help='invoke the interactive console',
-    defaults={'action': 'console'}
-)
 
-
-class ConsoleProgMixin(object):
-    def console(self):
+class ConsoleSubparser(Subparser):
+    def perform(self, program):
         """
         Console action
         """
+        self.program_name = TextTransform.title(program.name)
+        self.exit_message = program.tagline
+        self.display_console_welcome()
         self.enter_console()
 
     def enter_console(self):
@@ -21,9 +20,8 @@ class ConsoleProgMixin(object):
         Enter a simple console, for interactive access to your applications
         code, provided by ipdb
         """
-        self.display_console_welcome()
         ipdb.run(
-            'print("{}")'.format(self.tagline
+            'print("{}")'.format(self.exit_message
                                  ),    #globals=dict(app=self.app())
         )
 
@@ -31,4 +29,11 @@ class ConsoleProgMixin(object):
         """
         Display a welcome message
         """
-        print('Welcome to {} console'.format(self.__class__.__name__))
+        print('Welcome to the {} console'.format(self.program_name))
+
+
+console_subparser = ConsoleSubparser(
+    name='console',
+    usage='invoke the interactive console',
+    defaults={'action': 'console'}
+)
