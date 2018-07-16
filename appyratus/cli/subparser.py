@@ -10,7 +10,7 @@ class Subparser(object):
         self, name, usage=None, defaults=None, args=None, perform=None
     ):
         self.name = name
-        self.usage = usage
+        self.usage = usage or ''
         self.defaults = defaults or {'action': self.name}
         self.args = args or []
         if perform:

@@ -123,7 +123,7 @@ class CliProgram(object):
                 raise Exception('no perform for subparser {}'.format(action))
             res = perform(self)
         else:
-            self.print_usage()
+            self.display_usage()
         return res
 
     def run(self):
