@@ -2,12 +2,12 @@
 Argz
 Things to adopt for command line python usage
 Concepts:
-- Prog
+- CliProgram
 - Subparser
 - Arg
 """
 
 from .arg import Arg
 from .subparser import Subparser
-from .prog import Prog
-from .console import ConsoleProgMixin
+from .cli_program import CliProgram
+from .console import console_subparser
