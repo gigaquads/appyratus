@@ -1,13 +1,21 @@
 from .arg import Arg
+from .parser import Parser
 
 
-class Subparser(object):
+class Subparser(Parser):
     """
     Subparser
     """
 
     def __init__(
-        self, name, usage=None, defaults=None, args=None, perform=None
+        self,
+        name,
+        usage=None,
+        defaults=None,
+        parent=None,
+        subparsers=None,
+        args=None,
+        perform=None
     ):
         self.name = name
         self.usage = usage or ''
@@ -31,6 +39,7 @@ class Subparser(object):
         )
         # set defaults for each subparser
         subparser_obj.set_defaults(**self.defaults)
+
         # add arguments
         for arg in self.args:
             subparser_obj.add_argument(
