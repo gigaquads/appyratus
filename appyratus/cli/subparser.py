@@ -8,19 +8,12 @@ class Subparser(Parser):
     """
 
     def __init__(
-        self,
-        name,
-        usage=None,
-        defaults=None,
-        parent=None,
-        subparsers=None,
-        args=None,
-        perform=None
+        self, name, usage=None, defaults=None, perform=None, *args, **kwargs
     ):
         self.name = name
         self.usage = usage or ''
         self.defaults = defaults or {'action': self.name}
-        self.args = args or []
+        super().__init__(*args, **kwargs)
         if perform:
             self.perform = perform
 
@@ -30,18 +23,21 @@ class Subparser(Parser):
         """
         raise NotImplementedError('override in subclass')
 
-    def build(self, program):
+    def build_parser(self, parent, *args, **kwargs):
+        """
+        Build the Subparsers parser
+        """
+        parser = parent.subparser_group.add_parser(self.name, help=self.usage)
+        parser.set_defaults(**self.defaults)
+        return parser
+
+    def build_args(self, program):
         """
         Build a subparser and all of its arguments
         """
-        subparser_obj = program.subparser_group.add_parser(
-            self.name, help=self.usage
-        )
-        # set defaults for each subparser
-        subparser_obj.set_defaults(**self.defaults)
 
         # add arguments
-        for arg in self.args:
+        for arg in self.args():
             subparser_obj.add_argument(
                 *arg.flags,
                 type=arg.dtype,

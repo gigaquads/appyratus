@@ -10,6 +10,7 @@ class CliProgram(Parser):
     """
     # Command-line interface program
     An interface to your program
+
     """
 
     def __init__(
@@ -21,22 +22,42 @@ class CliProgram(Parser):
         *args,
         **kwargs
     ):
+        """
+        # Args
+        - `name`, TODO
+        - `version`, TODO
+        - `tagline`, TODO
+        - `defaults`, TODO
+        """
         self.name = name
         self.version = version
         self.tagline = tagline
         self.defaults = defaults or dict(action=None)
         super().__init__(*args, **kwargs)
 
-    def build_parser(self):
+    def build_parser(self, *args, **kwargs):
         """
-        Build parser for interactivity
+        Build main program parser for interactivity.
         """
         # setup the parser with defaults and version information
         parser = argparse.ArgumentParser(prog=self.name)
         parser.set_defaults(**self.defaults)
+        return parser
+
+    def build_subparser_group(self):
+        """
+        Build subparser group
+        """
+        subparser_group = self._parser.add_subparsers(
+            title='sub-commands', help='sub-command help'
+        )
+        return subparser_group
+
+    def add_version_arg(self):
+        # TODO
         # support version number
         if self.version:
-            parser.add_argument(
+            self._parser.add_argument(
                 '-v',
                 '--version',
                 action='version',
@@ -44,17 +65,15 @@ class CliProgram(Parser):
                 version=self.show_info()
             )
 
-        return parser
-
     def show_usage(self):
         """
         Output program usage
         """
-        self.parser.print_usage()
+        self._parser.print_usage()
 
     def show_info(self):
         """
-        Construct a program display line representing information about the
+        Construct a display line representing information about the
         program.
         """
         return INFO_FORMAT.format(
@@ -86,4 +105,5 @@ class CliProgram(Parser):
         """
         Run this program
         """
-        action_res = self.route_action(action=self.args.action)
+        self.build()
+        action_res = self.route_action(action=self.cli_args.action)
