@@ -2,8 +2,6 @@ import tkinter as tk
 
 
 class Node(object):
-    depth = 0
-    pack_data = {}
 
     def __repr__(self):
         value = getattr(self, 'value', None)
@@ -17,10 +15,17 @@ class Node(object):
     def __init__(self, parent=None, *args, **kwargs):
         self.nodes = []
         self.parent = parent
+        self.depth = 0
+        self.pack_data = {}
         if self.parent:
             self.depth = self.parent.depth + 1
             self.parent.nodes.append(self)
-        self._object = self.build()
+        build_object = self.build()
+        if isinstance(build_object, Node):
+            self._object = build_object._object
+        else:
+            self._object = build_object
+        #self._object = self.build()
 
     @property
     def source(self):
@@ -71,18 +76,29 @@ class Gui(Node):
 
 
 class Window(Node):
-    def __init__(self, parent=None):
+    def __init__(self, width=None, height=None, parent=None):
+        self.width = width
+        self.height = height
         super().__init__(parent=parent)
 
+    def build(self):
+        return Frame(parent=self.parent, width=self.width, height=self.height)
+
     def render(self):
-        self._object = tk.Frame(self.parent._object)
         super().render()
 
 
 class Frame(Node):
+    def __init__(self, width=None, height=None, parent=None):
+        self.width = width
+        self.height = height
+        super().__init__(parent=parent)
+
+    def build(self):
+        return tk.Frame(self.parent._object, width=self.width, height=self.height, bd=2)
+
     def render(self):
-        self._object = tk.Frame(self.parent._object)
-        self._object.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        self._object.pack(side=tk.TOP, fill=tk.BOTH, padx=5, pady=5)
         super().render()
 
 
@@ -305,6 +321,7 @@ class TabBar(Node):
         del self.buttons[tabname]
 
     def switch_tab(self, name):
+        print('SWITCHING TAB {}'.format(name))
         if self.current_tab:
             self.buttons[self.current_tab].config(relief=tk.RAISED)
             self.tabs[self.current_tab].hide()
