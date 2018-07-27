@@ -1,7 +1,10 @@
+import inspect
+
 from abc import abstractmethod
 from mock import patch, MagicMock
 from contextlib import contextmanager
-import inspect
+
+from appyratus.util import DictUtils
 
 
 class BaseTests(object):
@@ -18,10 +21,14 @@ class BaseTests(object):
         """
         return
 
-    def instance(self, *args, **kwargs):
+    def instance(self, fixture=None, *args, **kwargs):
         """
-        Build an object from defined class
+        Build an object from defined class.
         """
+        if fixture and fixture in self.fixtures:
+            fixture_data = self.fixtures[fixture]
+            # apply kwargs on top of fixture data
+            kwargs = DictUtils.merge(fixture_data, kwargs)
         return self.klass(*args, **kwargs)
 
     @property
@@ -37,6 +44,13 @@ class BaseTests(object):
         Path to the target class
         """
         return "{}.{}".format(self.module_path, self.klass.__name__)
+
+    @property
+    def fixtures(self):
+        """
+        Fixture data available to the target class.
+        """
+        return {}
 
     @contextmanager
     def mock(
