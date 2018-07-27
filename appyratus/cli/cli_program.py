@@ -14,22 +14,14 @@ class CliProgram(Parser):
     """
 
     def __init__(
-        self,
-        name=None,
-        version=None,
-        tagline=None,
-        defaults=None,
-        *args,
-        **kwargs
+        self, version=None, tagline=None, defaults=None, *args, **kwargs
     ):
         """
         # Args
-        - `name`, TODO
         - `version`, TODO
         - `tagline`, TODO
         - `defaults`, TODO
         """
-        self.name = name
         self.version = version
         self.tagline = tagline
         self.defaults = defaults or dict(action=None)
@@ -44,14 +36,14 @@ class CliProgram(Parser):
         parser.set_defaults(**self.defaults)
         return parser
 
-    def build_subparser_group(self):
+    def build_subparser(self):
         """
-        Build subparser group
+        Build subparser
         """
-        subparser_group = self._parser.add_subparsers(
+        subparser = self._parser.add_subparsers(
             title='sub-commands', help='sub-command help'
         )
-        return subparser_group
+        return subparser
 
     def add_version_arg(self):
         # TODO
@@ -90,13 +82,13 @@ class CliProgram(Parser):
         the action bound to this method.  The default action is to print usage.
         """
         res = None
-        subparsers_by_name = {s.name: s for s in self.subparsers()}
-        if action in subparsers_by_name.keys():
-            subparser = subparsers_by_name[action]
+        self.cli_args.func(self)
+        if action in self.subparsers_by_name.keys():
+            subparser = self.subparsers_by_name[action]
             perform = getattr(subparser, 'perform')
             if not perform:
                 raise Exception('no perform for subparser {}'.format(action))
-            res = perform(self)
+            res = perform(1, 2)
         else:
             self.show_usage()
         return res
