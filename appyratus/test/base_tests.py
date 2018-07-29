@@ -21,6 +21,14 @@ class BaseTests(object):
         """
         return
 
+    @property
+    @abstractmethod
+    def fixtures(self):
+        """
+        Fixture data available to the target class.
+        """
+        return {}
+
     def instance(self, fixture=None, *args, **kwargs):
         """
         Build an object from defined class.
@@ -44,13 +52,6 @@ class BaseTests(object):
         Path to the target class
         """
         return "{}.{}".format(self.module_path, self.klass.__name__)
-
-    @property
-    def fixtures(self):
-        """
-        Fixture data available to the target class.
-        """
-        return {}
 
     @contextmanager
     def mock(

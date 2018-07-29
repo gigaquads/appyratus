@@ -3,8 +3,6 @@ from inspect import isclass
 
 from .parser import Parser
 
-INFO_FORMAT = "{name} {version}, {tagline}"
-
 
 class CliProgram(Parser):
     """
@@ -22,17 +20,28 @@ class CliProgram(Parser):
         - `tagline`, TODO
         - `defaults`, TODO
         """
+        super().__init__(*args, **kwargs)
         self.version = version
         self.tagline = tagline
-        self.defaults = defaults or dict(action=None)
-        super().__init__(*args, **kwargs)
+        self.defaults = defaults or {}
+        self._func = None
+
+    def build(self, *args, **kwargs):
+        """
+        Build program
+        """
+        super().build(*args, **kwargs)
+        self.add_version_arg()
+        self.cli_args = self.parse_cli_args()
 
     def build_parser(self, *args, **kwargs):
         """
         Build main program parser for interactivity.
         """
         # setup the parser with defaults and version information
-        parser = argparse.ArgumentParser(prog=self.name)
+        parser = argparse.ArgumentParser(
+            prog=self.name, description='', epilog=''
+        )
         parser.set_defaults(**self.defaults)
         return parser
 
@@ -41,13 +50,13 @@ class CliProgram(Parser):
         Build subparser
         """
         subparser = self._parser.add_subparsers(
-            title='sub-commands', help='sub-command help'
+            title='{} sub-commands'.format(self.name),
+            help='{} sub-command help'.format(self.name)
         )
         return subparser
 
     def add_version_arg(self):
-        # TODO
-        # support version number
+        # XXX this uses the underlying parser structure make it an Arg
         if self.version:
             self._parser.add_argument(
                 '-v',
@@ -68,7 +77,7 @@ class CliProgram(Parser):
         Construct a display line representing information about the
         program.
         """
-        return INFO_FORMAT.format(
+        return "{name} {version}, {tagline}".format(
             **{
                 'name': self.name,
                 'version': self.version,
@@ -76,21 +85,21 @@ class CliProgram(Parser):
             }
         )
 
-    def route_action(self, action: str):
+    def route_action(self, action: str=None):
         """
-        Using the provided action, locate the matching subparser and perform
-        the action bound to this method.  The default action is to print usage.
+
+        Argparser will recognize the called subparser (at whatever depth) and
+        use the supplied func to deliver
+
+        Previously, using the provided action, locate the matching subparser
+        and perform the action bound to this method.
+
+        The default action is to print usage.
         """
-        res = None
-        self.cli_args.func(self)
-        if action in self.subparsers_by_name.keys():
-            subparser = self.subparsers_by_name[action]
-            perform = getattr(subparser, 'perform')
-            if not perform:
-                raise Exception('no perform for subparser {}'.format(action))
-            res = perform(1, 2)
-        else:
+        if not self._perform:
             self.show_usage()
+            return
+        res = self._perform(self)
         return res
 
     def run(self):
@@ -98,4 +107,37 @@ class CliProgram(Parser):
         Run this program
         """
         self.build()
-        action_res = self.route_action(action=self.cli_args.action)
+        action_res = self.route_action()
+
+    def parse_cli_args(self):
+        """
+        Parse arguments from command-line
+        """
+        # let argparser do the initial parsing
+        cli_args, unknown = self._parser.parse_known_args()
+
+        # now combine known and unknown arguments into a single dict
+        args_dict = {
+            k: getattr(cli_args, k)
+            for k in dir(cli_args) if not k.startswith('_') and k is not 'func'
+        }
+
+        # XXX we want the func reference as this points directly to the
+        # subparsers perform, and we don't want it in the cli args, and
+        # handling it should probably not go here any, but it is
+        if hasattr(cli_args, 'func'):
+            self._perform = cli_args.func
+
+        # and any unknown pairs will get added
+        for i in range(0, len(unknown), 2):
+            k = unknown[i]
+            try:
+                v = unknown[i + 1]
+                args_dict[k.lstrip('-')] = v
+            except Exception as err:
+                print('unmatched arg "{}"'.format(k))
+
+        # build a custom type with the combined argument names as attributes
+        arguments = type('Arguments', (object, ), args_dict)()
+
+        return arguments

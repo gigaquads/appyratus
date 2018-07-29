@@ -7,41 +7,26 @@ class Subparser(Parser):
     # Subparser
     """
 
-    def __init__(
-        self,
-        name=None,
-        usage=None,
-        defaults=None,
-        perform=None,
-        *args,
-        **kwargs
-    ):
-        self.name = name
-        self.usage = usage or ''
-        if perform:
-            self.perform = perform
-        self.defaults = defaults or {
-            'action': self.name,
-            'func': self.perform,
-        }
+    def __init__(self, usage=None, defaults=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.usage = usage or ''
+        self.defaults = defaults if defaults and defaults is not None else {}
+        self.defaults['func'] = self._perform
 
-    def perform(self, program):
+    def build_parser(self, *args, **kwargs):
         """
-        Action that will be called upon subparser when selected
+        Build the Subparser's parser
         """
-        print('wooop')
-
-    def build_parser(self, parent, *args, **kwargs):
-        """
-        Build the Subparsers parser
-        """
-        parser = parent._subparser.add_parser(self.name, help=self.usage)
+        parser = self.parent._subparser.add_parser(self.name, help=self.usage)
         parser.set_defaults(**self.defaults)
         return parser
 
     def build_subparser(self, *args, **kwargs):
+        """
+        Build the Subparser's subparser
+        """
         subparser = self._parser.add_subparsers(
-            title='sub-sub-commands', help='sub-sub-command help'
+            title='{} sub-commands'.format(self.name),
+            help='{} sub-command help'.format(self.name)
         )
         return subparser
