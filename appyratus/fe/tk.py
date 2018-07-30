@@ -2,49 +2,44 @@ import tkinter as tk
 
 
 class Node(object):
+    """
+    # Node
+    Represents any particular node in a tree of gui elements.  Specific types
+    of Nodes implement this, such as `Frame` and `Label`.
+    """
 
     def __repr__(self):
         value = getattr(self, 'value', None)
-        return "<Node({}){}>".format(self.__class__.__name__,
-                                     ' value={}'.format(value)
-                                     if value else '')
+        return "<Node({}){}>".format(
+            self.__class__.__name__, ' value={}'.format(value) if value else ''
+        )
 
     def __str__(self):
         return getattr(self, 'value', None)
 
     def __init__(self, parent=None, *args, **kwargs):
         self.nodes = []
-        self.parent = parent
         self.depth = 0
         self.pack_data = {}
+        self.parent = parent
         if self.parent:
             self.depth = self.parent.depth + 1
             self.parent.nodes.append(self)
-        build_object = self.build()
-        if isinstance(build_object, Node):
-            self._object = build_object._object
-        else:
-            self._object = build_object
-        #self._object = self.build()
-
-    @property
-    def source(self):
-        if not self._object:
-            pass
-        return self._object
 
     def render(self):
         print('{}{}'.format(('    ' * self.depth), self.__repr__()))
         for node in self.nodes:
+            node.build()
             node.render()
 
-    def source(self):
-        if not self._object:
-            self._object = self.build()
-        return self._object
-
     def build(self):
-        pass
+        import ipdb; ipdb.set_trace(); print('wat')
+        #build_object = self.build()
+        #if isinstance(build_object, Node):
+        #    self._object = build_object._object
+        #else:
+        #    self._object = build_object
+        #self._object = self.build()
 
     def show(self):
         self._object.pack(self.pack_data)
@@ -95,7 +90,9 @@ class Frame(Node):
         super().__init__(parent=parent)
 
     def build(self):
-        return tk.Frame(self.parent._object, width=self.width, height=self.height, bd=2)
+        return tk.Frame(
+            self.parent._object, width=self.width, height=self.height, bd=2
+        )
 
     def render(self):
         self._object.pack(side=tk.TOP, fill=tk.BOTH, padx=5, pady=5)
@@ -115,35 +112,40 @@ class Label(Node):
             self.parent._object,
             width=self.width,
             text=self.text,
-            anchor=self.anchor)
+            anchor=self.anchor
+        )
         self._object.pack(side=tk.LEFT)
         super().render()
 
 
 class Entry(Node):
     def __init__(self, value=None, parent=None):
-        super().__init__(parent=parent)
         self.value = value
+        super().__init__(parent=parent)
 
     @property
     def text(self):
         return self._object.get()
 
-    def render(self):
+    def build(self):
         value = tk.StringVar()
         value.set(self.value)
-        self._object = tk.Entry(self.parent._object, textvariable=value)
+        return tk.Entry(self.parent._object, textvariable=value)
+
+    def render(self):
         self._object.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
         super().render()
 
 
 class Button(Node):
-    def __init__(self,
-                 text: str,
-                 parent=None,
-                 command=None,
-                 side: str = None,
-                 pad: int = None):
+    def __init__(
+        self,
+        text: str,
+        parent=None,
+        command=None,
+        side: str = None,
+        pad: int = None
+    ):
         super().__init__(parent=parent)
         self.text = text
         self.command = command
@@ -152,7 +154,8 @@ class Button(Node):
 
     def render(self):
         self._object = tk.Button(
-            self.parent._object, text=self.text, command=self.command)
+            self.parent._object, text=self.text, command=self.command
+        )
         self._object.pack(side=self.side, padx=self.pad, pady=self.pad)
         super().render()
 
@@ -161,26 +164,25 @@ class Form(Node):
     def __init__(self, data: dict, parent: str = None):
         super().__init__(parent=parent)
         self.frame = Frame(parent=parent)
-        self.entries = self.build(data, parent=self.frame)
+        _, __, entries = self.build(data, parent=self.frame)
+        self.entries = entries
 
     def build(self, data=None, parent=None, agg=None):
         entry = None
-        agg = agg or {}
-        if 'entries' not in agg:
-            agg['entries'] = []
+        agg = agg or []
 
         if isinstance(data, dict):
             for field, value in data.items():
                 row = Frame(parent=parent)
                 dentry, dparent, agg = self.build(value, parent=row, agg=agg)
                 lab = Label(text=field, parent=row)
-                agg['entries'].append((field, dentry))
+                #agg.append((field, dentry))
         elif isinstance(data, list):
             for field in data:
                 nentry, parent, agg = self.build(field, parent=parent, agg=agg)
         else:
             entry = Entry(value=data, parent=parent)
-            agg['entries'].append(entry)
+            agg.append(entry)
         return entry, parent, agg
 
     def fetch(self, ent):
@@ -189,6 +191,9 @@ class Form(Node):
             field = entry[0]
             text = entry[1].text
             data[field] = text
+            import ipdb
+            ipdb.set_trace()
+            print('wat')
         return data
 
 
@@ -198,12 +203,12 @@ class Listbox(Node):
         self.values = values or []
 
     def build(self):
-        pass
+        node = tk.Listbox(self.parent._object)
+        for value in self.values:
+            node.insert(tk.END, value)
+        return node
 
     def render(self):
-        self._object = tk.Listbox(self.parent._object)
-        for value in self.values:
-            self.add(value)
         self._object.pack()
 
     def clear(self):
@@ -247,10 +252,13 @@ class Menu(Node):
             commands = []
         self.commands = commands
 
-    def render(self):
-        self._object = tk.Menu(self.parent._object)
+    def build(self):
+        menu = tk.Menu(self.parent._object)
         for command in self.commands:
-            self._object.add_command(label='Wat', command=None)
+            menu.add_command(label='Wat', command=None)
+
+    def render(self):
+        pass
 
 
 class View(Node):
@@ -281,12 +289,13 @@ class TabBar(Node):
         self.current_tab = None
         self.name = name
         super().__init__(parent=parent)
-        if tabs:
-            for tab in tabs:
-                self.add(tab)
 
     def build(self):
-        return tk.Frame(self.parent._object)
+        tab_bar = tk.Frame(self.parent._object)
+        if self.tabs:
+            for tab in tabs:
+                pass    #self.add(tab)
+        return tab_bar
 
     def render(self):
         self.show()
@@ -298,12 +307,17 @@ class TabBar(Node):
         if keys:
             self.switch_tab(keys[0])
 
+    @classmethod
+    def _add(cls, tab):
+        pass
+
     def add(self, tab):
         tab.hide()
         self.tabs[tab.name] = tab
         cmd = (lambda name=tab.name: self.switch_tab(name))
         b = tk.Button(
-            self._object, text=tab.name, relief=tk.RAISED, command=cmd)
+            self._object, text=tab.name, relief=tk.RAISED, command=cmd
+        )
         b.pack(side=tk.LEFT)
         self.buttons[tab.name] = b
 
