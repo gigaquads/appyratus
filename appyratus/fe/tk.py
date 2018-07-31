@@ -28,12 +28,13 @@ class Node(object):
 
     def render(self):
         print('{}{}'.format(('    ' * self.depth), self.__repr__()))
+        self._object = self.build()
         for node in self.nodes:
-            node.build()
             node.render()
 
-    def build(self):
-        import ipdb; ipdb.set_trace(); print('wat')
+    def build(self, _object=None, *args, **kwargs):
+        pass
+        #import ipdb; ipdb.set_trace(); print('wat')
         #build_object = self.build()
         #if isinstance(build_object, Node):
         #    self._object = build_object._object
@@ -95,8 +96,8 @@ class Frame(Node):
         )
 
     def render(self):
-        self._object.pack(side=tk.TOP, fill=tk.BOTH, padx=5, pady=5)
         super().render()
+        self._object.pack(side=tk.TOP, fill=tk.BOTH, padx=5, pady=5)
 
 
 class Label(Node):
@@ -133,8 +134,8 @@ class Entry(Node):
         return tk.Entry(self.parent._object, textvariable=value)
 
     def render(self):
-        self._object.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
         super().render()
+        self._object.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
 
 
 class Button(Node):
@@ -191,9 +192,6 @@ class Form(Node):
             field = entry[0]
             text = entry[1].text
             data[field] = text
-            import ipdb
-            ipdb.set_trace()
-            print('wat')
         return data
 
 
@@ -209,6 +207,7 @@ class Listbox(Node):
         return node
 
     def render(self):
+        super().render()
         self._object.pack()
 
     def clear(self):
@@ -220,6 +219,7 @@ class Listbox(Node):
 
 class Scrollbar(Node):
     def render(self):
+        super().render()
         scrollbar = tk.Scrollbar(self.parent._object)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -298,8 +298,8 @@ class TabBar(Node):
         return tab_bar
 
     def render(self):
-        self.show()
         super().render()
+        self.show()
 
     def show(self):
         self._object.pack(side=tk.TOP, expand=tk.YES, fill=tk.X)
