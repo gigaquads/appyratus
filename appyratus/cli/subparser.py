@@ -1,41 +1,32 @@
 from .arg import Arg
+from .parser import Parser
 
 
-class Subparser(object):
+class Subparser(Parser):
     """
-    Subparser
+    # Subparser
     """
 
-    def __init__(
-        self, name, usage=None, defaults=None, args=None, perform=None
-    ):
-        self.name = name
+    def __init__(self, usage=None, defaults=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.usage = usage or ''
-        self.defaults = defaults or {'action': self.name}
-        self.args = args or []
-        if perform:
-            self.perform = perform
+        self.defaults = defaults if defaults and defaults is not None else {}
+        self.defaults['func'] = self._perform
 
-    def perform(self, program):
+    def build_parser(self, *args, **kwargs):
         """
-        Action that will be called upon subparser when selected
+        Build the Subparser's parser
         """
-        raise NotImplementedError('override in subclass')
+        parser = self.parent._subparser.add_parser(self.name, help=self.usage)
+        parser.set_defaults(**self.defaults)
+        return parser
 
-    def build(self, program):
+    def build_subparser(self, *args, **kwargs):
         """
-        Build a subparser and all of its arguments
+        Build the Subparser's subparser
         """
-        subparser_obj = program.subparser_group.add_parser(
-            self.name, help=self.usage
+        subparser = self._parser.add_subparsers(
+            title='{} sub-commands'.format(self.name),
+            help='{} sub-command help'.format(self.name)
         )
-        # set defaults for each subparser
-        subparser_obj.set_defaults(**self.defaults)
-        # add arguments
-        for arg in self.args:
-            subparser_obj.add_argument(
-                *arg.flags,
-                type=arg.dtype,
-                default=arg.default,
-                help=arg.usage
-            )
+        return subparser

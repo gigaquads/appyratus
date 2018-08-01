@@ -1,7 +1,10 @@
+import inspect
+
 from abc import abstractmethod
 from mock import patch, MagicMock
 from contextlib import contextmanager
-import inspect
+
+from appyratus.util import DictUtils
 
 
 class BaseTests(object):
@@ -18,10 +21,22 @@ class BaseTests(object):
         """
         return
 
-    def instance(self, *args, **kwargs):
+    @property
+    @abstractmethod
+    def fixtures(self):
         """
-        Build an object from defined class
+        Fixture data available to the target class.
         """
+        return {}
+
+    def instance(self, fixture=None, *args, **kwargs):
+        """
+        Build an object from defined class.
+        """
+        if fixture and fixture in self.fixtures:
+            fixture_data = self.fixtures[fixture]
+            # apply kwargs on top of fixture data
+            kwargs = DictUtils.merge(fixture_data, kwargs)
         return self.klass(*args, **kwargs)
 
     @property
@@ -39,7 +54,14 @@ class BaseTests(object):
         return "{}.{}".format(self.module_path, self.klass.__name__)
 
     @contextmanager
-    def mock(self, path: str=None, method: str=None, prop: str=None, **kwargs):
+    def mock(
+        self,
+        path: str=None,
+        method: str=None,
+        prop: str=None,
+        raw: bool=False,
+        **kwargs
+    ):
         """
         # Mock
         Establish a mock object relative to the target module.
@@ -48,15 +70,21 @@ class BaseTests(object):
         - `path`: Additional path, relative to the module path
         - `method`: an optional method to mock on the module class
         - `prop`: mock a property on a module class
+        - `raw`: do not attempt to restrict the path to the target module
         - `kwargs`: additional key word args to be passed into the pytest patch method
+
+        # Usage
+        ```
+        with self.mock('
         """
-        if not path:
-            path = self.klass.__name__
-        if method:
-            path = "{}.{}".format(path, method)
-        if prop:
-            path = "{}.{}".format(path, prop)
-        path = "{}.{}".format(self.module_path, path)
+        if not raw:
+            if not path:
+                path = self.klass.__name__
+            if method:
+                path = "{}.{}".format(path, method)
+            if prop:
+                path = "{}.{}".format(path, prop)
+            path = "{}.{}".format(self.module_path, path)
         with patch(path, **kwargs) as mock_obj:
             if prop:
                 mock_obj.__get__ = MagicMock(**kwargs)
