@@ -18,46 +18,17 @@ class EnvironmentValidationError(EnvironmentError):
 
 
 class Environment(Schema):
-
-    _instance = None  # <- the singleton instance
-    _re_magic_attr = re.compile(r'^__\w+__$')
-
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = cls()
-
-            # remove the fields declared on the class; otherwise, they'll
-            # shadow the same-named instance attributes and __getattr__
-            # won't work right.
-            for k in cls._instance.fields:
-                delattr(cls, k)
-
-        return cls._instance
-
     def __init__(self):
         super().__init__(strict=False, allow_additional=True)
-        result = self.load(os.environ)
-
+        result = self.load({k.lower(): v for k, v in os.environ.items()})
         if result.errors:
             raise EnvironmentValidationError(result.errors)
-
         self._data = result.data
+        for k, v in result.data.items():
+            setattr(self, k, v)
 
     def __repr__(self):
-        return '<Environment(singleton)>'
-
-    def __getattr__(self, key):
-        if self._re_magic_attr.match(key):
-            raise AttributeError(key)
-        return self_data[key]
-
-    def __getitem__(self, key):
-        if key not in self._data:
-            raise UndefinedVariableError(
-                '{} environment variable is undefined'.format(key))
-
-        return self._data[key]
+        return '<Environment>'
 
     def __keys__(self):
         return self._data.keys()
