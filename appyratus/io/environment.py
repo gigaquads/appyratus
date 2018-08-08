@@ -50,7 +50,7 @@ class Environment(Schema):
     def __getattr__(self, key):
         if self._re_magic_attr.match(key):
             raise AttributeError(key)
-        return self[key]
+        return self_data[key]
 
     def __getitem__(self, key):
         if key not in self._data:
