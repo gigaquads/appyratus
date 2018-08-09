@@ -86,7 +86,7 @@ class SchemaMeta(type):
 
 
 class AbstractSchema(object):
-    def __init__(self, strict=False, allow_additional=True):
+    def __init__(self, strict=False, allow_additional=False):
         """
         # Kwargs:
             - strict: if True, then a ValidationException will be thrown if any
