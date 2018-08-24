@@ -20,12 +20,16 @@ class EnvironmentValidationError(EnvironmentError):
 class Environment(Schema):
     def __init__(self):
         super().__init__(strict=False, allow_additional=True)
-        result = self.load({k.lower(): v for k, v in os.environ.items()})
+        result = self.load(os.environ)
         if result.errors:
             raise EnvironmentValidationError(result.errors)
         self._data = result.data
-        for k, v in result.data.items():
-            setattr(self, k, v)
+
+    def __getitem__(self, key):
+        if key in self._data:
+            return self._data[key]
+        else:
+            return os.environ[key]
 
     def __repr__(self):
         return '<Environment>'
