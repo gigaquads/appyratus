@@ -347,9 +347,10 @@ class Uuid(Field):
     _random = Random.new()
 
     @classmethod
-    def next_uuid(cls):
+    def next_uuid(cls, as_hex=False):
         Random.atfork()
-        return UUID(bytes=cls._random.read(16))
+        uuid = UUID(bytes=cls._random.read(16))
+        return uuid if not as_hex else uuid.hex
 
     def load(self, value):
         if isinstance(value, UUID):
@@ -366,8 +367,14 @@ class Uuid(Field):
         return FieldResult(error='expected a UUID')
 
     def dump(self, value):
-        return self.load(value)
-
+        if isinstance(value, str):
+            return FieldResult(value=value.replace('-', '').lower())
+        if isinstance(value, UUID):
+            return FieldResult(value=value.hex)
+        else:
+            return FieldResult(
+                error='expected a valid UUID object or hex string'
+            )
 
 class Int(Field):
     def load(self, value):
