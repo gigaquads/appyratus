@@ -10,12 +10,13 @@ class Node(object):
 
     def __repr__(self):
         value = getattr(self, 'value', None)
+        value_str = str(value)[0:32] if value else value
         return "<Node({}){}>".format(
-            self.__class__.__name__, ' value={}'.format(value) if value else ''
+            self.__class__.__name__, ' value={}/"{}"'.format(value.__class__.__name__, value_str) if value else ''
         )
 
     def __str__(self):
-        return getattr(self, 'value', None)
+        return getattr(self, 'value', '')
 
     def __init__(self, parent=None, *args, **kwargs):
         self.nodes = []
@@ -27,6 +28,7 @@ class Node(object):
             self.parent.nodes.append(self)
 
     def build(self):
+        print('{} {} ({})'.format('  ' * self.depth, repr(self), len(self.nodes)))
         self._object = self.build_object()
         self.build_children()
 
@@ -35,12 +37,12 @@ class Node(object):
             node.build()
 
     def render(self):
-        self.render_object()
+        print('{} {} ({})'.format('  ' * self.depth, repr(self), len(self.nodes)))
         self.render_children()
+        self.render_object()
 
     def render_children(self):
         for node in self.nodes:
-            print(node)
             node.render()
 
     def render_object(self):
@@ -166,34 +168,36 @@ class Button(Node):
         self._object.pack(side=self.side, padx=self.pad, pady=self.pad)
 
 
-class Form(Node):
+class Form(Frame):
     def __init__(self, data: dict, parent: str=None):
         super().__init__(parent=parent)
-        self.frame = Frame(parent=parent)
-        _, __, entries = self.build_object(data, parent=self.frame)
-        self.entries = entries
+        self.entries = data
 
-    def build_object(self, data=None, parent=None, agg=None):
-        entry = None
-        agg = agg or []
-
+    def build_data(self, data, parent=None):
+        if not parent:
+            parent = self
+        agg = []
         if isinstance(data, dict):
             for field, value in data.items():
                 row = Frame(parent=parent)
-                dentry, dparent, agg = self.build_object(
-                    value, parent=row, agg=agg
-                )
-                lab = Label(text=field, parent=row)
-                #agg.append((field, dentry))
+                label = Label(text=field, parent=row)
+                entry = self.build_data(data=value, parent=row)
+                agg.append(row)
+            return agg
         elif isinstance(data, list):
+            row = Frame(parent=self)
             for field in data:
-                nentry, parent, agg = self.build_object(
-                    field, parent=parent, agg=agg
-                )
+                entry = self.build_data(field, parent=row)
+            agg.append(row)
+            return agg
         else:
             entry = Entry(value=data, parent=parent)
-            agg.append(entry)
-        return entry, parent, agg
+            return entry
+
+    def build_children(self):
+        agg = self.build_data(self.entries)
+        self.nodes = agg
+        super().build_children()
 
     def fetch(self, ent):
         data = {}
