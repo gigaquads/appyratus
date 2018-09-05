@@ -1,4 +1,7 @@
+import copy
 import tkinter as tk
+
+from appyratus.util import DictUtils
 
 
 class Node(object):
@@ -11,8 +14,13 @@ class Node(object):
     def __repr__(self):
         value = getattr(self, 'value', None)
         value_str = str(value)[0:32] if value else value
-        return "<Node({}){}>".format(
-            self.__class__.__name__, ' value={}/"{}"'.format(value.__class__.__name__, value_str) if value else ''
+        text = getattr(self, 'text', None)
+
+        return "<Node({}#{}){}>".format(
+            self.__class__.__name__,
+            str(id(self))[-4:],
+            ' value={}/"{}"'.format(value.__class__.__name__, value_str)
+            if value else ''
         )
 
     def __str__(self):
@@ -28,7 +36,10 @@ class Node(object):
             self.parent.nodes.append(self)
 
     def build(self):
-        print('{} {} ({})'.format('  ' * self.depth, repr(self), len(self.nodes)))
+        print(
+            '{} {} ({})'.
+            format('  ' * self.depth, repr(self), len(self.nodes))
+        )
         self._object = self.build_object()
         self.build_children()
 
@@ -37,7 +48,6 @@ class Node(object):
             node.build()
 
     def render(self):
-        print('{} {} ({})'.format('  ' * self.depth, repr(self), len(self.nodes)))
         self.render_children()
         self.render_object()
 
@@ -127,7 +137,8 @@ class Label(Node):
 
 
 class Entry(Node):
-    def __init__(self, value=None, parent=None):
+    def __init__(self, key=None, value=None, parent=None):
+        self.key = key
         self.value = value
         super().__init__(parent=parent)
 
@@ -171,40 +182,54 @@ class Button(Node):
 class Form(Frame):
     def __init__(self, data: dict, parent: str=None):
         super().__init__(parent=parent)
-        self.entries = data
+        self.data = data
+        self.entries = []
 
-    def build_data(self, data, parent=None):
+    def build_data(self, key=None, value=None, parent=None):
+        """
+        Build form data as entries.  This will recurisively iterate over nested
+        data structures and provide a generic layout of entry fields
+
+        # Args
+        - `key`, the current key.  This is a list of keys, depending on the
+          depth of the value being built.  When attached to an entry, it will
+          be flattened into a dotted path, `path.to.key`
+        - `value`, the provided data structure that is being built
+        - `parent`, the parent of the data structure
+        """
+        if not key:
+            key = []
         if not parent:
             parent = self
-        agg = []
-        if isinstance(data, dict):
-            for field, value in data.items():
+        if isinstance(value, dict):
+            for kfield, kvalue in value.items():
+                base_key = copy.copy(key)
+                base_key.append(kfield)
                 row = Frame(parent=parent)
-                label = Label(text=field, parent=row)
-                entry = self.build_data(data=value, parent=row)
-                agg.append(row)
-            return agg
-        elif isinstance(data, list):
-            row = Frame(parent=self)
-            for field in data:
-                entry = self.build_data(field, parent=row)
-            agg.append(row)
-            return agg
+                label = Label(text=kfield, parent=row)
+                self.build_data(key=base_key, value=kvalue, parent=row)
+        elif isinstance(value, list):
+            row = Frame(parent=parent)
+            for idx, field in enumerate(value):
+                base_key = copy.copy(key)
+                base_key.append(str(idx))
+                self.build_data(key=base_key, value=field, parent=parent)
         else:
-            entry = Entry(value=data, parent=parent)
-            return entry
+            entry = Entry(key=key, value=value, parent=parent)
+            self.entries.append(entry)
 
     def build_children(self):
-        agg = self.build_data(self.entries)
-        self.nodes = agg
+        agg = self.build_data(value=self.data)
         super().build_children()
 
     def fetch(self, ent):
-        data = {}
+        flat_data = {}
         for entry in self.entries:
-            field = entry[0]
-            text = entry[1].text
-            data[field] = text
+            key = entry.key
+            text = entry.text
+            flat_data['.'.join(key)] = text
+        data = DictUtils.unflatten_keys(data=flat_data)
+        import ipdb; ipdb.set_trace(); print('wat')
         return data
 
 

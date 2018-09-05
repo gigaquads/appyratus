@@ -61,12 +61,27 @@ class TestDictUtilsUnit(BaseTests):
                     }
                 }
             ),
+    # integer keys will be converted to a list
+            (
+                {
+                    'tanagra.0.darmok': 'weird',
+                    'tanagra.1.jalad': 'culture',
+                }, {
+                    'tanagra': [{
+                        'darmok': 'weird'
+                    }, {
+                        'jalad': 'culture',
+                    }]
+                }
+            ),
         ]
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
-        diff_result = self.klass.diff(data=result, other=expected)
-        assert not diff_result
+        from pprint import pprint
+        pprint(result)
+        #diff_result = self.klass.diff(data=result, other=expected)
+        #assert not diff_result
 
     @mark.params(
         'data, other, expected',
