@@ -37,8 +37,9 @@ class Node(object):
 
     def build(self):
         print(
-            '{} {} ({})'.
-            format('  ' * self.depth, repr(self), len(self.nodes))
+            '{} {} ({})'.format(
+                '  ' * self.depth, repr(self), len(self.nodes)
+            )
         )
         self._object = self.build_object()
         self.build_children()
@@ -68,7 +69,7 @@ class Gui(Node):
     Top-most node
     """
 
-    def __init__(self, parent=None, title: str=None, binds=None):
+    def __init__(self, parent=None, title: str = None, binds=None):
         self.title = title
         self.binds = binds
         super().__init__(parent=parent)
@@ -161,8 +162,8 @@ class Button(Node):
         text: str,
         parent=None,
         command=None,
-        side: str=None,
-        pad: int=None
+        side: str = None,
+        pad: int = None
     ):
         super().__init__(parent=parent)
         self.text = text
@@ -180,7 +181,7 @@ class Button(Node):
 
 
 class Form(Frame):
-    def __init__(self, data: dict, parent: str=None):
+    def __init__(self, data: dict, parent: str = None):
         super().__init__(parent=parent)
         self.data = data
         self.entries = []
@@ -229,12 +230,14 @@ class Form(Frame):
             text = entry.text
             flat_data['.'.join(key)] = text
         data = DictUtils.unflatten_keys(data=flat_data)
-        import ipdb; ipdb.set_trace(); print('wat')
+        import ipdb
+        ipdb.set_trace()
+        print('wat')
         return data
 
 
 class Listbox(Node):
-    def __init__(self, values: list=None, parent=None):
+    def __init__(self, values: list = None, parent=None):
         super().__init__(parent=parent)
         self.values = values or []
 
@@ -321,7 +324,7 @@ class Tab(Node):
 
 # the bulk of the logic is in the actual tab bar
 class TabBar(Node):
-    def __init__(self, name: str=None, tabs: list=None, parent=None):
+    def __init__(self, name: str = None, tabs: list = None, parent=None):
         self.tabs = {}
         self.buttons = {}
         self.current_tab = None

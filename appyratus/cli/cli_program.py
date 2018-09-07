@@ -85,7 +85,7 @@ class CliProgram(Parser):
             }
         )
 
-    def route_action(self, action: str=None):
+    def route_action(self, action: str = None):
         """
 
         Argparser will recognize the called subparser (at whatever depth) and
