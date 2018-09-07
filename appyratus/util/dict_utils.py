@@ -17,14 +17,26 @@ class DictUtils(object):
                 path = k.split(separator)
                 obj = new_data
                 for x in path[:-1]:
-                    xval = obj.get(x)
+                    import re
+                    # xtype exists, which means that array has been referenced in the key.
+                    xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
+                    if len(xparts) == 5:
+                        _, xkey, xtype, xid, _ = xparts
+                        x = xkey
+                        xval = ''    #obj[xid]
+                    else:
+                        xval = obj.get(x)
+                        xtype = None
                     if xval and not isinstance(xval, dict):
                         raise ValueError(
                             'Expected value to be a dictionary, got "{}"'.
                             format(xval)
                         )
                     elif not isinstance(xval, dict):
-                        obj[x] = {}
+                        if xtype:
+                            import ipdb; ipdb.set_trace(); print('wat')
+                        else:
+                            obj[x] = {}
                     obj = obj[x]
                 obj[path[-1]] = v
         return new_data

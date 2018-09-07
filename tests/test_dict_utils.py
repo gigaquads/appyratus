@@ -13,6 +13,19 @@ class TestDictUtilsUnit(BaseTests):
     @mark.params(
         'actual, expected',
         [
+    # hey
+            (
+                {
+                    'tanagra[0].darmok': 'weird',
+                    'tanagra[1].jalad': 'culture',
+                }, {
+                    'tanagra': [{
+                        'darmok': 'weird'
+                    }, {
+                        'jalad': 'culture',
+                    }]
+                }
+            ),
     # keys without separators will not be affected
             ({
                 'data': 'android'
@@ -67,11 +80,14 @@ class TestDictUtilsUnit(BaseTests):
                     'tanagra.0.darmok': 'weird',
                     'tanagra.1.jalad': 'culture',
                 }, {
-                    'tanagra': [{
-                        'darmok': 'weird'
-                    }, {
-                        'jalad': 'culture',
-                    }]
+                    'tanagra': {
+                        '0': {
+                            'darmok': 'weird'
+                        },
+                        '1': {
+                            'jalad': 'culture',
+                        }
+                    }
                 }
             ),
         ]
@@ -80,6 +96,7 @@ class TestDictUtilsUnit(BaseTests):
         result = self.klass.unflatten_keys(actual)
         from pprint import pprint
         pprint(result)
+        import ipdb; ipdb.set_trace(); print('wat')
         #diff_result = self.klass.diff(data=result, other=expected)
         #assert not diff_result
 
