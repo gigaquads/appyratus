@@ -1,4 +1,5 @@
 from copy import deepcopy
+import re
 
 
 class DictUtils(object):
@@ -11,33 +12,43 @@ class DictUtils(object):
         if not separator:
             separator = '.'
         new_data = deepcopy(data)
+        print()
+        print('=========== STARTING ===========')
+        print('FOUND DATA {} as {}'.format(data, type(data)))
         for k in data.keys():
+            print('  PROCESSING KEYS {}'.format(k))
             if separator in k:
                 v = new_data.pop(k)
                 path = k.split(separator)
                 obj = new_data
+                print('  OBJECT {} as {}'.format(obj, type(obj)))
                 for x in path[:-1]:
-                    import re
+                    print('    RESOLVING PATH KEY {}'.format(x))
                     # xtype exists, which means that array has been referenced in the key.
                     xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
+                    # its an array in the path
                     if len(xparts) == 5:
                         _, xkey, xtype, xid, _ = xparts
-                        x = xkey
-                        xval = ''    #obj[xid]
+                        xval = obj.get(xkey)
+                        print('    ARRAY {} {} {} '.format(xkey, xid, xval))
+                        #x = xkey
+                        import ipdb; ipdb.set_trace(); print('wat')
+                    # it's a normal dictionary
                     else:
-                        xval = obj.get(x)
+                        xkey, xtype, xid = None, None, None
+                        xval = obj.get(xkey)
+                        print('    FOUND OBJ {} {}'.format(x, xval))
                         xtype = None
-                    if xval and not isinstance(xval, dict):
-                        raise ValueError(
-                            'Expected value to be a dictionary, got "{}"'.
-                            format(xval)
-                        )
-                    elif not isinstance(xval, dict):
-                        if xtype:
-                            import ipdb; ipdb.set_trace(); print('wat')
-                        else:
+                        if xval and not isinstance(xval, dict):
+                            raise ValueError(
+                                'Expected value to be a dictionary, got "{}"'.
+                                format(xval)
+                            )
+                        elif not isinstance(xval, dict):
                             obj[x] = {}
-                    obj = obj[x]
+                        obj = obj[x]
+                        print('    {} RES {}'.format(x, obj))
+                print('  PATH RESULT {} IN {}'.format(v, path[-1]))
                 obj[path[-1]] = v
         return new_data
 
