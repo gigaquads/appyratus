@@ -16,13 +16,15 @@ class TestDictUtilsUnit(BaseTests):
     # hey
             (
                 {
-                    'tanagra[0].darmok': 'weird',
-                    'tanagra[1].jalad': 'culture',
+                    'tanagra[0].name': 'darmok',
+                    'tanagra[1].name': 'jalad',
+                    'tanagra[1].weird': 'culture',
                 }, {
                     'tanagra': [{
-                        'darmok': 'weird'
+                        'name': 'darmok',
                     }, {
-                        'jalad': 'culture',
+                        'name': 'jalad',
+                        'weird': 'culture',
                     }]
                 }
             ),

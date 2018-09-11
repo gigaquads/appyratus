@@ -12,43 +12,53 @@ class DictUtils(object):
         if not separator:
             separator = '.'
         new_data = deepcopy(data)
-        print()
-        print('=========== STARTING ===========')
-        print('FOUND DATA {} as {}'.format(data, type(data)))
+
+        def key_parts(key) -> tuple:
+            """
+            Extract relevant key parts from a key.
+            """
+            xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
+            if len(xparts) == 5:
+                # xtype exists, an array referenced has been found in the key.
+                _, xkey, xtype, xid, _ = xparts
+                xid = int(xid) if xid else xid
+            else:
+                # normal key
+                xkey = key
+                xtype, xid = None, None
+            return (xkey, xtype, xid)
+
         for k in data.keys():
-            print('  PROCESSING KEYS {}'.format(k))
             if separator in k:
                 v = new_data.pop(k)
                 path = k.split(separator)
                 obj = new_data
-                print('  OBJECT {} as {}'.format(obj, type(obj)))
                 for x in path[:-1]:
-                    print('    RESOLVING PATH KEY {}'.format(x))
-                    # xtype exists, which means that array has been referenced in the key.
-                    xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
-                    # its an array in the path
-                    if len(xparts) == 5:
-                        _, xkey, xtype, xid, _ = xparts
-                        xval = obj.get(xkey)
-                        print('    ARRAY {} {} {} '.format(xkey, xid, xval))
-                        #x = xkey
-                        import ipdb; ipdb.set_trace(); print('wat')
-                    # it's a normal dictionary
+                    xkey, xtype, xid = key_parts(x)
+                    xval = obj.get(xkey)
+                    if not xtype:
+                        if not isinstance(xval, dict):
+                            if xval:
+                                raise ValueError(
+                                    'Expected value to be a dictionary, got "{}"'.
+                                    format(xval)
+                                )
+                            obj[xkey] = {}
                     else:
-                        xkey, xtype, xid = None, None, None
-                        xval = obj.get(xkey)
-                        print('    FOUND OBJ {} {}'.format(x, xval))
-                        xtype = None
-                        if xval and not isinstance(xval, dict):
-                            raise ValueError(
-                                'Expected value to be a dictionary, got "{}"'.
-                                format(xval)
-                            )
-                        elif not isinstance(xval, dict):
-                            obj[x] = {}
-                        obj = obj[x]
-                        print('    {} RES {}'.format(x, obj))
-                print('  PATH RESULT {} IN {}'.format(v, path[-1]))
+                        if not isinstance(xval, list):
+                            if xval:
+                                raise ValueError(
+                                    'Expected value to be a list, got "{}"'.
+                                    format(xval)
+                                )
+                            obj[xkey] = []
+                        try:
+                            obj[xkey][xid]
+                        except IndexError:
+                            obj[xkey].insert(xid, {})
+                    obj = obj[xkey]
+                    if xtype:
+                        obj = obj[xid]
                 obj[path[-1]] = v
         return new_data
 

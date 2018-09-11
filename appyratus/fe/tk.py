@@ -1,5 +1,6 @@
 import copy
 import tkinter as tk
+from abc import abstractmethod
 
 from appyratus.util import DictUtils
 
@@ -37,12 +38,18 @@ class Node(object):
 
     def build(self):
         print(
-            '{} {} ({})'.format(
-                '  ' * self.depth, repr(self), len(self.nodes)
-            )
+            '{} {} ({})'.
+            format('  ' * self.depth, repr(self), len(self.nodes))
         )
         self._object = self.build_object()
         self.build_children()
+
+    @abstractmethod
+    def build_object(self):
+        """
+        Build _this_ object in the relevant interface
+        """
+        pass
 
     def build_children(self):
         for node in self.nodes:
@@ -69,7 +76,7 @@ class Gui(Node):
     Top-most node
     """
 
-    def __init__(self, parent=None, title: str = None, binds=None):
+    def __init__(self, parent=None, title: str=None, binds=None):
         self.title = title
         self.binds = binds
         super().__init__(parent=parent)
@@ -162,8 +169,8 @@ class Button(Node):
         text: str,
         parent=None,
         command=None,
-        side: str = None,
-        pad: int = None
+        side: str=None,
+        pad: int=None
     ):
         super().__init__(parent=parent)
         self.text = text
@@ -181,7 +188,7 @@ class Button(Node):
 
 
 class Form(Frame):
-    def __init__(self, data: dict, parent: str = None):
+    def __init__(self, data: dict, parent: str=None):
         super().__init__(parent=parent)
         self.data = data
         self.entries = []
@@ -213,7 +220,7 @@ class Form(Frame):
             row = Frame(parent=parent)
             for idx, field in enumerate(value):
                 base_key = copy.copy(key)
-                base_key.append(str(idx))
+                base_key[-1] = '{}[{}]'.format(base_key[-1], str(idx))
                 self.build_data(key=base_key, value=field, parent=parent)
         else:
             entry = Entry(key=key, value=value, parent=parent)
@@ -229,15 +236,13 @@ class Form(Frame):
             key = entry.key
             text = entry.text
             flat_data['.'.join(key)] = text
+            print(key)
         data = DictUtils.unflatten_keys(data=flat_data)
-        import ipdb
-        ipdb.set_trace()
-        print('wat')
         return data
 
 
 class Listbox(Node):
-    def __init__(self, values: list = None, parent=None):
+    def __init__(self, values: list=None, parent=None):
         super().__init__(parent=parent)
         self.values = values or []
 
@@ -324,7 +329,7 @@ class Tab(Node):
 
 # the bulk of the logic is in the actual tab bar
 class TabBar(Node):
-    def __init__(self, name: str = None, tabs: list = None, parent=None):
+    def __init__(self, name: str=None, tabs: list=None, parent=None):
         self.tabs = {}
         self.buttons = {}
         self.current_tab = None
