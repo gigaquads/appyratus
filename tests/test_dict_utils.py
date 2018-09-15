@@ -183,6 +183,14 @@ class TestDictUtilsUnit(BaseTests):
             }, {}),
     #wat
             ({
+                'meh': {
+                    'meh': None
+                }
+            }, {
+                'meh': {}
+            }),
+    #wat
+            ({
                 'meh': 'meh!'
             }, {
                 'meh': 'meh!'
@@ -191,4 +199,6 @@ class TestDictUtilsUnit(BaseTests):
     )
     def test__remove_keys(self, data, expected):
         keys = ['blah', 'hmph']
-        res = self.klass.remove_keys(data, keys)
+        values = [None]
+        res = self.klass.remove_keys(data, keys, values)
+        #print("\n", expected, res)

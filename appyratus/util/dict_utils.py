@@ -104,7 +104,7 @@ class DictUtils(object):
         return changed
 
     @staticmethod
-    def remove_keys(data: dict, keys: list = None, values: list = None):
+    def remove_keys(data: dict, keys: list=None, values: list=None):
         """
         Providing a list of keys remove them from a dictionary.
 
@@ -123,8 +123,23 @@ class DictUtils(object):
         for k, v in data.items():
             if k in keys:
                 new_data.pop(k)
-            if v in values:
+            elif v in values:
                 new_data.pop(k)
-            if isinstance(v, dict):
-                new_data[k] = DictUtils.remove_keys(new_data[k], keys)
+            if k not in new_data:
+                continue
+            if isinstance(v, list):
+                vlist = []
+                for listk in v:
+                    vres = DictUtils.remove_keys(listk, keys, values)
+                    if vres in values:
+                        new_data.pop(k)
+                    else:
+                        vlist.append(vres)
+                new_data[k] = vlist
+            elif isinstance(v, dict):
+                dres = DictUtils.remove_keys(new_data[k], keys, values)
+                if dres in values:
+                    new_data.pop(k)
+                else:
+                    new_data[k] = dres
         return new_data
