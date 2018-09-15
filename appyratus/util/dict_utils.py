@@ -102,3 +102,29 @@ class DictUtils(object):
             elif data_v is not other_v:
                 changed[data_k] = other_v
         return changed
+
+    @staticmethod
+    def remove_keys(data: dict, keys: list = None, values: list = None):
+        """
+        Providing a list of keys remove them from a dictionary.
+
+        This additionally supports removing keys based on a list of values that
+        the key contains.
+        """
+        if not keys and not values:
+            return data
+        if not keys:
+            keys = []
+        if not values:
+            values = []
+        if not isinstance(data, dict):
+            return data
+        new_data = deepcopy(data)
+        for k, v in data.items():
+            if k in keys:
+                new_data.pop(k)
+            if v in values:
+                new_data.pop(k)
+            if isinstance(v, dict):
+                new_data[k] = DictUtils.remove_keys(new_data[k], keys)
+        return new_data

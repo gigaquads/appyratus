@@ -20,12 +20,14 @@ class TestDictUtilsUnit(BaseTests):
                     'tanagra[1].name': 'jalad',
                     'tanagra[1].weird': 'culture',
                 }, {
-                    'tanagra': [{
-                        'name': 'darmok',
-                    }, {
-                        'name': 'jalad',
-                        'weird': 'culture',
-                    }]
+                    'tanagra': [
+                        {
+                            'name': 'darmok',
+                        }, {
+                            'name': 'jalad',
+                            'weird': 'culture',
+                        }
+                    ]
                 }
             ),
     # keys without separators will not be affected
@@ -159,3 +161,34 @@ class TestDictUtilsUnit(BaseTests):
         assert isinstance(result, dict)
         has_no_change = (not result)
         assert has_no_change is not changed
+
+    @mark.params(
+        'data, expected',
+        [
+    #wat
+            ({
+                'blah': 'blah!'
+            }, {}),
+    #wat
+            ({
+                'meh': {
+                    'blah': 'blah!'
+                }
+            }, {
+                'meh': {}
+            }),
+    #wat
+            ({
+                'meh': None
+            }, {}),
+    #wat
+            ({
+                'meh': 'meh!'
+            }, {
+                'meh': 'meh!'
+            })
+        ]
+    )
+    def test__remove_keys(self, data, expected):
+        keys = ['blah', 'hmph']
+        res = self.klass.remove_keys(data, keys)

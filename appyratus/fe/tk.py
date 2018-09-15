@@ -3,6 +3,25 @@ import tkinter as tk
 from abc import abstractmethod
 
 from appyratus.util import DictUtils
+"""
+Common shiznit
+
+# Gui
+
+# Window
+
+# Menu
+
+# TabBar
+
+# Tab
+
+# Form
+
+# Frame
+
+# Button
+"""
 
 
 class Node(object):
