@@ -143,3 +143,40 @@ class DictUtils(object):
                 else:
                     new_data[k] = dres
         return new_data
+
+    def traverse(data: dict, method):
+        new_data = deepcopy(data)
+        if not data:
+            return data
+        if isinstance(data, dict):
+            for kd, vd in data.items():
+                if isinstance(vd, (list, dict)):
+                    dres = DictUtils.traverse(vd, method)
+                else:
+                    dres = method(vd)
+                new_data[kd] = dres
+        elif isinstance(data, list):
+            for kl, vl in enumerate(data):
+                if isinstance(vl, (list, dict)):
+                    lres = DictUtils.traverse(vl, method)
+                else:
+                    lres = method(vl)
+                new_data[kl] = lres
+        return new_data
+
+    def traverse_orig(data: dict, method):
+        if not data:
+            return data
+        if isinstance(data, dict):
+            for kd, vd in data.items():
+                if isinstance(vd, (list, dict)):
+                    yield from DictUtils.traverse(vd, method)
+                else:
+                    yield (kd, method(vd))
+        elif isinstance(data, list):
+            for kl, vl in enumerate(data):
+                if isinstance(vl, (list, dict)):
+                    yield from DictUtils.traverse(vl, method)
+                else:
+                    yield (kl, method(vl))
+        return data
