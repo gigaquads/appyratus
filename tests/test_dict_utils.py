@@ -106,6 +106,35 @@ class TestDictUtilsUnit(BaseTests):
         #assert not diff_result
 
     @mark.params(
+        'actual, expected',
+        [
+    # hey
+            (
+                {
+                    'tanagra': [
+                        {
+                            'name': 'darmok',
+                        }, {
+                            'name': 'jalad',
+                            'weird': 'culture',
+                        }
+                    ]
+                }, {
+                    'tanagra[0].name': 'darmok',
+                    'tanagra[1].name': 'jalad',
+                    'tanagra[1].weird': 'culture',
+                }
+            ),
+        ]
+    )
+    def test__flatten(self, actual, expected):
+        result = self.klass.flatten(actual)
+        from pprint import pprint
+        print()
+        print('===============')
+        pprint(result)
+
+    @mark.params(
         'data, other, expected',
         [
     # unique keys are merged

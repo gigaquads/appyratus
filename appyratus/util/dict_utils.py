@@ -3,6 +3,34 @@ import re
 
 
 class DictUtils(object):
+    def key_parts(self, key) -> tuple:
+        """
+        Extract relevant key parts from a key.
+        """
+        xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
+        if len(xparts) == 5:
+            # xtype exists, an array referenced has been found in the key.
+            _, xkey, xtype, xid, _ = xparts
+            xid = int(xid) if xid else xid
+        else:
+            # normal key
+            xkey = key
+            xtype, xid = None, None
+        return (xkey, xtype, xid)
+
+    @staticmethod
+    def flatten(data: dict, separator=None):
+        if not separator:
+            separator = '.'
+        new_data = deepcopy(data)
+        if isinstance(v, list):
+            pass
+        elif isinstance(v, dict):
+            pass
+        else:
+            pass
+        return new_data
+
     @staticmethod
     def unflatten_keys(data: dict, separator=None):
         """
@@ -13,28 +41,13 @@ class DictUtils(object):
             separator = '.'
         new_data = deepcopy(data)
 
-        def key_parts(key) -> tuple:
-            """
-            Extract relevant key parts from a key.
-            """
-            xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
-            if len(xparts) == 5:
-                # xtype exists, an array referenced has been found in the key.
-                _, xkey, xtype, xid, _ = xparts
-                xid = int(xid) if xid else xid
-            else:
-                # normal key
-                xkey = key
-                xtype, xid = None, None
-            return (xkey, xtype, xid)
-
         for k in data.keys():
             if separator in k:
                 v = new_data.pop(k)
                 path = k.split(separator)
                 obj = new_data
                 for x in path[:-1]:
-                    xkey, xtype, xid = key_parts(x)
+                    xkey, xtype, xid = self.key_parts(x)
                     xval = obj.get(xkey)
                     if not xtype:
                         if not isinstance(xval, dict):
@@ -104,7 +117,7 @@ class DictUtils(object):
         return changed
 
     @staticmethod
-    def remove_keys(data: dict, keys: list=None, values: list=None):
+    def remove_keys(data: dict, keys: list = None, values: list = None):
         """
         Providing a list of keys remove them from a dictionary.
 
