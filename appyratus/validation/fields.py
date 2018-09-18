@@ -63,6 +63,7 @@ class Field(metaclass=FieldMeta):
         default=None,
         transform=None,
         pickled=False,
+        protobuf_field_number : int = None,
     ):
         """
         Kwargs:
@@ -88,6 +89,7 @@ class Field(metaclass=FieldMeta):
         self.default = default
         self.transform = transform
         self.pickled = pickled
+        self.protobuf_field_number = protobuf_field_number
 
     def __repr__(self):
         return '<Field({}{})>'.format(
@@ -103,6 +105,18 @@ class Field(metaclass=FieldMeta):
             else:
                 return copy.deepcopy(self.default)
         return None
+
+    def to_protobuf_field_declaration(self, field_number : int = None):
+        return '{required} {field_type} {field_name} = {field_number}'.format(
+            required='required' if self.required else '',
+            field_type=self.protobuf_type,
+            field_name=self.dump_to or self.name,
+            field_number=field_number,
+        )
+
+    @property
+    def protobuf_type(self):
+        raise NotImplementedError()
 
     @property
     def has_default_value(self):
@@ -262,6 +276,10 @@ class Str(Field):
     def dump(self, value):
         return self.load(value)
 
+    @property
+    def protobuf_type(self):
+        return 'string'
+
 
 class CompositeStr(Str):
     composite = True
@@ -389,6 +407,10 @@ class Int(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'sint64'
 
 
 class Float(Field):
