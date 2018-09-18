@@ -3,11 +3,12 @@ import re
 
 
 class DictUtils(object):
-    def key_parts(self, key) -> tuple:
+    @staticmethod
+    def key_parts(key) -> tuple:
         """
         Extract relevant key parts from a key.
         """
-        xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', x)
+        xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', key)
         if len(xparts) == 5:
             # xtype exists, an array referenced has been found in the key.
             _, xkey, xtype, xid, _ = xparts
@@ -47,7 +48,7 @@ class DictUtils(object):
                 path = k.split(separator)
                 obj = new_data
                 for x in path[:-1]:
-                    xkey, xtype, xid = self.key_parts(x)
+                    xkey, xtype, xid = DictUtils.key_parts(x)
                     xval = obj.get(xkey)
                     if not xtype:
                         if not isinstance(xval, dict):
