@@ -83,7 +83,8 @@ class Node(object):
             node.render()
 
     def render_object(self):
-        self._object.pack(self.pack_data)
+        if self._object:
+            self._object.pack(self.pack_data)
 
     def hide(self):
         self._object.pack_forget()
@@ -321,9 +322,10 @@ class Menu(Node):
         menu = tk.Menu(self.parent._object)
         for command in self.commands:
             menu.add_command(label='Wat', command=None)
+        return menu
 
     def render_object(self):
-        pass
+        super().render_object(self)
 
 
 class View(Node):

@@ -2,7 +2,7 @@ import os
 import re
 from setuptools import setup, find_packages
 
-CLASSIFIERS = {
+PROJECT_CLASSIFIERS = {
     'python3': 'Programming Language :: Python :: 3',
     'mit-license': 'License :: OSI Approved :: MIT License',
     'os-independent': 'Operating System :: OS Independent'
@@ -13,7 +13,7 @@ class RealSetup(object):
     """
     Setup your program for the world
 
-    All the things setuptools didn't do for ya
+    All the things setuptools maybe didn't do for ya
 
     # Resource
     - Packaging https://packaging.python.org/tutorials/packaging-projects/
@@ -64,8 +64,9 @@ class RealSetup(object):
         self.author = author or ''
         self.author_email = author_email or ''
         self.url = url or ''
+        if classifiers:
+            self.classifiers = self.load_classifiers(classifiers)
         self.classifiers = classifiers or []
-        self.long_description_context_type = 'text/markdown'
         self.long_description = self.load_description()
         self.requirements = self.load_requirements()
         self.scripts = self.load_scripts()
@@ -117,14 +118,29 @@ class RealSetup(object):
         bin_path = os.path.join(self.path, 'bin')
         for (dirpath, _, filenames) in os.walk(bin_path):
             for filename in filenames:
+                if filename.endswith('.swp'):
+                    continue
                 scripts.append(os.path.join(bin_path, filename))
         return scripts
 
     def load_packages(self):
         """
-        Load packages
+        Load packages, setuptools does a fine job
         """
         return find_packages()
+
+    def load_classifiers(self, keys: list):
+        """
+        Load classifiers providing a list of keys that exist in PROJECT_CLASSIFIERS
+        """
+        if not keys:
+            return []
+        classifiers = []
+        for k in keys:
+            classifier = PROJECT_CLASSIFIERS.get(k)
+            if classifier:
+                classifiers.append(classifier)
+        return classifiers
 
     def run(self):
         """
@@ -141,7 +157,6 @@ class RealSetup(object):
             url=self.url,
             classifiers=self.classifiers,
             long_description=self.description,
-            long_description_context_type=self.long_description_context_type,
             install_requires=self.requirements,
             scripts=self.scripts,
             packages=self.packages,
