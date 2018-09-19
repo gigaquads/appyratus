@@ -196,6 +196,7 @@ class List(Field):
                     return FieldResult(error={i: result.error})
                 result_list.append(result.value)
         else:
+            # assume `nested` is a Schema object
             for i, x in enumerate(value):
                 result = self.nested.load(x)
                 if result.errors:
@@ -223,6 +224,15 @@ class List(Field):
                 result_list.append(result.data)
 
         return FieldResult(value=result_list)
+
+    @property
+    def protobuf_type(self):
+        if isinstance(self.nested, Field):
+            typename = self.nesetd.protobuf_type
+        else:
+            typename = self.nested.protobuf_message_name
+        return 'repeated {}'.format(typename)
+
 
 
 class Array(Field):

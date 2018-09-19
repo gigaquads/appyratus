@@ -87,7 +87,12 @@ class SchemaMeta(type):
 
 
 class AbstractSchema(object):
-    def __init__(self, strict=False, allow_additional=False):
+    def __init__(
+        self,
+        strict=False,
+        allow_additional=False,
+        protobuf_message_name=None,
+    ):
         """
         # Kwargs:
             - strict: if True, then a ValidationException will be thrown if any
@@ -99,6 +104,10 @@ class AbstractSchema(object):
         """
         self.strict = strict
         self.allow_additional = allow_additional
+        if protobuf_message_name is not None:
+            self.protobuf_message_name = protobuf_message_name
+        else:
+            self.protobuf_message_name = self.__class__.__name__
 
     def __repr__(self):
         return '<Schema({})>'.format(self.__class__.__name__)
