@@ -13,6 +13,23 @@ class TestDictUtilsUnit(BaseTests):
     @mark.params(
         'actual, expected',
         [
+    # hey
+            (
+                {
+                    'tanagra[0].name': 'darmok',
+                    'tanagra[1].name': 'jalad',
+                    'tanagra[1].weird': 'culture',
+                }, {
+                    'tanagra': [
+                        {
+                            'name': 'darmok',
+                        }, {
+                            'name': 'jalad',
+                            'weird': 'culture',
+                        }
+                    ]
+                }
+            ),
     # keys without separators will not be affected
             ({
                 'data': 'android'
@@ -61,12 +78,61 @@ class TestDictUtilsUnit(BaseTests):
                     }
                 }
             ),
+    # integer keys will be converted to a list
+            (
+                {
+                    'tanagra.0.darmok': 'weird',
+                    'tanagra.1.jalad': 'culture',
+                }, {
+                    'tanagra': {
+                        '0': {
+                            'darmok': 'weird'
+                        },
+                        '1': {
+                            'jalad': 'culture',
+                        }
+                    }
+                }
+            ),
         ]
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
-        diff_result = self.klass.diff(data=result, other=expected)
-        assert not diff_result
+        from pprint import pprint
+        print()
+        pprint('===============')
+        pprint(result)
+        #diff_result = self.klass.diff(data=result, other=expected)
+        #assert not diff_result
+
+    @mark.params(
+        'actual, expected',
+        [
+    # hey
+            (
+                {
+                    'tanagra': [
+                        {
+                            'name': 'darmok',
+                        }, {
+                            'name': 'jalad',
+                            'weird': 'culture',
+                        }
+                    ]
+                }, {
+                    'tanagra[0].name': 'darmok',
+                    'tanagra[1].name': 'jalad',
+                    'tanagra[1].weird': 'culture',
+                }
+            ),
+        ]
+    )
+    def test__flatten(self, actual, expected):
+        result = self.klass.flatten(actual)
+        from pprint import pprint
+        print()
+        print('===============')
+        pprint(result)
 
     @mark.params(
         'data, other, expected',
@@ -124,3 +190,44 @@ class TestDictUtilsUnit(BaseTests):
         assert isinstance(result, dict)
         has_no_change = (not result)
         assert has_no_change is not changed
+
+    @mark.params(
+        'data, expected',
+        [
+    #wat
+            ({
+                'blah': 'blah!'
+            }, {}),
+    #wat
+            ({
+                'meh': {
+                    'blah': 'blah!'
+                }
+            }, {
+                'meh': {}
+            }),
+    #wat
+            ({
+                'meh': None
+            }, {}),
+    #wat
+            ({
+                'meh': {
+                    'meh': None
+                }
+            }, {
+                'meh': {}
+            }),
+    #wat
+            ({
+                'meh': 'meh!'
+            }, {
+                'meh': 'meh!'
+            })
+        ]
+    )
+    def test__remove_keys(self, data, expected):
+        keys = ['blah', 'hmph']
+        values = [None]
+        res = self.klass.remove_keys(data, keys, values)
+        #print("\n", expected, res)

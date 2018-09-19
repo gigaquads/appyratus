@@ -63,6 +63,7 @@ class Field(metaclass=FieldMeta):
         default=None,
         transform=None,
         pickled=False,
+        protobuf_field_number : int = None,
     ):
         """
         Kwargs:
@@ -88,6 +89,7 @@ class Field(metaclass=FieldMeta):
         self.default = default
         self.transform = transform
         self.pickled = pickled
+        self.protobuf_field_number = protobuf_field_number
 
     def __repr__(self):
         return '<Field({}{})>'.format(
@@ -103,6 +105,18 @@ class Field(metaclass=FieldMeta):
             else:
                 return copy.deepcopy(self.default)
         return None
+
+    def to_protobuf_field_declaration(self, field_number : int = None):
+        return '{required} {field_type} {field_name} = {field_number}'.format(
+            required='required' if self.required else '',
+            field_type=self.protobuf_type,
+            field_name=self.dump_to or self.name,
+            field_number=field_number,
+        )
+
+    @property
+    def protobuf_type(self):
+        raise NotImplementedError()
 
     @property
     def has_default_value(self):
@@ -182,6 +196,7 @@ class List(Field):
                     return FieldResult(error={i: result.error})
                 result_list.append(result.value)
         else:
+            # assume `nested` is a Schema object
             for i, x in enumerate(value):
                 result = self.nested.load(x)
                 if result.errors:
@@ -209,6 +224,15 @@ class List(Field):
                 result_list.append(result.data)
 
         return FieldResult(value=result_list)
+
+    @property
+    def protobuf_type(self):
+        if isinstance(self.nested, Field):
+            typename = self.nesetd.protobuf_type
+        else:
+            typename = self.nested.protobuf_message_name
+        return 'repeated {}'.format(typename)
+
 
 
 class Array(Field):
@@ -261,6 +285,10 @@ class Str(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'string'
 
 
 class CompositeStr(Str):
@@ -347,9 +375,10 @@ class Uuid(Field):
     _random = Random.new()
 
     @classmethod
-    def next_uuid(cls):
+    def next_uuid(cls, as_hex=False):
         Random.atfork()
-        return UUID(bytes=cls._random.read(16))
+        uuid = UUID(bytes=cls._random.read(16))
+        return uuid if not as_hex else uuid.hex
 
     def load(self, value):
         if isinstance(value, UUID):
@@ -366,8 +395,14 @@ class Uuid(Field):
         return FieldResult(error='expected a UUID')
 
     def dump(self, value):
-        return self.load(value)
-
+        if isinstance(value, str):
+            return FieldResult(value=value.replace('-', '').lower())
+        if isinstance(value, UUID):
+            return FieldResult(value=value.hex)
+        else:
+            return FieldResult(
+                error='expected a valid UUID object or hex string'
+            )
 
 class Int(Field):
     def load(self, value):
@@ -382,6 +417,10 @@ class Int(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'sint64'
 
 
 class Float(Field):
