@@ -1,5 +1,6 @@
 import os
 import re
+from copy import deepcopy
 from setuptools import setup, find_packages
 
 PROJECT_CLASSIFIERS = {
@@ -148,6 +149,13 @@ class RealSetup(object):
 
         Get this thing set up already!!
         """
+        # Requirements loaded from file are in order of appearance, however in
+        # setuptools `setup` they are installed in reverse!  This can be
+        # problematic when you have a specific order that you expect your
+        # packages to be installed in, so we will reverse them here so that
+        # setup reflects the correct order.
+        requirements = deepcopy(self.requirements)
+        requirements.reverse()
         setup(
             name=self.name,
             version=self.version,
@@ -157,7 +165,7 @@ class RealSetup(object):
             url=self.url,
             classifiers=self.classifiers,
             long_description=self.description,
-            install_requires=self.requirements,
+            install_requires=requirements,
             scripts=self.scripts,
             packages=self.packages,
         )
