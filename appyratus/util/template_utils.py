@@ -21,23 +21,6 @@ INTERNAL_FILTERS = {
 }
 
 
-class templatized(object):
-    """
-    Decorator for rendering templates
-    """
-    env = TemplateEnvironment()
-
-    def __init__(self, name: str, *args, **kwargs):
-        self._name = name
-
-    def __call__(self, func):
-        def inner_func(self, *args, **kwargs):
-            context = func(*args, **kwargs)
-            return self.env.render()
-
-        return inner_func
-
-
 class TemplateEnvironment(object):
     """
     Template Environment
@@ -87,3 +70,21 @@ class TemplateEnvironment(object):
         Providing a string, run it against the templating environment
         """
         return self.env.from_string(value)
+
+class templatized(object):
+    """
+    Decorator for rendering templates
+    """
+    env = TemplateEnvironment()
+
+    def __init__(self, name: str, *args, **kwargs):
+        self._name = name
+
+    def __call__(self, func):
+        def inner_func(self, *args, **kwargs):
+            context = func(*args, **kwargs)
+            return self.env.render()
+
+        return inner_func
+
+
