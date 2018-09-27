@@ -21,12 +21,37 @@ INTERNAL_FILTERS = {
 }
 
 
+class templatized(object):
+    """
+    Decorator for rendering templates
+    """
+    env = TemplateEnvironment()
+
+    def __init__(self, name: str, *args, **kwargs):
+        self._name = name
+
+    def __call__(self, func):
+        def inner_func(self, *args, **kwargs):
+            context = func(*args, **kwargs)
+            return self.env.render()
+
+        return inner_func
+
+
 class TemplateEnvironment(object):
     """
     Template Environment
+
+    ```
+    env = TemplateEnvironment(search_path='/tmp')
+    tpl = env.from_string('Hello {{ name }}')
+    tpl.render(dict(name='Johnny'))
+    > "Hello Johnny"
+    ```
+
     """
 
-    def __init__(self, search_path: str=None, filters: dict=None):
+    def __init__(self, search_path: str = None, filters: dict = None):
         """
         Initialize the necessities of a template environment, including the
         environment itself as well as any filters to use when building and
@@ -44,14 +69,6 @@ class TemplateEnvironment(object):
     def build_jinja_env(self, search_path: str):
         """
         Create an instance of jinja Environment
-        Templates are ideally generated from this, e.g.,
-
-        ```
-        tpl = env.from_string('Hello {{ name }}')
-        tpl.render(dict(name='Johnny'))
-        > "Hello Johnny"
-        ```
-
         """
         loader = jinja2.FileSystemLoader(search_path)
         env = jinja2.Environment(
@@ -59,7 +76,7 @@ class TemplateEnvironment(object):
         )
         return env
 
-    def apply_filters(self, filters: dict=None):
+    def apply_filters(self, filters: dict = None):
         """
         Apply filters
         """
