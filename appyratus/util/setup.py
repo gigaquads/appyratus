@@ -22,6 +22,7 @@ class RealSetup(object):
     - Registering https://test.pypi.org/account/register/
     - Testing https://test.pypi.org/
     - Classifying https://pypi.org/classifiers/
+    - Key projects https://packaging.python.org/key_projects/
 
     # Using PyPi
     ## Requirements
