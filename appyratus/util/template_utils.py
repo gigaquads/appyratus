@@ -31,8 +31,8 @@ class TemplateEnvironment(object):
     tpl.render(dict(name='Johnny'))
     > "Hello Johnny"
     ```
-
     """
+    filters = INTERNAL_FILTERS
 
     def __init__(self, search_path: str = None, filters: dict = None):
         """
@@ -45,7 +45,8 @@ class TemplateEnvironment(object):
         the templating engine.  They could also be optional.
         """
         self.env = self.build_jinja_env(search_path or '/tmp')
-        self.apply_filters(INTERNAL_FILTERS)
+        if self.filters:
+            self.apply_filters(self.filters)
         if filters:
             self.apply_filters(filters)
 
@@ -71,6 +72,14 @@ class TemplateEnvironment(object):
         """
         return self.env.from_string(value)
 
+    def from_template(self, template: str, context):
+        """
+        Providing a template filename
+        """
+        template = self.env.get_template(template)
+        return template.render(**context)
+
+
 class templatized(object):
     """
     Decorator for rendering templates
@@ -86,5 +95,3 @@ class templatized(object):
             return self.env.render()
 
         return inner_func
-
-
