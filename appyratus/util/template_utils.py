@@ -66,16 +66,18 @@ class TemplateEnvironment(object):
         """
         self.env.filters.update(filters)
 
-    def from_string(self, value):
+    def from_string(self, value: str):
         """
         Providing a string, run it against the templating environment
         """
         return self.env.from_string(value)
 
-    def from_template(self, template: str, context):
+    def from_template(self, template: str, context: dict):
         """
         Providing a template filename
         """
+        if not context:
+            context = {}
         template = self.env.get_template(template)
         return template.render(**context)
 
