@@ -66,24 +66,18 @@ class TemplateEnvironment(object):
         """
         self.env.filters.update(filters)
 
-    def from_string(self, value: str, context: dict):
+    def from_string(self, value: str):
         """
-        Providing a string, run it against the templating environment
+        Providing a string, return a template 
         """
-        if not context:
-            context = {}
-        template = self.env.from_string(value)
-        return template.render(**context)
+        return self.env.from_string(value)
 
 
-    def from_filename(self, filename: str, context: dict):
+    def from_filename(self, filename: str):
         """
-        Providing a template filename
+        Providing a template filename, return a template
         """
-        if not context:
-            context = {}
-        template = self.env.get_template(filename)
-        return template.render(**context)
+        return self.env.get_template(filename)
 
 
 
