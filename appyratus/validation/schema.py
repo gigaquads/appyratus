@@ -198,7 +198,7 @@ class AbstractSchema(object):
         else:
             for k, field in self.composite_fields.items():
                 value = data.get(field.load_key)
-                result.data[field.load_key] = value.format(**result.data)
+                result.data[field.load_key] = value.format(**result.data) if value else value
 
         if strict and result.errors:
             result.raise_validation_error()

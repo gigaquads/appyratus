@@ -6,58 +6,75 @@ import json
 from appyratus.util.text_transform import TextTransform
 from appyratus.json import JsonEncoder
 
+encoder = JsonEncoder()
+
+INTERNAL_FILTERS = {
+    'snake': TextTransform.snake,
+    'dash': TextTransform.dash,
+    'title': TextTransform.title,
+    'camel': TextTransform.camel,
+    'dot': TextTransform.dot,
+    'json': lambda obj: (
+        json.dumps(ujson.loads(encoder.encode(obj)),
+        indent=2, sort_keys=True
+    )),
+}
+
+# XXX Build Base class for TemplateEnvironment
+# XXX Scan for filters rather than using init Use inspect.getmembers(env, predicate=inspect.ismethod) -> (method_name, method)
+
 
 class TemplateEnvironment(object):
     """
     Template Environment
-    """
-    def __init__(self):
-        self.env = self.build_jinja_env()
-        self.apply_custom_filters()
 
-    def build_jinja_env(self):
+    ```
+    env = TemplateEnvironment(search_path='/tmp')
+    tpl = env.from_string('Hello {{ name }}')
+    tpl.render(dict(name='Johnny'))
+    > "Hello Johnny"
+    ```
+    """
+
+    def __init__(self, search_path: str = None, filters: dict = None):
+        """
+        Initialize the necessities of a template environment, including the
+        environment itself as well as any filters to use when building and
+        rendering a template.
+
+        Internal filters are elements of appyratus that are applied here, such
+        as ujson or the TextTransform util, to add additional convenience to
+        the templating engine.  They could also be optional.
+        """
+        self.env = self.build(search_path or '/tmp')
+        self.add_filters(INTERNAL_FILTERS)
+        if filters:
+            self.add_filters(filters)
+
+    def build(self, search_path: str):
         """
         Create an instance of jinja Environment
-        Templates are ideally generated from this, e.g.,
-
-        ```
-        tpl = env.from_string('Hello {{ name }}')
-        tpl.render(dict(name='Johnny'))
-        > "Hello Johnny"
-        ```
-
         """
-        loader = jinja2.FileSystemLoader('/tmp')
+        loader = jinja2.FileSystemLoader(search_path)
         env = jinja2.Environment(
-            autoescape=True, loader=loader, trim_blocks=True
+            loader=loader, autoescape=True, trim_blocks=True
         )
         return env
 
-    def apply_internal_filters(self):
+    def add_filters(self, filters: dict = None):
         """
-        Add internal filters
-
-        Internal filters are elements of appyratus that are applied here, such
-        as ujson or the TextTransform util, to add additional
-        convenience to the templating engine.
+        Apply filters
         """
-        encoder = JsonEncoder()
+        self.env.filters.update(filters)
 
-        internal_filters = {
-            'snake': TextTransform.snake,
-            'dash': TextTransform.dash,
-            'title': TextTransform.title,
-            'camel': TextTransform.camel,
-            'dot': TextTransform.dot,
-            'json': lambda obj: (
-                json.dumps(ujson.loads(encoder.encode(obj)),
-                indent=2, sort_keys=True
-            ))
-                }
-        self.env.filters.update(internal_filters)
-
-    def from_string(self, value):
+    def from_string(self, value: str):
         """
-        Providing a string, run it against the templating environment
+        Providing a string, return a template
         """
         return self.env.from_string(value)
+
+    def from_filename(self, filename: str):
+        """
+        Providing a template filename, return a template
+        """
+        return self.env.get_template(filename)
