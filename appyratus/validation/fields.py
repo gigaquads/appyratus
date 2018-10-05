@@ -251,6 +251,14 @@ class Array(Field):
             return FieldResult(error='expected a valid sequence')
         return FieldResult(value=value.tolist())
 
+    @property
+    def protobuf_type(self):
+        if isinstance(self.nested, Field):
+            typename = self.nesetd.protobuf_type
+        else:
+            typename = self.nested.protobuf_message_name
+        return 'repeated {}'.format(typename)
+
 
 class Regexp(Field):
     def __init__(self, pattern, re_flags=None, *args, **kwargs):
@@ -269,6 +277,10 @@ class Regexp(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'string'
 
 
 class Str(Field):
@@ -293,6 +305,10 @@ class Str(Field):
 
 class CompositeStr(Str):
     composite = True
+
+    @property
+    def protobuf_type(self):
+        return 'string'
 
 
 class Dict(Field):
@@ -354,6 +370,9 @@ class Enum(Field):
     def dump(self, value):
         return self.load(value)
 
+    @property
+    def protobuf_type(self):
+        return 'enum'
 
 class Email(Field):
     def load(self, value):
@@ -367,6 +386,10 @@ class Email(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'string'
 
 
 class Uuid(Field):
@@ -404,6 +427,10 @@ class Uuid(Field):
                 error='expected a valid UUID object or hex string'
             )
 
+    @property
+    def protobuf_type(self):
+        return 'string'
+
 class Int(Field):
     def load(self, value):
         if isinstance(value, int):
@@ -437,6 +464,10 @@ class Float(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'double'
 
 
 class DateTime(Field):
@@ -473,6 +504,10 @@ class DateTime(Field):
             result.value = to_timestamp(result.value)
         return result
 
+    @property
+    def protobuf_type(self):
+        return 'uint64'
+
 
 class Bool(Field):
     TRUTHY = {'T', 't', 'True', 'true', 1}
@@ -489,3 +524,7 @@ class Bool(Field):
 
     def dump(self, value):
         return self.load(value)
+
+    @property
+    def protobuf_type(self):
+        return 'bool'
