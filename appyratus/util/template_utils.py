@@ -78,30 +78,3 @@ class TemplateEnvironment(object):
         Providing a template filename, return a template
         """
         return self.env.get_template(filename)
-
-
-class templatized(object):
-    """
-    Decorator for rendering templates
-    """
-    env = TemplateEnvironment()
-
-    def __init__(self, name: str, *args, **kwargs):
-        self._name = name
-
-    def __call__(self, func):
-        def inner_func(self, request, response, *args, **kwargs):
-            response.content_type = 'text/html'
-            context = func(*args, **kwargs)
-            template = self.env.from_template(self._name)
-            return template.render(**context)
-
-        return inner_func
-
-    @classmethod
-    def set_env(cls, env):
-        cls.env = env
-
-    @classmethod
-    def get_env(cls):
-        return cls.env
