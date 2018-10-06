@@ -144,7 +144,7 @@ class AbstractSchema(object):
 
         for k, v in data.items():
             # ignore any field whose name not in projection
-            if k not in projection:
+            if k not in projection and not self.allow_additional:
                 continue
 
             field = self.fields.get(k)
@@ -154,6 +154,8 @@ class AbstractSchema(object):
                 if field is None:
                     if not self.allow_additional:
                         result.errors[k] = 'unrecognized field'
+                    else:
+                        result.data[k] = v
                     continue
 
             if v is None:
