@@ -57,7 +57,8 @@ class RealSetup(object):
         author=None,
         author_email=None,
         url=None,
-        classifiers=None
+        classifiers=None,
+        dependency_links=None,
     ):
         self.path = path or ''
         self.name = name or ''
@@ -69,6 +70,7 @@ class RealSetup(object):
         if classifiers:
             self.classifiers = self.load_classifiers(classifiers)
         self.classifiers = classifiers or []
+        self.dependency_links = dependency_links or []
         self.long_description = self.load_description()
         self.requirements = self.load_requirements()
         self.scripts = self.load_scripts()
@@ -169,4 +171,5 @@ class RealSetup(object):
             install_requires=requirements,
             scripts=self.scripts,
             packages=self.packages,
+            dependency_links=self.dependency_links,
         )
