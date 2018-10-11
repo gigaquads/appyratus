@@ -2,7 +2,7 @@
 # encoding=utf-8
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='appyratus',
@@ -11,5 +11,6 @@ setup(
     author='Gigaquads',
     author_email='notdsk@gmail.com',
     url='https://github.com/gigaquads/appyratus.git',
+    packages=find_packages()
     #classifiers=['python3', 'mit-license'],
 )
