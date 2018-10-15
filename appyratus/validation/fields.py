@@ -5,6 +5,7 @@ import numpy as np
 import dateutil.parser
 import pickle
 
+from typing import Dict
 from uuid import UUID, uuid4
 from datetime import datetime, date
 from abc import ABCMeta, abstractmethod
@@ -63,7 +64,8 @@ class Field(metaclass=FieldMeta):
         default=None,
         transform=None,
         pickled=False,
-        protobuf_field_number : int = None,
+        meta : Dict = None,
+        rank = None,
     ):
         """
         Kwargs:
@@ -89,7 +91,8 @@ class Field(metaclass=FieldMeta):
         self.default = default
         self.transform = transform
         self.pickled = pickled
-        self.protobuf_field_number = protobuf_field_number
+        self.meta = meta or {}
+        self.rank = rank
 
     def __repr__(self):
         return '<Field({}{})>'.format(

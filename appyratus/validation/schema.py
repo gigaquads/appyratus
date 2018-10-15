@@ -91,7 +91,6 @@ class AbstractSchema(object):
         self,
         strict=False,
         allow_additional=False,
-        protobuf_message_name=None,
     ):
         """
         # Kwargs:
@@ -104,10 +103,6 @@ class AbstractSchema(object):
         """
         self.strict = strict
         self.allow_additional = allow_additional
-        if protobuf_message_name is not None:
-            self.protobuf_message_name = protobuf_message_name
-        else:
-            self.protobuf_message_name = self.__class__.__name__
 
     def __repr__(self):
         return '<Schema({})>'.format(self.__class__.__name__)
@@ -226,19 +221,3 @@ class Schema(AbstractSchema, metaclass=SchemaMeta):
             loaded_keys.append(loaded_key)
         return loaded_keys
 
-    @classmethod
-    def to_protobuf_message_declaration(cls, name : Text = None) -> Text:
-        type_name = name or cls.__name__
-        field_decls = []
-        for i, f in enumerate(cls.fields.values()):
-            if f.protobuf_field_number is not None:
-                field_num = f.protobuf_field_number
-            else:
-                field_num = i + 1
-            field_decl = f.to_protobuf_field_declaration(field_number=field_num)
-            field_decls.append('  ' + field_decl + ';')
-
-        return 'message {name} {{\n{fields}\n}}'.format(
-            name=type_name,
-            fields='\n'.join(field_decls),
-        )
