@@ -1,34 +1,34 @@
+"""
+Node represented TK UI
+
+This works but is still pretty basic.  It allows you to tersley compose GUI
+elements with these classes below into a crude interface rendered by TK.  A
+consistent pattern has emerged for building and rendering nodes, however it is
+still under heavy development
+
+Common shiznit
+- Gui
+- Window
+- Menu
+- TabBar
+- Tab
+- Form
+- Frame
+- Button
+"""
 import copy
 import tkinter as tk
 from abc import abstractmethod
 
 from appyratus.util import DictUtils
-"""
-Common shiznit
-
-# Gui
-
-# Window
-
-# Menu
-
-# TabBar
-
-# Tab
-
-# Form
-
-# Frame
-
-# Button
-"""
 
 
 class Node(object):
     """
     # Node
     Represents any particular node in a tree of gui elements.  Specific types
-    of Nodes implement this, such as `Frame` and `Label`.
+    of Nodes implement this, such as `Frame` and `Label`.  A node can have a
+    parent and many children
     """
 
     def __repr__(self):
@@ -325,7 +325,7 @@ class Menu(Node):
         return menu
 
     def render_object(self):
-        super().render_object(self)
+        super().render_object()
 
 
 class View(Node):
