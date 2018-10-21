@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from abc import abstractmethod
+from abc import abstractclassmethod
 
 import os
 import yaml
@@ -14,27 +14,27 @@ class BaseFile(object):
     def exists(cls, file_path: str):
         return os.path.exists(file_path)
 
-    @abstractmethod
+    @abstractclassmethod
     def read(cls, file_path: str):
         pass
 
-    @abstractmethod
+    @abstractclassmethod
     def write(cls, file_path: str, contents):
         pass
 
-    @abstractmethod
+    @abstractclassmethod
     def from_file(cls, file_path: str, *args, **kwargs):
         pass
 
-    @abstractmethod
+    @abstractclassmethod
     def to_file(cls, file_path: str, contents, *args, **kwargs):
         pass
 
-    @abstractmethod
+    @abstractclassmethod
     def load(cls, data):
         pass
 
-    @abstractmethod
+    @abstractclassmethod
     def dump(cls, data):
         pass
 
@@ -67,6 +67,14 @@ class File(BaseFile):
     @classmethod
     def dir_path(cls, path):
         return os.path.dirname(os.path.realpath(path))
+
+    @classmethod
+    def from_file(cls, file_path: str):
+        return cls.read(file_path)
+
+    @classmethod
+    def to_file(cls, file_path: str, contents):
+        cls.write(file_path, contents)
 
 
 class Yaml(BaseFile):
@@ -212,3 +220,7 @@ class Csv(BaseFile):
             delimiter = ','
         reader = csv.DictReader(buff, delimiter=delimiter)
         return [row for row in reader]
+
+
+class Text(File):
+    pass
