@@ -106,33 +106,39 @@ class TestDictUtilsUnit(BaseTests):
         #assert not diff_result
 
     @mark.params(
-        'actual, expected',
+        'actual, expected, whatever',
         [
-    # hey
+    # a basic nested dictionary
+            ({
+                'a': {
+                    'b': 'z'
+                }
+            }, {
+                'a.b': 'z'
+            }, {}),
+    # a dictionary that has a value that is a list, containing multiple dictionaries
             (
                 {
-                    'tanagra': [
-                        {
-                            'name': 'darmok',
-                        }, {
-                            'name': 'jalad',
-                            'weird': 'culture',
-                        }
-                    ]
+                    'a': [{
+                        'b': 'z',
+                    }, {
+                        'b': 'y',
+                        'c': {
+                            'd': 'x'
+                        },
+                    }]
                 }, {
-                    'tanagra[0].name': 'darmok',
-                    'tanagra[1].name': 'jalad',
-                    'tanagra[1].weird': 'culture',
-                }
+                    'a[0].b': 'z',
+                    'a[1].b': 'y',
+                    'a[1].c.d': 'x',
+                }, {}
             ),
         ]
     )
-    def test__flatten(self, actual, expected):
+    def test__flatten(self, actual, expected, whatever):
         result = self.klass.flatten(actual)
-        from pprint import pprint
-        print()
-        print('===============')
-        pprint(result)
+        diff_res = self.klass.diff(expected, result)
+        assert not diff_res
 
     @mark.params(
         'data, other, expected',

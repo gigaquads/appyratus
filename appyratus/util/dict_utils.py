@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy, deepcopy
 import re
 
 
@@ -20,17 +20,52 @@ class DictUtils(object):
         return (xkey, xtype, xid)
 
     @staticmethod
-    def flatten(data: dict, separator=None):
+    def flatten(
+        data: dict, acc: dict=None, parent: list=None, separator=None
+    ) -> dict:
+        """
+        Flatten a dictionary, consolidating all nested structures of a value
+        into a single key per unique field
+        separated by `separator`
+
+        Args
+        - `data`, the data to be flattened
+        - `acc`, the accumulator of flattened keys
+        - `parent`, the parent key, a list of keys to be joined by the separator
+        - `separator`, the separating value when parent key is joined.  by
+          default it is the period (`.`)
+        """
+        if not data:
+            return {}
         if not separator:
             separator = '.'
-        new_data = deepcopy(data)
-        if isinstance(v, list):
-            pass
-        elif isinstance(v, dict):
-            pass
+        if not acc:
+            acc = {}
+        if not parent:
+            parent = []
+        if isinstance(data, list):
+            for idx, v in enumerate(data):
+                kparent = copy(parent)
+                kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
+                kacc = DictUtils.flatten(
+                    v, separator=separator, parent=kparent
+                )
+                acc.update(kacc)
+        elif isinstance(data, dict):
+            for k, v in data.items():
+                kparent = copy(parent)
+                kparent.append(k)
+                kacc = DictUtils.flatten(
+                    v, separator=separator, parent=kparent
+                )
+                if isinstance(kacc, dict):
+                    acc.update(kacc)
+                else:
+                    acc[separator.join(kparent)] = kacc
         else:
-            pass
-        return new_data
+            return data
+        # da return
+        return acc
 
     @staticmethod
     def unflatten_keys(data: dict, separator=None):
@@ -118,7 +153,7 @@ class DictUtils(object):
         return changed
 
     @staticmethod
-    def remove_keys(data: dict, keys: list = None, values: list = None):
+    def remove_keys(data: dict, keys: list=None, values: list=None):
         """
         Providing a list of keys remove them from a dictionary.
 
