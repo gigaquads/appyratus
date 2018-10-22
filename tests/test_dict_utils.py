@@ -5,7 +5,7 @@ from collections import namedtuple
 
 
 @mark.unit
-class TestDictUtilsUnit(BaseTests):
+class TestDictUtils(BaseTests):
     @property
     def klass(self):
         return DictUtils
@@ -78,7 +78,7 @@ class TestDictUtilsUnit(BaseTests):
                     }
                 }
             ),
-    # integer keys will be converted to a list
+    # integer keys will be converted to dict keys, and not a list
             (
                 {
                     'tanagra.0.darmok': 'weird',
@@ -98,12 +98,8 @@ class TestDictUtilsUnit(BaseTests):
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
-        from pprint import pprint
-        print()
-        pprint('===============')
-        pprint(result)
-        #diff_result = self.klass.diff(data=result, other=expected)
-        #assert not diff_result
+        diff_result = self.klass.diff(expected, result)
+        assert not diff_result
 
     @mark.params(
         'actual, expected, whatever',
@@ -135,8 +131,8 @@ class TestDictUtilsUnit(BaseTests):
             ),
         ]
     )
-    def test__flatten(self, actual, expected, whatever):
-        result = self.klass.flatten(actual)
+    def test__flatten_keys(self, actual, expected, whatever):
+        result = self.klass.flatten_keys(actual)
         diff_res = self.klass.diff(expected, result)
         assert not diff_res
 
@@ -180,22 +176,67 @@ class TestDictUtilsUnit(BaseTests):
         assert not diff_result
 
     @mark.params(
-        'data, other, changed',
+        'data, other, is_changed',
         [
-    # flat keys will be compared
-            (dict(a=0), dict(a=1), True),
-            (dict(a=0), dict(a=0), False),
+    # list in a dict key is comparable
+            ({
+                'hmm': ['heh']
+            }, {
+                'hmm': ['heh']
+            }, False),
+            ({
+                'hmm': ['heh', 'huh']
+            }, {
+                'hmm': ['heh']
+            }, True),
+    # blah
+            ({
+                'a': {
+                    'b': 0
+                }
+            }, {
+                'a': {
+                    'b': 0
+                }
+            }, False),
+    # flat keys
+            ({
+                'a': 0
+            }, {
+                'a': 1
+            }, True),
+    # unchanged data
+            ({
+                'a': 0
+            }, {
+                'a': 0
+            }, False),
     # nested will be recursively compared
-            (dict(a=dict(b=0)), dict(a=dict(c=1)), True),
-            (dict(a=dict(b=0)), dict(a=dict(b=1)), True),
-            (dict(a=dict(b=0)), dict(a=dict(b=0)), False),
+            ({
+                'a': {
+                    'b': 0
+                }
+            }, {
+                'a': {
+                    'c': 1
+                }
+            }, True),
+    # blah
+            ({
+                'a': {
+                    'b': 0
+                }
+            }, {
+                'a': {
+                    'b': 1
+                }
+            }, True),
         ]
     )
-    def test__diff(self, data, other, changed):
+    def test__diff(self, data, other, is_changed):
         result = self.klass.diff(data=data, other=other)
-        assert isinstance(result, dict)
         has_no_change = (not result)
-        assert has_no_change is not changed
+        assert has_no_change is not is_changed
 
     @mark.params(
         'data, expected',
@@ -229,7 +270,7 @@ class TestDictUtilsUnit(BaseTests):
                 'meh': 'meh!'
             }, {
                 'meh': 'meh!'
-            })
+            }),
         ]
     )
     def test__remove_keys(self, data, expected):
