@@ -14,6 +14,7 @@ from Crypto import Random
 from appyratus.exc import AppyratusError
 from appyratus.time import to_timestamp
 
+from . import fields
 from .exc import ValidationError
 from .fields import Field
 from .results import SchemaResult
@@ -221,3 +222,17 @@ class Schema(AbstractSchema, metaclass=SchemaMeta):
             loaded_keys.append(loaded_key)
         return loaded_keys
 
+    def get_nested_schemas(self, max_depth=None):
+        def accumulate(schema, acc, depth, max_depth):
+            acc.add(schema)
+            if (max_depth is not None) and depth == max_depth:
+                return set()
+            for field in schema.fields.values():
+                if isinstance(field, fields.Object):
+                    accumulate(field.nested, acc, depth+1, max_depth)
+            return acc
+
+        schemas = accumulate(self, set(), 0, max_depth)
+        schemas.discard(self)
+
+        return schemas

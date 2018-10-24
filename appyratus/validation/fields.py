@@ -109,18 +109,6 @@ class Field(metaclass=FieldMeta):
                 return copy.deepcopy(self.default)
         return None
 
-    def to_protobuf_field_declaration(self, field_number : int = None):
-        return '{required} {field_type} {field_name} = {field_number}'.format(
-            required='required' if self.required else '',
-            field_type=self.protobuf_type,
-            field_name=self.dump_to or self.name,
-            field_number=field_number,
-        )
-
-    @property
-    def protobuf_type(self):
-        raise NotImplementedError()
-
     @property
     def has_default_value(self):
         return self.default is not None
@@ -228,15 +216,6 @@ class List(Field):
 
         return FieldResult(value=result_list)
 
-    @property
-    def protobuf_type(self):
-        if isinstance(self.nested, Field):
-            typename = self.nesetd.protobuf_type
-        else:
-            typename = self.nested.protobuf_message_name
-        return 'repeated {}'.format(typename)
-
-
 
 class Array(Field):
     def __init__(self, nested, dtype=None, *args, **kwargs):
@@ -253,14 +232,6 @@ class Array(Field):
         if not isinstance(value, np.ndarray):
             return FieldResult(error='expected a valid sequence')
         return FieldResult(value=value.tolist())
-
-    @property
-    def protobuf_type(self):
-        if isinstance(self.nested, Field):
-            typename = self.nesetd.protobuf_type
-        else:
-            typename = self.nested.protobuf_message_name
-        return 'repeated {}'.format(typename)
 
 
 class Regexp(Field):
@@ -281,10 +252,6 @@ class Regexp(Field):
     def dump(self, value):
         return self.load(value)
 
-    @property
-    def protobuf_type(self):
-        return 'string'
-
 
 class Str(Field):
     def load(self, value):
@@ -301,17 +268,9 @@ class Str(Field):
     def dump(self, value):
         return self.load(value)
 
-    @property
-    def protobuf_type(self):
-        return 'string'
-
 
 class CompositeStr(Str):
     composite = True
-
-    @property
-    def protobuf_type(self):
-        return 'string'
 
 
 class Dict(Field):
@@ -355,27 +314,17 @@ class Dict(Field):
 class Enum(Field):
     def __init__(self, nested, allowed_values, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.is_nested_field = isinstance(nested, Field)
         self.allowed_values = set(allowed_values)
         self.nested = nested
 
     def load(self, value):
         if value not in self.allowed_values:
             return FieldResult(error='unrecognized value')
-        if self.is_nested_field:
-            return self.nested.load(value)
-        else:
-            schema_result = self.nested.load(value)
-            return FieldResult(
-                value=schema_result.data, error=schema_result.errors
-            )
+        return self.nested.load(value)
 
     def dump(self, value):
         return self.load(value)
 
-    @property
-    def protobuf_type(self):
-        return 'enum'
 
 class Email(Field):
     def load(self, value):
@@ -389,10 +338,6 @@ class Email(Field):
 
     def dump(self, value):
         return self.load(value)
-
-    @property
-    def protobuf_type(self):
-        return 'string'
 
 
 class Uuid(Field):
@@ -430,9 +375,6 @@ class Uuid(Field):
                 error='expected a valid UUID object or hex string'
             )
 
-    @property
-    def protobuf_type(self):
-        return 'string'
 
 class Int(Field):
     def load(self, value):
@@ -447,10 +389,6 @@ class Int(Field):
 
     def dump(self, value):
         return self.load(value)
-
-    @property
-    def protobuf_type(self):
-        return 'sint64'
 
 
 class Float(Field):
@@ -467,10 +405,6 @@ class Float(Field):
 
     def dump(self, value):
         return self.load(value)
-
-    @property
-    def protobuf_type(self):
-        return 'double'
 
 
 class DateTime(Field):
@@ -507,10 +441,6 @@ class DateTime(Field):
             result.value = to_timestamp(result.value)
         return result
 
-    @property
-    def protobuf_type(self):
-        return 'uint64'
-
 
 class Bool(Field):
     TRUTHY = {'T', 't', 'True', 'true', 1}
@@ -527,7 +457,3 @@ class Bool(Field):
 
     def dump(self, value):
         return self.load(value)
-
-    @property
-    def protobuf_type(self):
-        return 'bool'
