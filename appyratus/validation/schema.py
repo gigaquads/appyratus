@@ -14,6 +14,7 @@ from Crypto import Random
 from appyratus.exc import AppyratusError
 from appyratus.time import to_timestamp
 
+from . import fields
 from .exc import ValidationError
 from .fields import Field
 from .results import SchemaResult
@@ -91,7 +92,6 @@ class AbstractSchema(object):
         self,
         strict=False,
         allow_additional=False,
-        protobuf_message_name=None,
     ):
         """
         # Kwargs:
@@ -104,10 +104,6 @@ class AbstractSchema(object):
         """
         self.strict = strict
         self.allow_additional = allow_additional
-        if protobuf_message_name is not None:
-            self.protobuf_message_name = protobuf_message_name
-        else:
-            self.protobuf_message_name = self.__class__.__name__
 
     def __repr__(self):
         return '<Schema({})>'.format(self.__class__.__name__)
@@ -144,7 +140,7 @@ class AbstractSchema(object):
 
         for k, v in data.items():
             # ignore any field whose name not in projection
-            if k not in projection:
+            if k not in projection and not self.allow_additional:
                 continue
 
             field = self.fields.get(k)
@@ -154,6 +150,8 @@ class AbstractSchema(object):
                 if field is None:
                     if not self.allow_additional:
                         result.errors[k] = 'unrecognized field'
+                    else:
+                        result.data[k] = v
                     continue
 
             if v is None:
@@ -224,19 +222,17 @@ class Schema(AbstractSchema, metaclass=SchemaMeta):
             loaded_keys.append(loaded_key)
         return loaded_keys
 
-    @classmethod
-    def to_protobuf_message_declaration(cls, name : Text = None) -> Text:
-        type_name = name or cls.__name__
-        field_decls = []
-        for i, f in enumerate(cls.fields.values()):
-            if f.protobuf_field_number is not None:
-                field_num = f.protobuf_field_number
-            else:
-                field_num = i + 1
-            field_decl = f.to_protobuf_field_declaration(field_number=field_num)
-            field_decls.append('  ' + field_decl + ';')
+    def get_nested_schemas(self, max_depth=None):
+        def accumulate(schema, acc, depth, max_depth):
+            acc.add(schema)
+            if (max_depth is not None) and depth == max_depth:
+                return set()
+            for field in schema.fields.values():
+                if isinstance(field, fields.Object):
+                    accumulate(field.nested, acc, depth+1, max_depth)
+            return acc
 
-        return 'message {name} {{\n{fields}\n}}'.format(
-            name=type_name,
-            fields='\n'.join(field_decls),
-        )
+        schemas = accumulate(self, set(), 0, max_depth)
+        schemas.discard(self)
+
+        return schemas
