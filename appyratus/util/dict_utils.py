@@ -65,7 +65,11 @@ class DictUtils(object):
                 kacc = DictUtils.flatten_keys(
                     v, separator=separator, parent=kparent
                 )
-                acc.update(kacc)
+                if isinstance(kacc, dict):
+                    acc.update(kacc)
+                else:
+                    acc[separator.join(kparent)] = kacc
+
         else:
             return data
         # da return

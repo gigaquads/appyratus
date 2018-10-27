@@ -129,6 +129,14 @@ class TestDictUtils(BaseTests):
                     'a[1].c.d': 'x',
                 }, {}
             ),
+    # a dict that has a value that is a list
+            ({
+                'a': '1',
+                'b': ['z']
+            }, {
+                'a': '1',
+                'b[0]': 'z'
+            }, {})
         ]
     )
     def test__flatten_keys(self, actual, expected, whatever):
