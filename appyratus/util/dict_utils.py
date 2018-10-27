@@ -50,7 +50,7 @@ class DictUtils(object):
         if isinstance(data, dict):
             for k, v in data.items():
                 kparent = copy(parent)
-                kparent.append(k)
+                kparent.append(str(k))
                 kacc = DictUtils.flatten_keys(
                     v, separator=separator, parent=kparent
                 )

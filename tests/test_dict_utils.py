@@ -129,13 +129,34 @@ class TestDictUtils(BaseTests):
                     'a[1].c.d': 'x',
                 }, {}
             ),
-    # a dict that has a value that is a list
+    # a dict that has a value that is a list containing scalar values
             ({
                 'a': '1',
                 'b': ['z']
             }, {
                 'a': '1',
                 'b[0]': 'z'
+            }, {}),
+
+    # integers as strings for dict keys do not act as any sort of list
+            ({
+                'a': {
+                    '1': 'z',
+                    '2': 'y',
+                }
+            }, {
+                'a.1': 'z',
+                'a.2': 'y'
+            }, {}),
+    # dicts with integers as keys are still dict keys
+            ({
+                'a': {
+                    1: 'z',
+                    3: 'x'
+                }
+            }, {
+                'a.1': 'z',
+                'a.3': 'x'
             }, {})
         ]
     )
