@@ -41,7 +41,7 @@ class DictUtils(object):
         """
         if not data:
             return {}
-        if not separator:
+        if separator is None:
             separator = '.'
         if not acc:
             acc = {}
@@ -61,7 +61,8 @@ class DictUtils(object):
         elif isinstance(data, list):
             for idx, v in enumerate(data):
                 kparent = copy(parent)
-                kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
+                if kparent:
+                    kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
                 kacc = DictUtils.flatten_keys(
                     v, separator=separator, parent=kparent
                 )
