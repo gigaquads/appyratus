@@ -29,7 +29,7 @@ def to_timestamp(datetime_obj) -> int:
     return int((datetime_obj - epoch).total_seconds())
 
 
-def from_timestamp(timestamp: int) -> datetime:
+def from_timestamp(timestamp) -> datetime:
     """
     Return the timestamp int as a UTC datetime object.
     """

@@ -1,4 +1,5 @@
 import copy
+import time
 
 import pytz
 import dateutil.parser
@@ -12,13 +13,14 @@ from abc import ABCMeta, abstractmethod
 from Crypto import Random
 
 from appyratus.exc import AppyratusError
-from appyratus.time import to_timestamp
+from appyratus.time import to_timestamp, from_timestamp
 
 
 ## Fields.py
 import re
 
 from uuid import UUID, uuid4
+from datetime import datetime, date
 
 
 class Field(object):
@@ -124,7 +126,7 @@ class Float(Field):
 
     def process(self, value):
         if isinstance(value, float):
-            return return (value, None)
+            return (value, None)
         elif isinstance(value, int):
             return (float(value), None)
         elif isinstance(value, str):
@@ -136,7 +138,7 @@ class Float(Field):
             return (None, 'expected a float')
 
 
-class Email(String):
+class Email(Str):
     re_email = re.compile(r'^[a-f]\w*(\.\w+)?@\w+\.\w+$', re.I)
 
     def process(self, value):
@@ -163,7 +165,7 @@ class Uuid(Field):
                 return (UUID(value), None)
         elif isinstance(value, int):
             hex_str = hex(value)[2:]
-            uuid_hex = '0' * (32 - len(hex_str))) + hex_str)
+            uuid_hex = ('0' * (32 - len(hex_str))) + hex_str
             return (UUID(uuid_hex), None)
         else:
             return (None, 'expected a UUID')
@@ -185,12 +187,65 @@ class Bool(Field):
 
 
 class DateTime(Field):
-    def __init__(self, format_spec: str = None, **kwargs):
+    def process(self, value):
+        if isinstance(value, datetime):
+            return (value.replace(tzinfo=pytz.utc), None)
+        elif isinstance(value, (int, float)):
+            try:
+                return (from_timestamp(value), None)
+            except ValueError:
+                return (None, 'invalid UTC timestamp')
+        elif isinstance(value, date):
+            return (datetime.combine(value, datetime.min.time()), None)
+        elif isinstance(value, str):
+            try:
+                return (dateutil.parser.parse(value), None)
+            except:
+                return (None, 'invalid datetime string')
+        else:
+            return (None, 'unrecognized datetime')
+
+
+class DateTimeString(Field):
+    def __init__(self, format_spec=None, **kwargs):
         super().__init__(**kwargs)
         self.format_spec = format_spec
 
     def process(self, value):
-        raise NotImplementedError()
+        if isinstance(value, str):
+            try:
+                dt = dateutil.parser.parse(value)
+            except:
+                return (None, 'invalid datetime string')
+        elif isinstance(value, (int, float)):
+            dt = from_timestamp(value)
+        elif isinstance(value, datetime):
+            dt = value.replace(tzinfo=pytz.utc)
+        elif isinstance(value, date):
+            dt = datetime.combine(value, datetime.min.time())
+        else:
+            return (None, 'unrecognized timestamp')
+
+        if self.format_spec:
+            dt_str = datetime.strftime(dt, self.format_spec)
+        else:
+            dt_str = dt.isoformat()
+
+        return (dt_str, None)
+
+
+class Timestamp(Field):
+    def process(self, value):
+        if isinstance(value, (int, float)):
+            return (value, None)
+        elif isinstance(value, datetime):
+            return (to_timestamp(value), None)
+        elif isinstance(value, date):
+            return (time.mktime(value.timetuple()), None)
+        else:
+            return (None, 'unrecognized timestamp')
+
+
 
 ## schema.py
 from copy import deepcopy

@@ -1,6 +1,7 @@
 ipdb
 pytest
 pycrypto
+python-dateutil
 venusian
 pyyaml
 pytz
