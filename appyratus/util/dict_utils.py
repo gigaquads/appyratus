@@ -25,7 +25,7 @@ class DictUtils(object):
 
     @staticmethod
     def flatten_keys(
-        data: dict, acc: dict=None, parent: list=None, separator=None
+        data: dict, acc: dict = None, parent: list = None, separator=None
     ) -> dict:
         """
         Flatten a dictionary, consolidating all nested structures of a value
@@ -185,7 +185,7 @@ class DictUtils(object):
         return changed
 
     @staticmethod
-    def remove_keys(data: dict, keys: list=None, values: list=None):
+    def remove_keys(data: dict, keys: list = None, values: list = None):
         """
         Providing a list of keys remove them from a dictionary.
 
@@ -223,4 +223,28 @@ class DictUtils(object):
                     new_data.pop(k)
                 else:
                     new_data[k] = dres
+        return new_data
+
+    def traverse(data: dict, method):
+        """
+        Traverse a dictionary while passing values into the provided callable
+        in order to mutate existing data
+        """
+        new_data = deepcopy(data)
+        if not data:
+            return data
+        if isinstance(data, dict):
+            for kd, vd in data.items():
+                if isinstance(vd, (list, dict)):
+                    dres = DictUtils.traverse(vd, method)
+                else:
+                    dres = method(vd)
+                new_data[kd] = dres
+        elif isinstance(data, list):
+            for kl, vl in enumerate(data):
+                if isinstance(vl, (list, dict)):
+                    lres = DictUtils.traverse(vl, method)
+                else:
+                    lres = method(vl)
+                new_data[kl] = lres
         return new_data
