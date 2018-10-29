@@ -23,13 +23,15 @@ class AsyncHttpClient(object):
             path: str,
             params: dict = None,
             data: dict = None,
-            headers: dict = None
+            headers: dict = None,
+            json=None,
         ):
             self.method = method
             self.path = path
             self.params = params
             self.data = data
             self.headers = headers
+            self.json = json
 
     def __init__(
         self,
