@@ -5,7 +5,7 @@ import pytz
 import dateutil.parser
 import venusian
 
-from typing import Text, Dict
+from typing import Text, Type
 from uuid import UUID, uuid4
 from datetime import datetime, date
 from abc import ABCMeta, abstractmethod
@@ -31,46 +31,52 @@ class Field(object):
         required=False,
         allow_none=True,
         default=None,
-        transform=None,
+        callback=None,
     ):
         self.name = name
         self.load_from = load_from
         self.required = required
         self.allow_none = allow_none
         self.default = default
-        self.transform = transform
+        self.callback = callback
+
+    def __repr__(self):
+        if self.load_from != self.name:
+            load_to = ' -> ' + self.name
+        else:
+            load_to = ''
+        return '{}({}{})'.format(
+            self.__class__.__name__,
+            self.load_from,
+            load_to
+        )
 
     def process(self, value):
         return (value, None)
 
-
-class Object(Field):
-    def __init__(self, nested, *args, **kwargs):
+    def callback(self, value, data):
         """
-        # Args:
-            - nested: either a Schema instance or a dict, containing field
-              names mapped to field objects.
+        This method is *intentionally* shadowed by the ctor keyword argument
+        with the same name. This stub is just for declaring the expected
+        interface.
         """
-        super().__init__(*args, **kwargs)
-
-        if isinstance(nested, dict):
-            # create a new schema class and instatiate it
-            from appyratus.validation.schema.v2.schema import Schema
-            schema_class = type('Anonymouschema', (Schema, ), nested)
-            self.nested = schema_class()
-        else:
-            self.nested = nested
-
-    def process(self, value):
-        return self.nested.process(value)
+        return (value, None)
 
 
-class Str(Field):
+class String(Field):
     def process(self, value):
         if isinstance(value, str):
             return (value, None)
         else:
-            return (None, 'not a string')
+            return (None, 'unrecognized')
+
+
+class String(Field):
+    def process(self, value):
+        if isinstance(value, str):
+            return (value, None)
+        else:
+            return (None, 'unrecognized')
 
 
 class Int(Field):
@@ -81,16 +87,16 @@ class Int(Field):
     def process(self, value):
         if isinstance(value, str):
             if not value.isdigit():
-                return (None, 'expected a digit string')
+                return (None, 'invalid')
             else:
                 value = int(value)
         if isinstance(value, int):
             if self.signed and value < 0:
-                return (None, 'expected signed int')
+                return (None, 'invalid')
             else:
                 return (value, None)
         else:
-            return (None, 'not an int')
+            return (None, 'unrecognized')
 
 
 class Uint32(Int):
@@ -113,12 +119,12 @@ class Sint64(Int):
         super().__init__(signed=True, **kwargs)
 
 
-class Str(Field):
+class String(Field):
     def process(self, value):
         if isinstance(value, str):
             return (value, None)
         else:
-            return (None, 'not a string')
+            return (None, 'unrecognized')
 
 
 class Float(Field):
@@ -138,7 +144,7 @@ class Float(Field):
             return (None, 'expected a float')
 
 
-class Email(Str):
+class Email(String):
     re_email = re.compile(r'^[a-f]\w*(\.\w+)?@\w+\.\w+$', re.I)
 
     def process(self, value):
@@ -160,7 +166,7 @@ class Uuid(Field):
         elif isinstance(value, str):
             value = value.replace('-', '').lower()
             if not self.re_uuid.match(value):
-                return (None, 'invalid UUID')
+                return (None, 'invalid')
             else:
                 return (UUID(value), None)
         elif isinstance(value, int):
@@ -168,7 +174,27 @@ class Uuid(Field):
             uuid_hex = ('0' * (32 - len(hex_str))) + hex_str
             return (UUID(uuid_hex), None)
         else:
-            return (None, 'expected a UUID')
+            return (None, 'unrecognized')
+
+
+class UuidString(Field):
+    re_uuid = re.compile(r'^[a-f0-9]{32}$')
+
+    def process(self, value):
+        if isinstance(value, UUID):
+            return (value.hex, None)
+        elif isinstance(value, str):
+            value = value.replace('-', '').lower()
+            if self.re_uuid.match(value):
+                return (value, None)
+            else:
+                return (None, 'invalid')
+        elif isinstance(value, int):
+            hex_str = hex(value)[2:]
+            uuid_hex = ('0' * (32 - len(hex_str))) + hex_str
+            return (uuid_hex, None)
+        else:
+            return (None, 'unrecognized')
 
 
 class Bool(Field):
@@ -183,7 +209,7 @@ class Bool(Field):
         elif value in self.FALSEY:
             return (False, None)
         else:
-            return (None, 'expected bool')
+            return (None, 'unrecognized')
 
 
 class DateTime(Field):
@@ -194,16 +220,16 @@ class DateTime(Field):
             try:
                 return (from_timestamp(value), None)
             except ValueError:
-                return (None, 'invalid UTC timestamp')
+                return (None, 'invalid')
         elif isinstance(value, date):
             return (datetime.combine(value, datetime.min.time()), None)
         elif isinstance(value, str):
             try:
                 return (dateutil.parser.parse(value), None)
             except:
-                return (None, 'invalid datetime string')
+                return (None, 'invalid')
         else:
-            return (None, 'unrecognized datetime')
+            return (None, 'unrecognized')
 
 
 class DateTimeString(Field):
@@ -216,7 +242,7 @@ class DateTimeString(Field):
             try:
                 dt = dateutil.parser.parse(value)
             except:
-                return (None, 'invalid datetime string')
+                return (None, 'invalid')
         elif isinstance(value, (int, float)):
             dt = from_timestamp(value)
         elif isinstance(value, datetime):
@@ -224,7 +250,7 @@ class DateTimeString(Field):
         elif isinstance(value, date):
             dt = datetime.combine(value, datetime.min.time())
         else:
-            return (None, 'unrecognized timestamp')
+            return (None, 'unrecognized')
 
         if self.format_spec:
             dt_str = datetime.strftime(dt, self.format_spec)
@@ -243,8 +269,69 @@ class Timestamp(Field):
         elif isinstance(value, date):
             return (time.mktime(value.timetuple()), None)
         else:
-            return (None, 'unrecognized timestamp')
+            return (None, 'unrecognized')
 
+
+class List(Field):
+    def __init__(self, nested: Field, **kwargs):
+        super().__init__(**kwargs)
+        self.nested = nested
+
+    def __repr__(self):
+        if self.load_from != self.name:
+            load_to = ' -> ' + self.name
+        else:
+            load_to = ''
+        return '{}({}{}, {})'.format(
+            self.__class__.__name__,
+            self.load_from,
+            load_to,
+            self.nested.__class__.__name__,
+        )
+
+    def process(self, sequence):
+        dest_sequence = []
+        idx2error = {}
+        if isinstance(sequence, set):
+            sequence = sorted(sequence)
+        for idx, value in enumerate(sequence):
+            dest_val, err = self.nested.process(value)
+            if not err:
+                dest_sequence.append(dest_val)
+            else:
+                idx2error[idx] = err
+
+        if not idx2error:
+            return (dest_sequence, None)
+        else:
+            return (None, idx2error)
+
+
+class Nested(Field):
+    def __init__(self, fields: dict, **kwargs):
+        super().__init__(**kwargs)
+        self.fields = fields
+        self.schema = None  # is set by owning Schema
+
+    def __repr__(self):
+        if self.load_from != self.name:
+            load_to = ' -> ' + self.name
+        else:
+            load_to = ''
+        return '{}({}{})'.format(
+            self.schema.__class__.__name__, self.load_from, load_to
+        )
+
+    def process(self, value):
+        return self.schema.process(value)
+
+
+class Dict(Field):
+    def process(self, value):
+        if isinstance(value, dict):
+            return (value, None)
+        else:
+            return (None, 'unrecognized')
 
 
 ## schema.py
@@ -262,46 +349,89 @@ class schema_type(type):
                     v.name = k
                 if v.load_from is None:
                     v.load_from = v.name
+                if isinstance(v, Nested):
+                    name = k.replace('_', ' ').title().replace(' ', '')
+                    v.schema = cls.factory(name + 'Schema', v.fields)()
         cls.fields = fields
 
 
-class Schema(metaclass=schema_type):
-    def process(self, source: Dict, strict=False):
+class Schema(Field, metaclass=schema_type):
+
+    @classmethod
+    def factory(cls, type_name, fields: dict) -> Type['Schema']:
+        return type(type_name, (cls, ), fields)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def process(self, source: dict, strict=False):
+        """
+        Marshal each value in the "source" dict into a new "dest" dict.
+        """
         dest = {}
         errors = {}
+
+        callback_fields = []
+
         for field in self.fields.values():
+            # is key simply present in source?
+            exists_key = field.load_from in source
+
+            # do we ultimately call field.process?
+            skip_field = not exists_key
+
+            # get source value, None is handled below
             source_val = source.get(field.load_from)
-            if field.required and field.load_from not in source:
+
+            if not exists_key:
+                # source key not present but required
+                # try to generate default value if possible
+                # or error.
                 if field.default is not None:
+                    # generate default val from either
+                    # the supplied constant or callable.
+                    skip_field = False
                     if callable(field.default):
                         source_val = field.default()
                     else:
                         source_val = deepcopy(field.default)
-                else:
-                    errors[field.name] = 'required'
-                    continue
-            if (source_val is None) and (not field.allow_none):
-                if field.default is not None:
-                    if callable(field.default):
-                        source_val = field.default()
-                    else:
-                        source_val = deepcopy(field.default)
-                if source_val is None:
-                    errors[field.name] = 'must not be null'
+                elif field.required:
+                    errors[field.name] = 'missing'
                     continue
 
+            if (source_val is None) and (not field.allow_none):
+                # source value is None, but None not allowed.
+                errors[field.name] = 'null'
+                continue
+
+            if skip_field:
+                # the key isn't in source, but that's ok,
+                # as this means that the field isn't required
+                # and has no default value.
+                continue
+
+            # apply field to the source value
             dest_val, field_err = field.process(source_val)
 
-            if field_err is None:
-                if field.transform:
-                    dest_val = field.transform(self, field, dest_val)
-                    if (dest_val is None) and (not field.allow_none):
-                        errors[field.name] = 'must not be null'
-                        continue
+            if not field_err:
                 dest[field.name] = dest_val
             else:
                 errors[field.name] = field_err
 
+            if field.callback is not None:
+                callback_fields.append(field)
+
+        for field in callback_fields:
+            dest_val = dest.pop(field.name)
+            field_val, field_err = field.callback(dest_val, dest)
+            if (dest_val is None) and (not field.allow_none):
+                errors[field.name] = 'null'
+            elif not field_err:
+                dest[field.name] = field_val
+            else:
+                errors[field.name] = field_err
+
+        # "strict" means we raise an exception
         if errors and strict:
             raise ValidationError(self, errors)
 
@@ -316,14 +446,43 @@ class ValidationError(Exception):
 
 
 if __name__ == '__main__':
+    from pprint import pprint
 
-    class User(Schema):
+    class AccountSchema(Schema):
+        name = String()
+
+    class UserSchema(Schema):
         age = Int(load_from='age_int')
-        gender = Str()
-        name = Str(required=True)
-        personality = Str(required=True, default=lambda: 'INTP')
+        gender = String()
+        composite = String(
+            default='{age}:{personality}',
+            callback=lambda fstr, data: (fstr.format(**data), None)
+        )
+        name = String(required=True)
+        personality = String(required=True, default=lambda: 'INTP')
+        t = Timestamp()
+        account = AccountSchema()
+        accounts = List(AccountSchema())
+        numbers = List(Int())
+        more_numbers = List(Int())
+        my_things = Nested({
+            'a': String(),
+            'b': Int(),
+        })
 
-    user = User()
+    schema = UserSchema()
 
-    print(user.fields)
-    print(user.process({'age_int': 1, 'gender': 'M'}))
+    data, errors = schema.process({
+        'age_int': 1,
+        'gender': 'M',
+        't': '124',
+        'account': {'name': 'foo'},
+        'accounts': [{'name': 'foo'}],
+        'numbers': [1, 2, 'a'],
+        'more_numbers': {1, 2},
+        'my_things': {'a': 'a', 'b': 1},
+    })
+
+    pprint(schema.fields)
+    pprint(data)
+    pprint(errors)
