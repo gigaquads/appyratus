@@ -7,7 +7,9 @@ from .environment import (
 
 from .file_types import (
     Csv,
+    Ini,
     Json,
+    Text,
     Yaml,
 )
 
