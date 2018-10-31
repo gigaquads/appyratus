@@ -1,14 +1,14 @@
-import asyncio
-import json
 import aiohttp
 import async_timeout
-from typing import List
+import asyncio
+import ujson
+import uvloop
 
+from typing import List
 from aiohttp import BasicAuth
 
+from appyratus.decorators import memoized_property
 from appyratus.json.json_encoder import JsonEncoder
-
-import uvloop
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -17,6 +17,10 @@ class AsyncHttpClient(object):
     encoder = JsonEncoder()
 
     class Request(object):
+        """
+        Request
+        """
+
         def __init__(
             self,
             method: str,
@@ -32,6 +36,48 @@ class AsyncHttpClient(object):
             self.data = data
             self.headers = headers
             self.json = json
+
+    class Response(object):
+        """
+        Response
+        """
+
+        def __init__(self, status_code=None, headers=None, text=None):
+            self.status_code = int(status_code) if status_code else None
+            self.headers = headers
+            self.text = text
+
+        @memoized_property
+        def json(self):
+            """
+            Deserialize response text containing JSON
+            """
+            return ujson.loads(self.text)
+
+        @property
+        def is_ok(self):
+            """
+            If the response is OK.  This is determined by any response that returns a 2xx-3xx
+            """
+            if not self.status_code:
+                return False
+            return int(str(self.status_code)[0]) in (2, 3)
+
+        def ensure_ok(self):
+            """
+            Ensure the result "is ok" and if not then raise an exception.
+            """
+            if not self.is_ok:
+                raise Exception(
+                    "HTTP status code '{}'".format(self.status_code)
+                )
+
+        @property
+        def is_partial(self):
+            """
+            If the response is a partial response.  This is determined by the presence of status code HTTP 206
+            """
+            return self.status_code == 206
 
     def __init__(
         self,
@@ -84,27 +130,32 @@ class AsyncHttpClient(object):
             kwargs['headers'] = dict(self._base_headers, **request.headers)
         else:
             kwargs['headers'] = self._base_headers
-        if self._auth is not None:
-            kwargs['headers']['authorization'] = self._auth.encode()
-        if request.data is not None:
-            kwargs['data'] = self.encoder.encode(data)
-
+        #if self._auth is not None:
+        #    kwargs['headers']['authorization'] = self._auth.encode()
+        #if request.data is not None:
+        #    kwargs['data'] = self.encoder.encode(request.data)
+        if request.json is not None:
+            kwargs['json'] = request.json
         # send the request
         with async_timeout.timeout(self.timeout):
             try:
                 url = '{}/{}'.format(self._base_url, request.path.lstrip('/'))
                 send = getattr(session, request.method.lower())
                 async with send(url, **kwargs) as response:
-                    body = await response.json()
-                    return {
-                        'headers': dict(response.headers),
-                        'body': body,
-                    }
+                    body = await response.text()
+                    return AsyncHttpClient.Response(
+                        status_code=response.status,
+                        headers=dict(response.headers),
+                        text=body,
+                    )
             except Exception as exc:
                 # TODO: log this
                 raise exc
 
     def send(self, requests: List[Request]):
+        """
+        Send the provided requests, returning the results
+        """
         coroutines = [self._prepare_request(request) for request in requests]
         results = self._loop.run_until_complete(asyncio.gather(*coroutines))
         return results
