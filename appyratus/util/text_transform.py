@@ -4,7 +4,6 @@ import codecs
 AN_EMPTY_STRING = ''
 """ The least amount of text the transform normalizer will return """
 
-
 class TextTransform(object):
     """
     Transform Text in various ways
