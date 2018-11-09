@@ -1,4 +1,4 @@
-from .schema.v1 import fields
-from .schema.v1.schema import AbstractSchema, Schema
-from .schema.v1.exc import ValidationError
-from .schema.v1.results import FieldResult, SchemaResult
+from .schema import fields
+from .schema.schema import AbstractSchema, Schema
+from .schema.exc import ValidationError
+from .schema.results import FieldResult, SchemaResult

@@ -2,7 +2,7 @@ import os
 import re
 
 from appyratus.exc import AppyratusError
-from appyratus.validation import Schema
+from appyratus.schema import Schema
 
 
 class EnvironmentError(AppyratusError):
@@ -14,22 +14,24 @@ class UndefinedVariableError(EnvironmentError):
 
 
 class EnvironmentValidationError(EnvironmentError):
-    pass
+    def __init__(self, errors):
+        super().__init__(str(errors))
+        self.errors = errors
 
 
 class Environment(Schema):
     def __init__(self):
-        super().__init__(strict=False, allow_additional=True)
-        result = self.load(os.environ)
-        if result.errors:
-            raise EnvironmentValidationError(result.errors)
-        self._data = result.data
+        super().__init__()
+        raw_data = os.environ.copy()
+        data, errors = self.process(raw_data)
+        if not errors:
+            self.data = raw_data
+            self.data.update(data)
+        else:
+            raise EnvironmentValidationError(errors)
 
     def __getitem__(self, key):
-        if key in self._data:
-            return self._data[key]
-        else:
-            return os.environ[key]
+        return self._data.get(key, self._raw_data.get(key))
 
     def __repr__(self):
         return '<Environment>'
