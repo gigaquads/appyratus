@@ -45,15 +45,20 @@ class Schema(Field, metaclass=schema_type):
         """
         return type(name, (cls, ), fields)
 
-    def __init__(self, **kwargs):
+    def __init__(self, allow_additional=False, **kwargs):
         super().__init__(**kwargs)
+        self.allow_additional = allow_additional
 
     def process(self, source: dict, strict=False):
         """
         Marshal each value in the "source" dict into a new "dest" dict.
         """
-        dest = {}
         errors = {}
+
+        if allow_additional:
+            dest = copy.deepcopy(source)
+        else:
+            dest = {}
 
         post_process_fields = []
 
