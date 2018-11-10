@@ -1,8 +1,12 @@
-from copy import deepcopy
+from copy import copy, deepcopy
 import re
 
 
 class DictUtils(object):
+    """
+    # Dict Utils
+    """
+
     @staticmethod
     def key_parts(key) -> tuple:
         """
@@ -20,17 +24,57 @@ class DictUtils(object):
         return (xkey, xtype, xid)
 
     @staticmethod
-    def flatten(data: dict, separator=None):
-        if not separator:
+    def flatten_keys(
+        data: dict, acc: dict = None, parent: list = None, separator=None
+    ) -> dict:
+        """
+        Flatten a dictionary, consolidating all nested structures of a value
+        into a single key per unique field
+        separated by `separator`
+
+        Args
+        - `data`, the data to be flattened
+        - `acc`, the accumulator of flattened keys
+        - `parent`, the parent key, a list of keys to be joined by the separator
+        - `separator`, the separating value when parent key is joined.  by
+          default it is the period (`.`)
+        """
+        if not data:
+            return {}
+        if separator is None:
             separator = '.'
-        new_data = deepcopy(data)
-        if isinstance(v, list):
-            pass
-        elif isinstance(v, dict):
-            pass
+        if not acc:
+            acc = {}
+        if not parent:
+            parent = []
+        if isinstance(data, dict):
+            for k, v in data.items():
+                kparent = copy(parent)
+                kparent.append(str(k))
+                kacc = DictUtils.flatten_keys(
+                    v, separator=separator, parent=kparent
+                )
+                if isinstance(kacc, dict):
+                    acc.update(kacc)
+                else:
+                    acc[separator.join(kparent)] = kacc
+        elif isinstance(data, list):
+            for idx, v in enumerate(data):
+                kparent = copy(parent)
+                if kparent:
+                    kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
+                kacc = DictUtils.flatten_keys(
+                    v, separator=separator, parent=kparent
+                )
+                if isinstance(kacc, dict):
+                    acc.update(kacc)
+                else:
+                    acc[separator.join(kparent)] = kacc
+
         else:
-            pass
-        return new_data
+            return data
+        # da return
+        return acc
 
     @staticmethod
     def unflatten_keys(data: dict, separator=None):
@@ -100,21 +144,44 @@ class DictUtils(object):
         # Diff
         Perform a difference on two dictionaries, returning a dictionary of the
         changed items.
+
+        # Args
+        - `data`, the original data structure to be compared against
+        - `other`, the modified data to be compared against `data
         """
-        changed = {}
-        for data_k, data_v in data.items():
-            if other:
-                other_v = other.get(data_k)
-            else:
-                other_v = None
-            if isinstance(data_v, dict):
-                data_v = DictUtils.diff(data_v, other_v)
-                if data_v:
-                    changed[data_k] = data_v
-            elif other and data_k not in other:
-                changed[data_k] = data_v
-            elif data_v is not other_v:
-                changed[data_k] = other_v
+        changed = None
+        if isinstance(data, dict):
+            changed = {}
+            for k, v in data.items():
+                if other:
+                    other_v = other.get(k)
+                else:
+                    other_v = None
+                vres = DictUtils.diff(v, other_v)
+                if isinstance(vres, (list, dict)):
+                    if vres:
+                        changed[k] = vres
+                elif other and k not in other:
+                    changed[k] = v
+                elif v is not other_v:
+                    changed[k] = other_v
+        elif isinstance(data, list):
+            changed = []
+            for idx, v in enumerate(data):
+                if other:
+                    if len(other) > idx:
+                        other_v = other[idx]
+                    else:
+                        other_v = None
+                else:
+
+                    other_v = None
+                vres = DictUtils.diff(v, other_v)
+                if vres:
+                    changed.append(vres)
+        else:
+            if data is not other:
+                changed = data
         return changed
 
     @staticmethod
@@ -159,6 +226,10 @@ class DictUtils(object):
         return new_data
 
     def traverse(data: dict, method):
+        """
+        Traverse a dictionary while passing values into the provided callable
+        in order to mutate existing data
+        """
         new_data = deepcopy(data)
         if not data:
             return data
@@ -177,20 +248,3 @@ class DictUtils(object):
                     lres = method(vl)
                 new_data[kl] = lres
         return new_data
-
-    def traverse_orig(data: dict, method):
-        if not data:
-            return data
-        if isinstance(data, dict):
-            for kd, vd in data.items():
-                if isinstance(vd, (list, dict)):
-                    yield from DictUtils.traverse(vd, method)
-                else:
-                    yield (kd, method(vd))
-        elif isinstance(data, list):
-            for kl, vl in enumerate(data):
-                if isinstance(vl, (list, dict)):
-                    yield from DictUtils.traverse(vl, method)
-                else:
-                    yield (kl, method(vl))
-        return data

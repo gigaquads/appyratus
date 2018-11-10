@@ -1,10 +1,12 @@
 from __future__ import absolute_import
+from abc import abstractclassmethod
 
 import os
 import yaml
 import json
 import io
 import csv
+import configparser
 
 
 class BaseFile(object):
@@ -12,10 +14,29 @@ class BaseFile(object):
     def exists(cls, file_path: str):
         return os.path.exists(file_path)
 
-    @classmethod
+    @abstractclassmethod
     def read(cls, file_path: str):
-        if not cls.exists(file_path):
-            return
+        pass
+
+    @abstractclassmethod
+    def write(cls, file_path: str, contents):
+        pass
+
+    @abstractclassmethod
+    def from_file(cls, file_path: str, *args, **kwargs):
+        pass
+
+    @abstractclassmethod
+    def to_file(cls, file_path: str, contents, *args, **kwargs):
+        pass
+
+    @abstractclassmethod
+    def load(cls, data):
+        pass
+
+    @abstractclassmethod
+    def dump(cls, data):
+        pass
 
 
 class File(BaseFile):
@@ -46,6 +67,14 @@ class File(BaseFile):
     @classmethod
     def dir_path(cls, path):
         return os.path.dirname(os.path.realpath(path))
+
+    @classmethod
+    def from_file(cls, file_path: str):
+        return cls.read(file_path)
+
+    @classmethod
+    def to_file(cls, file_path: str, contents):
+        cls.write(file_path, contents)
 
 
 class Yaml(BaseFile):
@@ -108,14 +137,50 @@ class Json(BaseFile):
         pass
 
 
+class Ini(File):
+    @classmethod
+    def from_file(cls, file_path: str):
+        file_data = cls.load_file(file_path=file_path)
+        return file_data
+
+    @classmethod
+    def to_file(cls, file_path: str, data):
+        output = io.StringIO()
+        config = configparser.ConfigParser()
+        config.read_dict(data)
+        config.write(output)
+        cls.write(file_path=file_path, contents=output.getvalue())
+
+    @classmethod
+    def load_file(cls, file_path: str):
+        file_data = cls.read(file_path=file_path)
+        ini_data = cls.data_from_blob(blob=file_data)
+        return ini_data
+
+    @classmethod
+    def data_from_blob(cls, blob: dict):
+        config = configparser.ConfigParser()
+        config.read_string(blob)
+        d = dict(config._sections)
+        for k in d:
+            d[k] = dict(config._defaults, **d[k])
+            d[k].pop('__name__', None)
+        return d
+
+    @classmethod
+    def blob_from_data(cls, data):
+        config.write()
+        pass
+
+
 class Csv(BaseFile):
     @classmethod
-    def from_file(cls, file_path: str, delimiter: str = None):
+    def from_file(cls, file_path: str, delimiter: str=None):
         file_data = cls.load_file(file_path=file_path, delimiter=delimiter)
         return file_data
 
     @classmethod
-    def load_file(cls, file_path: str, delimiter: str = None):
+    def load_file(cls, file_path: str, delimiter: str=None):
         file_data = File.read(file_path=file_path)
         csv_data = cls.data_from_blob(blob=file_data, delimiter=delimiter)
         return csv_data
@@ -155,3 +220,7 @@ class Csv(BaseFile):
             delimiter = ','
         reader = csv.DictReader(buff, delimiter=delimiter)
         return [row for row in reader]
+
+
+class Text(File):
+    pass

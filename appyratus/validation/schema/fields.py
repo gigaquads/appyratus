@@ -5,6 +5,7 @@ import numpy as np
 import dateutil.parser
 import pickle
 
+from typing import Dict
 from uuid import UUID, uuid4
 from datetime import datetime, date
 from abc import ABCMeta, abstractmethod
@@ -63,7 +64,8 @@ class Field(metaclass=FieldMeta):
         default=None,
         transform=None,
         pickled=False,
-        protobuf_field_number : int = None,
+        meta : Dict = None,
+        rank = None,
     ):
         """
         Kwargs:
@@ -89,7 +91,8 @@ class Field(metaclass=FieldMeta):
         self.default = default
         self.transform = transform
         self.pickled = pickled
-        self.protobuf_field_number = protobuf_field_number
+        self.meta = meta or {}
+        self.rank = rank
 
     def __repr__(self):
         return '<Field({}{})>'.format(
@@ -105,18 +108,6 @@ class Field(metaclass=FieldMeta):
             else:
                 return copy.deepcopy(self.default)
         return None
-
-    def to_protobuf_field_declaration(self, field_number : int = None):
-        return '{required} {field_type} {field_name} = {field_number}'.format(
-            required='required' if self.required else '',
-            field_type=self.protobuf_type,
-            field_name=self.dump_to or self.name,
-            field_number=field_number,
-        )
-
-    @property
-    def protobuf_type(self):
-        raise NotImplementedError()
 
     @property
     def has_default_value(self):
@@ -225,15 +216,6 @@ class List(Field):
 
         return FieldResult(value=result_list)
 
-    @property
-    def protobuf_type(self):
-        if isinstance(self.nested, Field):
-            typename = self.nesetd.protobuf_type
-        else:
-            typename = self.nested.protobuf_message_name
-        return 'repeated {}'.format(typename)
-
-
 
 class Array(Field):
     def __init__(self, nested, dtype=None, *args, **kwargs):
@@ -286,10 +268,6 @@ class Str(Field):
     def dump(self, value):
         return self.load(value)
 
-    @property
-    def protobuf_type(self):
-        return 'string'
-
 
 class CompositeStr(Str):
     composite = True
@@ -336,20 +314,13 @@ class Dict(Field):
 class Enum(Field):
     def __init__(self, nested, allowed_values, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.is_nested_field = isinstance(nested, Field)
         self.allowed_values = set(allowed_values)
         self.nested = nested
 
     def load(self, value):
         if value not in self.allowed_values:
             return FieldResult(error='unrecognized value')
-        if self.is_nested_field:
-            return self.nested.load(value)
-        else:
-            schema_result = self.nested.load(value)
-            return FieldResult(
-                value=schema_result.data, error=schema_result.errors
-            )
+        return self.nested.load(value)
 
     def dump(self, value):
         return self.load(value)
@@ -404,6 +375,7 @@ class Uuid(Field):
                 error='expected a valid UUID object or hex string'
             )
 
+
 class Int(Field):
     def load(self, value):
         if isinstance(value, int):
@@ -417,10 +389,6 @@ class Int(Field):
 
     def dump(self, value):
         return self.load(value)
-
-    @property
-    def protobuf_type(self):
-        return 'sint64'
 
 
 class Float(Field):

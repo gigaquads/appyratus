@@ -30,8 +30,12 @@ class Environment(Schema):
         else:
             raise EnvironmentValidationError(errors)
 
+    def __getattr__(self, key):
+        return self[key]
+
     def __getitem__(self, key):
-        return self._data.get(key, self._raw_data.get(key))
+        clean_key = key.upper()
+        return self._data.get(key, self._raw_data.get(clean_key))
 
     def __repr__(self):
         return '<Environment>'

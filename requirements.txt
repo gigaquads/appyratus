@@ -6,3 +6,4 @@ venusian
 pyyaml
 pytz
 numpy
+uvloop
