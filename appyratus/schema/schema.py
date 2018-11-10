@@ -10,8 +10,8 @@ from .exc import ValidationError
 class schema_type(type):
     def __init__(cls, name, bases, dict_):
         type.__init__(cls, name, bases, dict_)
-        fields = {}  # aggregator for all fields declared on the class
-        on_create_fields = []  # fields with on_create callbacks
+        fields = {}    # aggregator for all fields declared on the class
+        on_create_fields = []    # fields with on_create callbacks
 
         for k, v in dict_.items():
             if isinstance(v, Field):
@@ -36,7 +36,6 @@ class schema_type(type):
 
 
 class Schema(Field, metaclass=schema_type):
-
     @classmethod
     def factory(cls, name: str, fields: dict) -> Type['Schema']:
         """
@@ -55,7 +54,7 @@ class Schema(Field, metaclass=schema_type):
         """
         errors = {}
 
-        if allow_additional:
+        if self.allow_additional:
             dest = copy.deepcopy(source)
         else:
             dest = {}

@@ -14,13 +14,14 @@ from appyratus.time import to_timestamp, from_timestamp
 class Field(object):
     def __init__(
         self,
-        source: str = None,
-        name: str = None,
-        required: bool = False,
-        nullable: bool = True,
-        default: object = None,
-        on_create: object = None,
-        post_process: object = None,
+        source: str=None,
+        name: str=None,
+        required: bool=False,
+        nullable: bool=True,
+        default: object=None,
+        on_create: object=None,
+        post_process: object=None,
+        meta: object=None,
     ):
         """
         # Kwargs
@@ -31,6 +32,7 @@ class Field(object):
         - `default`: a constant or callable the returns a default value.
         - `on_create`: generic method to run upon init of host schema sclass.
         - `post_process`: generic method to run after fields are processed.
+        - `meta`: additional data storage
         """
         self.source = source
         self.name = name
@@ -39,6 +41,7 @@ class Field(object):
         self.default = default
         self.on_create = on_create
         self.post_process = post_process
+        self.meta = meta
 
     def __repr__(self):
         if self.source != self.name:
@@ -61,14 +64,6 @@ class Field(object):
         interface.
         """
         return (value, None)
-
-
-class String(Field):
-    def process(self, value):
-        if isinstance(value, str):
-            return (value, None)
-        else:
-            return (None, 'unrecognized')
 
 
 class String(Field):
@@ -325,6 +320,7 @@ class Nested(Field):
         })
     ```
     """
+
     def __init__(self, fields: dict, **kwargs):
         def on_create(schema_type: Type['Schema']):
             name = self.name.replace('_', ' ').title().replace(' ', '')

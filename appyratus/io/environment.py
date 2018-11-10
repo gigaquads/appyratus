@@ -25,8 +25,9 @@ class Environment(Schema):
         raw_data = os.environ.copy()
         data, errors = self.process(raw_data)
         if not errors:
-            self.data = raw_data
-            self.data.update(data)
+            self._raw_data = raw_data
+            self._data = raw_data
+            self._data.update(data)
         else:
             raise EnvironmentValidationError(errors)
 
@@ -34,8 +35,7 @@ class Environment(Schema):
         return self[key]
 
     def __getitem__(self, key):
-        clean_key = key.upper()
-        return self._data.get(key, self._raw_data.get(clean_key))
+        return self._data.get(key, self._raw_data.get(key))
 
     def __repr__(self):
         return '<Environment>'
