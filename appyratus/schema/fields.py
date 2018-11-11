@@ -30,7 +30,7 @@ class Field(object):
         - `required`: key must exist in source data if set.
         - `nullable`: if key exists, it can be None/null if this is set.
         - `default`: a constant or callable the returns a default value.
-        - `on_create`: generic method to run upon init of host schema sclass.
+        - `on_create`: generic method to run upon init of host schema class.
         - `post_process`: generic method to run after fields are processed.
         - `meta`: additional data storage
         """
