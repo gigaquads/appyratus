@@ -1,4 +1,5 @@
 import time
+import typing
 import re
 
 import pytz
@@ -14,14 +15,14 @@ from appyratus.time import to_timestamp, from_timestamp
 class Field(object):
     def __init__(
         self,
-        source: str=None,
-        name: str=None,
-        required: bool=False,
-        nullable: bool=True,
-        default: object=None,
-        on_create: object=None,
-        post_process: object=None,
-        meta: object=None,
+        source: typing.Text = None,
+        name: typing.Text = None,
+        required: bool = False,
+        nullable: bool = True,
+        default: object = None,
+        meta: typing.Dict = None,
+        on_create: object = None,
+        post_process: object = None,
     ):
         """
         # Kwargs
@@ -41,7 +42,7 @@ class Field(object):
         self.default = default
         self.on_create = on_create
         self.post_process = post_process
-        self.meta = meta
+        self.meta = meta or {}
 
     def __repr__(self):
         if self.source != self.name:
@@ -324,7 +325,8 @@ class Nested(Field):
     def __init__(self, fields: dict, **kwargs):
         def on_create(schema_type: Type['Schema']):
             name = self.name.replace('_', ' ').title().replace(' ', '')
-            self.schema = schema_type.factory(name + 'Schema', fields)()
+            self.schema_type = schema_type.factory(name + 'Schema', fields)
+            self.schema = self.schema_type()
 
         super().__init__(on_create=on_create, **kwargs)
         self.schema = None

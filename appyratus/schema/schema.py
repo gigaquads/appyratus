@@ -2,8 +2,11 @@ import venusian
 
 from typing import Type
 from copy import deepcopy
+from collections import namedtuple
 
-from .fields import Field
+from appyratus.decorators import memoized_property
+
+from .fields import Field, Nested, List
 from .exc import ValidationError
 
 
@@ -11,8 +14,17 @@ class schema_type(type):
     def __init__(cls, name, bases, dict_):
         type.__init__(cls, name, bases, dict_)
         fields = {}    # aggregator for all fields declared on the class
-        on_create_fields = []    # fields with on_create callbacks
 
+        def get_schema_from_field(field):
+            schema = None
+            if isinstance(field, Schema):
+                schema = field
+            if isinstance(field, Nested):
+                schema = field.schema
+            if isinstance(field, List):
+                schema = field.nested
+            return schema
+            
         for k, v in dict_.items():
             if isinstance(v, Field):
                 delattr(cls, k)
@@ -23,19 +35,27 @@ class schema_type(type):
                 if v.source is None:
                     # default source key to declared name
                     v.source = v.name
-                if v.on_create is not None:
-                    # collect fields with on_create callbacks
-                    on_create_fields.append(v)
 
-        # set aggregated fields dict as attr on the new class
+        # save aggregated fields dict and child
+        # schema list set on the new class
         cls.fields = fields
+        cls.children = []
 
-        # call any non-null on_create methods
-        for field in on_create_fields:
-            field.on_create(cls)
+        for field in cls.fields.values():
+            # call any non-null on_create methods
+            if field.on_create is not None:
+                field.on_create(cls)
+            # accumulate any schema delcared in the field
+            child = get_schema_from_field(field)
+            if child is not None:
+                cls.children.append(child)
 
 
 class Schema(Field, metaclass=schema_type):
+
+    fields = None
+    children = None
+
     @classmethod
     def factory(cls, name: str, fields: dict) -> Type['Schema']:
         """
@@ -46,6 +66,7 @@ class Schema(Field, metaclass=schema_type):
 
     def __init__(self, allow_additional=False, **kwargs):
         super().__init__(**kwargs)
+        self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
         self.allow_additional = allow_additional
 
     def process(self, source: dict, strict=False):
@@ -125,4 +146,10 @@ class Schema(Field, metaclass=schema_type):
         if errors and strict:
             raise ValidationError(self, errors)
 
-        return (dest, errors)
+        results = self.tuple_factory(dest, errors)
+        return results
+
+
+    @memoized_property
+    def children(self):
+        pass
