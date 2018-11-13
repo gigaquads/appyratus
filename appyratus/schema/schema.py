@@ -24,7 +24,7 @@ class schema_type(type):
             if isinstance(field, List):
                 schema = field.nested
             return schema
-            
+
         for k, v in dict_.items():
             if isinstance(v, Field):
                 delattr(cls, k)
@@ -66,7 +66,9 @@ class Schema(Field, metaclass=schema_type):
 
     def __init__(self, allow_additional=False, **kwargs):
         super().__init__(**kwargs)
-        self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
+        self.tuple_factory = namedtuple(
+            'results', field_names=['data', 'errors']
+        )
         self.allow_additional = allow_additional
 
     def process(self, source: dict, strict=False):
@@ -108,10 +110,16 @@ class Schema(Field, metaclass=schema_type):
                     errors[field.name] = 'missing'
                     continue
 
-            if (source_val is None) and (not field.nullable):
-                # source value is None, but None not allowed.
-                errors[field.name] = 'null'
-                continue
+            if (source_val is None):
+                # source value is None
+                if not field.nullable:
+                    # but None not allowed!
+                    errors[field.name] = 'null'
+                    continue
+                else:
+                    # when it is then set the dest to None
+                    dest[field.name] = None
+                    continue
 
             if skip_field:
                 # the key isn't in source, but that's ok,
@@ -148,7 +156,6 @@ class Schema(Field, metaclass=schema_type):
 
         results = self.tuple_factory(dest, errors)
         return results
-
 
     @memoized_property
     def children(self):
