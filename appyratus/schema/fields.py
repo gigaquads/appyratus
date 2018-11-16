@@ -5,9 +5,10 @@ import re
 import pytz
 import dateutil.parser
 
-from uuid import UUID, uuid4
 from datetime import datetime, date
+from os.path import abspath, expanduser
 from typing import Type
+from uuid import UUID, uuid4
 
 from appyratus.time import to_timestamp, from_timestamp
 
@@ -15,14 +16,14 @@ from appyratus.time import to_timestamp, from_timestamp
 class Field(object):
     def __init__(
         self,
-        source: typing.Text = None,
-        name: typing.Text = None,
-        required: bool = False,
-        nullable: bool = True,
-        default: object = None,
-        meta: typing.Dict = None,
-        on_create: object = None,
-        post_process: object = None,
+        source: typing.Text=None,
+        name: typing.Text=None,
+        required: bool=False,
+        nullable: bool=True,
+        default: object=None,
+        meta: typing.Dict=None,
+        on_create: object=None,
+        post_process: object=None,
     ):
         """
         # Kwargs
@@ -347,6 +348,21 @@ class Nested(Field):
 class Dict(Field):
     def process(self, value):
         if isinstance(value, dict):
+            return (value, None)
+        else:
+            return (None, 'unrecognized')
+
+
+class FilePath(Field):
+    """
+    # FilePath
+    Coerce a filepath into it's absolutized form.  This includes expanding the
+    userpath if specified.
+    """
+
+    def process(self, value):
+        if isinstance(value, str):
+            value = abspath(expanduser(value))
             return (value, None)
         else:
             return (None, 'unrecognized')
