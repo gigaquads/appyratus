@@ -209,9 +209,9 @@ class Bool(Field):
     def process(self, value):
         if isinstance(value, bool):
             return (value, None)
-        elif value in self.TRUTHY:
+        elif value in self.truthy:
             return (True, None)
-        elif value in self.FALSEY:
+        elif value in self.falsey:
             return (False, None)
         else:
             return (None, 'unrecognized')
