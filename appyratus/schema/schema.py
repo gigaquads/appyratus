@@ -94,23 +94,30 @@ class Schema(Field, metaclass=schema_type):
             # get source value, None is handled below
             source_val = source.get(field.source)
 
+            def generate_default(field):
+                # generate default val from either
+                # the supplied constant or callable.
+                if callable(field.default):
+                    source_val = field.default()
+                else:
+                    source_val = deepcopy(field.default)
+                return source_val
+
             if not exists_key:
                 # source key not present but required
                 # try to generate default value if possible
                 # or error.
                 if field.default is not None:
-                    # generate default val from either
-                    # the supplied constant or callable.
                     skip_field = False
-                    if callable(field.default):
-                        source_val = field.default()
-                    else:
-                        source_val = deepcopy(field.default)
+                    source_val = generate_default(field)
                 elif field.required:
                     errors[field.name] = 'missing'
                     continue
 
             if (source_val is None):
+                if field.default is not None:
+                    skip_field = False
+                    source_val = generate_default(field)
                 # source value is None
                 if not field.nullable:
                     # but None not allowed!
