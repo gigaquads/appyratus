@@ -71,7 +71,9 @@ class Schema(Field, metaclass=schema_type):
         )
         self.allow_additional = allow_additional
 
-    def process(self, source: dict, strict=False):
+    def process(
+        self, source: dict, strict=False, pre_process=None, post_process=None
+    ):
         """
         Marshal each value in the "source" dict into a new "dest" dict.
         """
@@ -93,6 +95,10 @@ class Schema(Field, metaclass=schema_type):
 
             # get source value, None is handled below
             source_val = source.get(field.source)
+
+            if pre_process:
+                # pre-process some shit for some reason
+                source_val = pre_process(field, source_val)
 
             def generate_default(field):
                 # generate default val from either
