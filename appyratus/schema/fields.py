@@ -10,7 +10,7 @@ from os.path import abspath, expanduser
 from typing import Type
 from uuid import UUID, uuid4
 
-from appyratus.time import to_timestamp, from_timestamp
+from appyratus.utils import TimeUtils
 
 
 class Field(object):
@@ -249,7 +249,7 @@ class DateTimeString(Field):
             except:
                 return (None, 'invalid')
         elif isinstance(value, (int, float)):
-            dt = from_timestamp(value)
+            dt = TimeUtils.from_timestamp(value)
         elif isinstance(value, datetime):
             dt = value.replace(tzinfo=pytz.utc)
         elif isinstance(value, date):
@@ -270,7 +270,7 @@ class Timestamp(Field):
         if isinstance(value, (int, float)):
             return (value, None)
         elif isinstance(value, datetime):
-            return (to_timestamp(value), None)
+            return (TimeUtils.to_timestamp(value), None)
         elif isinstance(value, date):
             return (time.mktime(value.timetuple()), None)
         else:

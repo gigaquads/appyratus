@@ -4,7 +4,7 @@ from typing import Type
 from copy import deepcopy
 from collections import namedtuple
 
-from appyratus.decorators import memoized_property
+from appyratus.memoize import memoized_property
 
 from .fields import Field, Nested, List
 from .exc import ValidationError
