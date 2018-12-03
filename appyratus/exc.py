@@ -1,2 +1,0 @@
-class AppyratusError(Exception):
-    pass

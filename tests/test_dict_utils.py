@@ -1,5 +1,5 @@
 from appyratus.test import mark, BaseTests
-from appyratus.util import DictUtils
+from appyratus.utils import DictUtils
 
 from collections import namedtuple
 

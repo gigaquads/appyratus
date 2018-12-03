@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from appyratus.decorators import memoized_property
+from appyratus.memoize import memoized_property
 
 
 class Parser(object):
