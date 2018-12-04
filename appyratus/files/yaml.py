@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import yaml
 
-from .base import BaseFile
+from .base import BaseFile, File
 
 
 class Yaml(BaseFile):

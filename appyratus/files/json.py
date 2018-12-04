@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import ujson
 
-from .base import File, BaseFile
+from .base import BaseFile, File
 
 
 class Json(BaseFile):

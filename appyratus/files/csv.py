@@ -5,7 +5,7 @@ import csv
 
 from typing import Text
 
-from .base import BaseFile
+from .base import BaseFile, File
 
 
 class Csv(BaseFile):
