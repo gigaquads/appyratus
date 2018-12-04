@@ -13,7 +13,7 @@ MIXED_CASE = '!@#$So-help-- --Me_god$$'
 SPACE_STR = '  this   is   too  much   space    '
 
 
-class TestTextTransform(object):
+class TestStringUtils(object):
     @pytest.mark.parametrize(
         'value_was, value_is', [
             (MIXED_CASE, 'So help Me god'), (CAMEL_CASE, 'Save A Plant'),

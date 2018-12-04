@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import io
 import csv
 
-from typing port Text
+from typing import Text
 
 from .base import BaseFile
 
