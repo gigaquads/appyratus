@@ -11,4 +11,3 @@ from .cli_program import CliProgram
 from .subparser import Subparser
 from .arg import Arg, PositionalArg, OptionalArg
 from .parser import Parser
-from .main import safe_main
