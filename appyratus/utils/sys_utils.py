@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 from typing import Text
 
@@ -27,7 +28,7 @@ class SysUtils(object):
         try:
             return main_callable()
         except Exception as exc:
-            show_exception(exc, level=debug_level)
+            SysUtils.raise_exception(exc, level=debug_level)
 
     @staticmethod
     def raise_exception(exception, level: int=None):
