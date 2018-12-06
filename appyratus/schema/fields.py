@@ -223,7 +223,7 @@ class DateTime(Field):
             return (value.replace(tzinfo=pytz.utc), None)
         elif isinstance(value, (int, float)):
             try:
-                return (from_timestamp(value), None)
+                return (TimeUtils.from_timestamp(value), None)
             except ValueError:
                 return (None, 'invalid')
         elif isinstance(value, date):
