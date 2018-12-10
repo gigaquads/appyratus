@@ -97,7 +97,9 @@ class AsyncHttpClient(object):
         self._base_url = '{}://{}'.format(scheme, self.host)
         if self._port:
             self._base_url += ':{}'.format(self._port)
-        self._loop = asyncio.get_event_loop()
+        #self._loop = asyncio.get_event_loop()
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
 
     @property
     def host(self):
