@@ -1,6 +1,6 @@
 import venusian
 
-from typing import Type
+from typing import Type, Dict
 from copy import deepcopy
 from collections import namedtuple
 
@@ -72,12 +72,18 @@ class Schema(Field, metaclass=schema_type):
         self.allow_additional = allow_additional
 
     def process(
-        self, source: dict, strict=False, pre_process=None, post_process=None
+        self,
+        source: Dict,
+        context: Dict = None,
+        strict=False,
+        pre_process=None,
+        post_process=None
     ):
         """
         Marshal each value in the "source" dict into a new "dest" dict.
         """
         errors = {}
+        context = context or {}
 
         if self.allow_additional:
             dest = copy.deepcopy(source)
@@ -97,8 +103,8 @@ class Schema(Field, metaclass=schema_type):
             source_val = source.get(field.source)
 
             if pre_process:
-                # pre-process some shit for some reason
-                source_val = pre_process(field, source_val)
+                # pre-process some shit
+                source_val = pre_process(source_val, source, context=context)
 
             def generate_default(field):
                 # generate default val from either
@@ -154,7 +160,9 @@ class Schema(Field, metaclass=schema_type):
         # call all post-process callbacks
         for field in post_process_fields:
             dest_val = dest.pop(field.name)
-            field_val, field_err = field.post_process(dest_val, dest)
+            field_val, field_err = field.post_process(
+                dest_val, dest, context=context
+            )
             # now recheck nullity of the post-processed field value
             if (dest_val is None) and (not field.nullable):
                 errors[field.name] = 'null'
