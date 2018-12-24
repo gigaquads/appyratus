@@ -40,8 +40,15 @@ class schema_type(type):
         # schema list set on the new class
         cls.fields = fields
         cls.children = []
+        cls.required_fields = {}
+        cls.optional_fields = {}
 
-        for field in cls.fields.values():
+        for k, field in cls.fields.items():
+            # track required and optional fields
+            if field.required:
+                cls.required_fields[k] = field
+            else:
+                cls.optional_fields[k] = field
             # call any non-null on_create methods
             if field.on_create is not None:
                 field.on_create(cls)
@@ -124,6 +131,8 @@ class Schema(Field, metaclass=schema_type):
                     source_val = generate_default(field)
                 elif field.required:
                     errors[field.name] = 'missing'
+                    continue
+                else:
                     continue
 
             if (source_val is None):
