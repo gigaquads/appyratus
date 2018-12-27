@@ -15,16 +15,20 @@ class Yaml(BaseFile):
             multi = True
         if multi:
             return cls.load_all_file(file_path)
+    
+    @classmethod
+    def from_string(cls, data: str):
+        return cls.load_string(data)
 
     @classmethod
-    def load_file(cls, file_path):
+    def load_file(cls, file_path: str):
         data = File.read(file_path)
         if not data:
             return
-        return yaml.load(data)
+        return cls.load_string(data)
 
     @classmethod
-    def load_all_file(cls, file_path):
+    def load_all_file(cls, file_path: str):
         data = File.read(file_path)
         if not data:
             return []
@@ -32,6 +36,11 @@ class Yaml(BaseFile):
         if not docs:
             return []
         return [doc for doc in docs]
+
+    @classmethod
+    def load_string(cls, data: str):
+        return yaml.load(data)
+
 
     @classmethod
     def to_file(cls, file_path: str, data=None, multi=False):
