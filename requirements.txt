@@ -7,3 +7,4 @@ pyyaml
 pytz
 numpy
 uvloop
+jinja2
