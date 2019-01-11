@@ -5,15 +5,22 @@ from datetime import datetime
 
 class TimeUtils(object):
 
-    @staticmethod
-    def utc_now() -> datetime:
+    @classmethod
+    def utc_now(cls) -> datetime:
         """
         Return a datetime in UTC timezone.
         """
         return datetime.now(pytz.utc)
 
-    @staticmethod
-    def to_timestamp(datetime_obj) -> int:
+    @classmethod
+    def utc_timestamp(cls) -> int:
+        """
+        Return a datetime in UTC timezone.
+        """
+        return cls.to_timestamp(datetime.now(pytz.utc))
+
+    @classmethod
+    def to_timestamp(cls, datetime_obj) -> int:
         """
         From datetime object to UTC integer timestamp (seconds)
         """
@@ -31,8 +38,8 @@ class TimeUtils(object):
         epoch = datetime.fromtimestamp(0, pytz.utc)
         return int((datetime_obj - epoch).total_seconds())
 
-    @staticmethod
-    def from_timestamp(timestamp) -> datetime:
+    @classmethod
+    def from_timestamp(cls, timestamp) -> datetime:
         """
         Return the timestamp int as a UTC datetime object.
         """

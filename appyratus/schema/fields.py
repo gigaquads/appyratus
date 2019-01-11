@@ -86,7 +86,7 @@ class String(Field):
             return (None, 'unrecognized')
 
 
-class FormatString(Field):
+class FormatString(String):
     def __init__(self, **kwargs):
         super().__init__(
             post_process=lambda fstr, data: (fstr.format(**data), None),
@@ -192,7 +192,7 @@ class Uuid(Field):
             return (None, 'unrecognized')
 
 
-class UuidString(Field):
+class UuidString(String):
     re_uuid = re.compile(r'^[a-f0-9]{32}$')
 
     def process(self, value):
@@ -247,7 +247,7 @@ class DateTime(Field):
             return (None, 'unrecognized')
 
 
-class DateTimeString(Field):
+class DateTimeString(String):
     def __init__(self, format_spec=None, **kwargs):
         super().__init__(**kwargs)
         self.format_spec = format_spec
@@ -363,7 +363,7 @@ class Dict(Field):
             return (None, 'unrecognized')
 
 
-class FilePath(Field):
+class FilePath(String):
     """
     # FilePath
     Coerce a filepath into it's absolutized form.  This includes expanding the

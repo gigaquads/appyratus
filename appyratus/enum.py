@@ -1,5 +1,6 @@
 import re
 
+from typing import Set
 from abc import ABCMeta, abstractmethod
 
 
@@ -28,14 +29,18 @@ class Enum(tuple):
         return cls(value_map, name=name)
 
     def __new__(cls, value_map: dict=None, name=None, **value_map_kwargs):
-        values = set(value_map.values()) | set(value_map_kwargs.values())
-        return super().__new__(cls, values)
+        return super().__new__(cls,
+            set((value_map or {}).values()) | set(value_map_kwargs.values())
+        )
 
     def __init__(self, value_map: dict=None, name=None, **value_map_kwargs):
         super().__init__()
         self._name = name
         self._value_map = value_map or {}
         self._value_map.update(value_map_kwargs)
+        self._value_map = {
+            k.lower(): v for k, v in self._value_map.items()
+        }
 
     def __getattr__(self, key: str):
         if key.startswith('__'):
@@ -83,7 +88,7 @@ class EnumValue(object, metaclass=EnumValueMeta):
 
     @staticmethod
     @abstractmethod
-    def values() -> {}:
+    def values() -> Set:
         return {}
 
     @classmethod
