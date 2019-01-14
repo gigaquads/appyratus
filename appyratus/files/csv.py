@@ -9,6 +9,11 @@ from .base import BaseFile, File
 
 
 class Csv(BaseFile):
+
+    @staticmethod
+    def extensions():
+        return {'csv'}
+
     @classmethod
     def from_file(cls, file_path: Text, delimiter: Text = None):
         file_data = cls.load_file(file_path=file_path, delimiter=delimiter)

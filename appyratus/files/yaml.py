@@ -6,6 +6,11 @@ from .base import BaseFile, File
 
 
 class Yaml(BaseFile):
+
+    @staticmethod
+    def extensions():
+        return {'yml', 'yaml'}
+
     @classmethod
     def from_file(cls, file_path: str, multi=False):
         try:

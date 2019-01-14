@@ -4,4 +4,7 @@ from .base import File
 
 
 class Text(File):
-    pass
+
+    @staticmethod
+    def extensions():
+        return {'txt'}

@@ -69,7 +69,14 @@ class EnumValueMeta(ABCMeta):
         setattr(cls, '_allowed_values', set())
         setattr(cls, '_value2name', {})
 
-        for k, v in cls.values().items():
+        values = cls.values()
+
+        if isinstance(values, (set, list, tuple)):
+            # do this for EnumValueStr specifically so that we don't have to
+            # return something like {'foo': 'foo', 'bar': 'bar'}
+            values = {k: k for k in values}
+
+        for k, v in values.items():
             if isinstance(v, cls._impl):
                 _v = cls(v)
                 cls._allowed_values.add(_v)
