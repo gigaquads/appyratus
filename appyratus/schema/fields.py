@@ -24,6 +24,7 @@ class Field(object):
         meta: typing.Dict=None,
         on_create: object=None,
         post_process: object=None,
+        **kwargs,
     ):
         """
         # Kwargs
@@ -36,14 +37,15 @@ class Field(object):
         - `post_process`: generic method to run after fields are processed.
         - `meta`: additional data storage
         """
-        self.source = source
         self.name = name
+        self.source = source or name
         self.required = required
         self.nullable = nullable
         self.default = default
         self.on_create = on_create
         self.post_process = post_process
         self.meta = meta or {}
+        self.meta.update(kwargs)
 
     def __repr__(self):
         if self.source != self.name:
@@ -59,7 +61,15 @@ class Field(object):
     def process(self, value):
         return (value, None)
 
-    def post_process(self, value, data):
+    def pre_process(self, value, source: dict, context: dict = None):
+        """
+        This method is *intentionally* shadowed by the ctor keyword argument
+        with the same name. This stub is just for declaring the expected
+        interface.
+        """
+        return (value, None)
+
+    def post_process(self, dest: dict, value, context=None):
         """
         This method is *intentionally* shadowed by the ctor keyword argument
         with the same name. This stub is just for declaring the expected
@@ -76,7 +86,7 @@ class String(Field):
             return (None, 'unrecognized')
 
 
-class FormatString(Field):
+class FormatString(String):
     def __init__(self, **kwargs):
         super().__init__(
             post_process=lambda fstr, data: (fstr.format(**data), None),
@@ -182,7 +192,7 @@ class Uuid(Field):
             return (None, 'unrecognized')
 
 
-class UuidString(Field):
+class UuidString(String):
     re_uuid = re.compile(r'^[a-f0-9]{32}$')
 
     def process(self, value):
@@ -237,7 +247,7 @@ class DateTime(Field):
             return (None, 'unrecognized')
 
 
-class DateTimeString(Field):
+class DateTimeString(String):
     def __init__(self, format_spec=None, **kwargs):
         super().__init__(**kwargs)
         self.format_spec = format_spec
@@ -278,9 +288,9 @@ class Timestamp(Field):
 
 
 class List(Field):
-    def __init__(self, nested: Field, **kwargs):
+    def __init__(self, nested: Field = None, **kwargs):
         super().__init__(**kwargs)
-        self.nested = nested
+        self.nested = nested or Field()
 
     def __repr__(self):
         if self.source != self.name:
@@ -353,7 +363,7 @@ class Dict(Field):
             return (None, 'unrecognized')
 
 
-class FilePath(Field):
+class FilePath(String):
     """
     # FilePath
     Coerce a filepath into it's absolutized form.  This includes expanding the

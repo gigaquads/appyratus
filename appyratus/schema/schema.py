@@ -1,6 +1,6 @@
 import venusian
 
-from typing import Type
+from typing import Type, Dict
 from copy import deepcopy
 from collections import namedtuple
 
@@ -40,8 +40,15 @@ class schema_type(type):
         # schema list set on the new class
         cls.fields = fields
         cls.children = []
+        cls.required_fields = {}
+        cls.optional_fields = {}
 
-        for field in cls.fields.values():
+        for k, field in cls.fields.items():
+            # track required and optional fields
+            if field.required:
+                cls.required_fields[k] = field
+            else:
+                cls.optional_fields[k] = field
             # call any non-null on_create methods
             if field.on_create is not None:
                 field.on_create(cls)
@@ -72,12 +79,18 @@ class Schema(Field, metaclass=schema_type):
         self.allow_additional = allow_additional
 
     def process(
-        self, source: dict, strict=False, pre_process=None, post_process=None
+        self,
+        source: Dict,
+        context: Dict = None,
+        strict=False,
+        pre_process=None,
+        post_process=None
     ):
         """
         Marshal each value in the "source" dict into a new "dest" dict.
         """
         errors = {}
+        context = context or {}
 
         if self.allow_additional:
             dest = copy.deepcopy(source)
@@ -97,8 +110,8 @@ class Schema(Field, metaclass=schema_type):
             source_val = source.get(field.source)
 
             if pre_process:
-                # pre-process some shit for some reason
-                source_val = pre_process(field, source_val)
+                # pre-process some shit
+                source_val = pre_process(source_val, source, context=context)
 
             def generate_default(field):
                 # generate default val from either
@@ -118,6 +131,8 @@ class Schema(Field, metaclass=schema_type):
                     source_val = generate_default(field)
                 elif field.required:
                     errors[field.name] = 'missing'
+                    continue
+                else:
                     continue
 
             if (source_val is None):
@@ -154,7 +169,9 @@ class Schema(Field, metaclass=schema_type):
         # call all post-process callbacks
         for field in post_process_fields:
             dest_val = dest.pop(field.name)
-            field_val, field_err = field.post_process(dest_val, dest)
+            field_val, field_err = field.post_process(
+                dest_val, dest, context=context
+            )
             # now recheck nullity of the post-processed field value
             if (dest_val is None) and (not field.nullable):
                 errors[field.name] = 'null'

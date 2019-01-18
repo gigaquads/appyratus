@@ -7,6 +7,11 @@ from .base import File
 
 
 class Ini(File):
+
+    @staticmethod
+    def extensions():
+        return {'ini'}
+
     @classmethod
     def from_file(cls, file_path: str):
         file_data = cls.load_file(file_path=file_path)

@@ -1,46 +1,42 @@
 from __future__ import absolute_import
 
 import os
-import yaml
-import json
-import io
-import csv
-import configparser
 
-from abc import abstractclassmethod
+from typing import Set, Text
 
 
 class BaseFile(object):
+
     @classmethod
     def exists(cls, file_path: str):
         return os.path.exists(file_path)
 
-    @abstractclassmethod
+    @staticmethod
+    def extensions() -> Set[Text]:
+        raise NotImplementedError('override in subclass')
+
     def read(cls, file_path: str):
-        pass
+        raise NotImplementedError('override in subclass')
 
-    @abstractclassmethod
     def write(cls, file_path: str, contents):
-        pass
+        raise NotImplementedError('override in subclass')
 
-    @abstractclassmethod
     def from_file(cls, file_path: str, *args, **kwargs):
-        pass
+        raise NotImplementedError('override in subclass')
 
-    @abstractclassmethod
     def to_file(cls, file_path: str, contents, *args, **kwargs):
-        pass
+        raise NotImplementedError('override in subclass')
 
-    @abstractclassmethod
     def load(cls, data):
-        pass
+        raise NotImplementedError('override in subclass')
 
-    @abstractclassmethod
     def dump(cls, data):
-        pass
-
+        raise NotImplementedError('override in subclass')
 
 class File(BaseFile):
+
+    UTF_ENCODINGS = {'utf-8', 'utf-16'}
+
     @classmethod
     def exists(cls, file_path: str):
         return os.path.exists(file_path)
@@ -51,13 +47,26 @@ class File(BaseFile):
             return
 
         data = None
-        for encoding in ['utf-8', 'utf-16']:
+        is_read_success = False
+
+        for encoding in cls.UTF_ENCODINGS:
             try:
                 with open(file_path, encoding=encoding) as contents:
                     data = contents.read()
+                    is_read_success = True
                     break
             except:
                 pass
+
+        if not is_read_success:
+            raise IOError(
+                'could not open {}. the file must be '
+                'encoded in any of the following formats: '
+                '{}'.format(
+                    file_path, ', '.join(cls.UTF_ENCODINGS)
+                )
+            )
+
         return data
 
     @classmethod
