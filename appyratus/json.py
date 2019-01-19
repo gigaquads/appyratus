@@ -1,29 +1,29 @@
 from __future__ import absolute_import
 
-import re
-import json
-import uuid
-import decimal
-import numpy as np
+import rapidjson
 
+from typing import Dict
+from uuid import UUID
 from datetime import datetime, date
 
 from appyratus.utils import TimeUtils
 
 
-class JsonEncoder(json.JSONEncoder):
-    RegularExpression = re.compile('').__class__
+class JsonEncoder(object):
+    def __init__(self, defaults: Dict = None):
+        self.defaults = {
+            datetime: lambda x: TimeUtils.to_timestamp(x),
+            date: lambda x: TimeUtils.to_timestamp(x),
+            UUID: lambda x: x.hex,
+            set: lambda x: list(x),
+        }
+        self.defaults.update(defaults or {})
 
-    def default(self, obj):
-        if isinstance(obj, (datetime, date)):
-            return TimeUtils.to_timestamp(obj)
-        elif isinstance(obj, uuid.UUID):
-            return obj.hex
-        elif isinstance(obj, self.RegularExpression):
-            return obj.pattern
-        elif isinstance(obj, decimal.Decimal):
-            return str(obj)
-        elif isinstance(obj, np.ndarray):
-            return str(list(obj))
-        else:
-            return super().default(obj)
+    def encode(self, target):
+        return rapidjson.dumps(target, default=self.default)
+
+    def default(self, target):
+        func = self.defaults.get(target.__class__)
+        if func is None:
+            raise ValueError('cannot JSON encode {}'.format(target))
+        return func(target)
