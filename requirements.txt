@@ -9,4 +9,5 @@ numpy
 uvloop
 jinja2
 ujson
+python-rapidjson
 aiohttp
