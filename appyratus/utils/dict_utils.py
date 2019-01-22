@@ -3,8 +3,8 @@ import re
 from copy import copy, deepcopy
 from typing import Dict, Tuple, List, Text
 
-
 # TODO: Rename DictAccessor to something better
+
 
 class DictAccessor(object):
     def __init__(self, data: Dict, default=None):
@@ -58,7 +58,7 @@ class DictUtils(object):
         into a single key per unique field
         separated by `separator`
 
-        Args
+        # Args
         - `data`, the data to be flattened
         - `acc`, the accumulator of flattened keys
         - `parent`, the parent key, a list of keys to be joined by the separator
@@ -66,31 +66,35 @@ class DictUtils(object):
           default it is the period (`.`)
         """
         if not data:
-            return {}
+            return
+        data = deepcopy(data)
         if separator is None:
             separator = '.'
-        if not acc:
+        if acc is None:
             acc = {}
-        if not parent:
+        if parent is None:
             parent = []
         if isinstance(data, dict):
             for k, v in data.items():
                 kparent = copy(parent)
                 kparent.append(str(k))
-                kacc = DictUtils.flatten_keys(
-                    v, separator=separator, parent=kparent
+                vacc = DictUtils.flatten_keys(
+                    data=deepcopy(v),
+                    acc=acc,
+                    separator=separator,
+                    parent=kparent
                 )
-                if isinstance(kacc, dict):
-                    acc.update(kacc)
-                else:
-                    acc[separator.join(kparent)] = kacc
+                acc[separator.join(kparent)] = vacc
+                if isinstance(vacc, dict) and vacc:
+                    acc.update(vacc)
+
         elif isinstance(data, list):
             for idx, v in enumerate(data):
                 kparent = copy(parent)
                 if kparent:
                     kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
                 kacc = DictUtils.flatten_keys(
-                    v, separator=separator, parent=kparent
+                    data=v, acc=acc, separator=separator, parent=kparent
                 )
                 if isinstance(kacc, dict):
                     acc.update(kacc)
@@ -124,8 +128,8 @@ class DictUtils(object):
                         if not isinstance(xval, dict):
                             if xval:
                                 raise ValueError(
-                                    'Expected value to be a dictionary, got "{}"'.
-                                    format(xval)
+                                    'Expected value to be a dictionary, got "{}"'
+                                    .format(xval)
                                 )
                             obj[xkey] = {}
                     else:
@@ -211,7 +215,9 @@ class DictUtils(object):
         return changed
 
     @staticmethod
-    def remove_keys(data: Dict, keys: List = None, values: List = None) -> Dict:
+    def remove_keys(
+        data: Dict, keys: List = None, values: List = None
+    ) -> Dict:
         """
         Providing a list of keys remove them from a dictionary.
 
@@ -251,26 +257,31 @@ class DictUtils(object):
                     new_data[k] = dres
         return new_data
 
-    def traverse(data: Dict, method) -> Dict:
+    def traverse(data: Dict, method, depth: int = None) -> Dict:
         """
         Traverse a dictionary while passing values into the provided callable
         in order to mutate existing data
         """
+        if not depth:
+            depth = 0
         new_data = deepcopy(data)
         if not data:
             return data
+        next_depth = depth + 1
         if isinstance(data, dict):
             for kd, vd in data.items():
                 if isinstance(vd, (list, dict)):
-                    dres = DictUtils.traverse(vd, method)
+                    dres = method(kd, vd, depth=depth)
+                    dres = DictUtils.traverse(dres, method, depth=next_depth)
                 else:
-                    dres = method(vd)
+                    dres = method(kd, vd, depth=depth)
                 new_data[kd] = dres
         elif isinstance(data, list):
             for kl, vl in enumerate(data):
                 if isinstance(vl, (list, dict)):
-                    lres = DictUtils.traverse(vl, method)
+                    lres = method(kl, vl, depth=depth)
+                    lres = DictUtils.traverse(lres, method, depth=next_depth)
                 else:
-                    lres = method(vl)
+                    lres = method(kl, vl, depth=depth)
                 new_data[kl] = lres
         return new_data
