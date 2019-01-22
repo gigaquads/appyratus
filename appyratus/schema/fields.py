@@ -89,9 +89,13 @@ class String(Field):
 class FormatString(String):
     def __init__(self, **kwargs):
         super().__init__(
-            post_process=lambda fstr, data: (fstr.format(**data), None),
+            post_process=lambda fstr, data: self.do_format(fstr, data),
             **kwargs
         )
+
+    def do_format(self, fstr, data):
+        value = fstr.format(**data)
+        return (value, None)
 
 
 class Int(Field):
