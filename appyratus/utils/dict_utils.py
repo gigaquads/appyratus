@@ -65,8 +65,10 @@ class DictUtils(object):
         - `separator`, the separating value when parent key is joined.  by
           default it is the period (`.`)
         """
-        if not data:
+        if data is None:
             return
+        if not data:
+            return {}
         data = deepcopy(data)
         if separator is None:
             separator = '.'
@@ -84,9 +86,10 @@ class DictUtils(object):
                     separator=separator,
                     parent=kparent
                 )
-                acc[separator.join(kparent)] = vacc
                 if isinstance(vacc, dict) and vacc:
                     acc.update(vacc)
+                else:
+                    acc[separator.join(kparent)] = vacc
 
         elif isinstance(data, list):
             for idx, v in enumerate(data):
