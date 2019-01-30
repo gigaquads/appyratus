@@ -9,6 +9,18 @@ class CliProgram(Parser):
     # Command-line interface program
     An interface to your program
 
+
+    # Example Usage
+    from appyratus.cli import CliProgram, Args
+    ```
+    class MyLameProgram(CliProgram):
+        lame_positional_arg = PositionalArg()
+        lame_optional_arg = OptionalArg()
+        lame_flag_arg = FlagArg()
+
+    program = MyLameProgram()
+    program.run()
+    ```
     """
 
     def __init__(
@@ -95,7 +107,7 @@ class CliProgram(Parser):
         if not self._perform:
             self.show_usage()
             return
-        res = self._perform()
+        res = self._perform(self)
         return res
 
     def run(self):
@@ -104,7 +116,6 @@ class CliProgram(Parser):
         """
         self.build()
         action_res = self.route_action()
-
 
     def parse_cli_args(self):
         """
