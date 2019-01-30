@@ -36,8 +36,8 @@ class Arg(object):
 class PositionalArg(Arg):
     """
     # Positional Arg
-    A positional argument is required by nature.  by default will set the flags to
-    match the provided name of the argument.
+    A positional argument is required by nature.  By default will set the flags
+    to match the provided name of the argument.
     """
 
     def __init__(self, name=None, flags=None, *args, **kwargs):

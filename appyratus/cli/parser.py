@@ -12,7 +12,6 @@ class Parser(object):
         - `subparsers`, TODO
         - `perform`, TODO
         """
-        #print('>>> INIT {} ({})'.format(name, self.__class__.__name__))
         self.name = name
         self._parser = None
         self._subparser = None
@@ -40,7 +39,6 @@ class Parser(object):
         """
         Build
         """
-        #print('>>> BUILD {} ({})'.format(self.name, self.__class__.__name__))
         self.parent = parent
         self._parser = self.build_parser()
         if self._subparsers:
