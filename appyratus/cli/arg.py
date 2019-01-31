@@ -4,7 +4,13 @@ class Arg(object):
     """
 
     def __init__(
-        self, name=None, flags=None, dtype=None, default=None, usage=None
+        self,
+        name=None,
+        flags=None,
+        dtype=None,
+        default=None,
+        usage=None,
+        action=None,
     ):
         """
         # Args
@@ -19,25 +25,26 @@ class Arg(object):
         self.dtype = dtype or str
         self.default = default
         self.usage = usage
+        self.action = action
 
     def build(self, parent):
         """
         """
         # add arguments
-        #print(">>> BUILD {} ({})".format(self.name, self.__class__.__name__))
         return parent._parser.add_argument(
             *self.flags,
             type=self.dtype,
             default=self.default,
-            help=self.usage
+            help=self.usage,
+            action=self.action
         )
 
 
 class PositionalArg(Arg):
     """
     # Positional Arg
-    A positional argument is required by nature.  by default will set the flags to
-    match the provided name of the argument.
+    A positional argument is required by nature.  By default will set the flags
+    to match the provided name of the argument.
     """
 
     def __init__(self, name=None, flags=None, *args, **kwargs):

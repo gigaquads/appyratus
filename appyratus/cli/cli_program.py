@@ -9,6 +9,18 @@ class CliProgram(Parser):
     # Command-line interface program
     An interface to your program
 
+
+    # Example Usage
+    from appyratus.cli import CliProgram, Args
+    ```
+    class MyLameProgram(CliProgram):
+        lame_positional_arg = PositionalArg()
+        lame_optional_arg = OptionalArg()
+        lame_flag_arg = FlagArg()
+
+    program = MyLameProgram()
+    program.run()
+    ```
     """
 
     def __init__(
@@ -78,11 +90,7 @@ class CliProgram(Parser):
         program.
         """
         return "{name} {version}, {tagline}".format(
-            **{
-                'name': self.name,
-                'version': self.version,
-                'tagline': self.tagline
-            }
+            name=self.name, version=self.version, tagline=self.tagline
         )
 
     def route_action(self, action: str = None):
@@ -104,14 +112,14 @@ class CliProgram(Parser):
 
     def run(self):
         """
-        Run this program
+        # Run this program
         """
         self.build()
         action_res = self.route_action()
 
     def parse_cli_args(self):
         """
-        Parse arguments from command-line
+        # Parse arguments from command-line
         """
         # let argparser do the initial parsing
         cli_args, unknown = self._parser.parse_known_args()
@@ -124,7 +132,7 @@ class CliProgram(Parser):
 
         # XXX we want the func reference as this points directly to the
         # subparsers perform, and we don't want it in the cli args, and
-        # handling it should probably not go here any, but it is
+        # handling it should probably not go here anyway, but it is
         if hasattr(cli_args, 'func'):
             self._perform = cli_args.func
 

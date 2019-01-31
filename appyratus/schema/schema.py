@@ -111,7 +111,7 @@ class Schema(Field, metaclass=schema_type):
 
             if pre_process:
                 # pre-process some shit
-                source_val = pre_process(source_val, source, context=context)
+                source_val = pre_process(field, source_val, context=context)
 
             def generate_default(field):
                 # generate default val from either
