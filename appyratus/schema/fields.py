@@ -78,6 +78,22 @@ class Field(object):
         return (value, None)
 
 
+class Enum(Field):
+    def __init__(self, nested: Field, values, **kwargs):
+        self.nested = nested
+        self.values = set(values)
+        super().__init__(**kwargs)
+
+    def process(self, value):
+        nested_value, error = self.nested.process(value)
+        if error:
+            return (None, error)
+        elif nested_value not in self.values:
+            return (None, 'unrecognized')
+        else:
+            return (nested_value, None)
+
+
 class String(Field):
     def process(self, value):
         if isinstance(value, str):
@@ -168,7 +184,7 @@ class Email(String):
 
     def process(self, value):
         dest, error = super().process(value)
-        if not error:
+        if error:
             return (dest, error)
         elif not self.re_email.match(value):
             return (None, 'not a valid e-mail address')
