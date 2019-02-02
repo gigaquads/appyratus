@@ -61,7 +61,36 @@ class OptionalArg(Arg):
     name `-j`, and the name itself `--jesus`.
     """
 
-    def __init__(self, name=None, flags=None, *args, **kwargs):
+    def __init__(
+        self,
+        name=None,
+        flags=None,
+        short_flag=None,
+        long_flag=None,
+        *args,
+        **kwargs
+    ):
+        short_flag = True if short_flag is None else short_flag
+        long_flag = True if long_flag is None else long_flag
         if name and not flags:
-            flags = ('-{}'.format(name[0]), '--{}'.format(name))
+            flags = []
+            if short_flag:
+                flags.append('-{}'.format(name[0]))
+            if long_flag:
+                flags.append('--{}'.format(name))
+        print(name, flags)
+        super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
+
+
+class FlagArg(Arg):
+    """
+    # Flag Arg
+    An argument for specifying a client flag, likely connected to a
+    boolean value.  This is similar to an optional argument, in that
+    it is not required, yet it only exists with a single dash prefix,
+    and requires no value to be specified.  E.g., `-verbose`, `-all`
+    """
+
+    def __init__(self, name=None, flags=None, *args, **kwargs):
+        flags = ('-{}'.format(name), )
         super().__init__(name=name, flags=flags, *args, **kwargs)
