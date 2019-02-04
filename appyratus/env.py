@@ -1,5 +1,6 @@
 import os
 import re
+import copy
 
 from appyratus.schema import Schema
 
@@ -19,9 +20,11 @@ class EnvironmentValidationError(EnvironmentError):
 
 
 class Environment(Schema):
-    def __init__(self):
-        super().__init__()
-        raw_data = os.environ.copy()
+    def __init__(self, allow_additional=False, **fields):
+        super().__init__(allow_additional=allow_additional)
+        if fields:
+            self.fields.update(fields)
+        raw_data = copy.deepcopy(dict(os.environ))
         data, errors = self.process(raw_data)
         if not errors:
             self._raw_data = raw_data

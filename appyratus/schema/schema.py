@@ -93,7 +93,7 @@ class Schema(Field, metaclass=schema_type):
         context = context or {}
 
         if self.allow_additional:
-            dest = copy.deepcopy(source)
+            dest = deepcopy(source)
         else:
             dest = {}
 
