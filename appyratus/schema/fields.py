@@ -396,3 +396,16 @@ class FilePath(String):
             return (value, None)
         else:
             return (None, 'unrecognized')
+
+
+class Set(Field):
+    """
+    """
+    dict_keys_type = type({}.keys())
+    dict_vals_type = type({}.values())
+
+    def process(self, value):
+        if isinstance(value, (list, tuple, set, dict_keys_type, dict_values)):
+            return (set(value), None)
+        else:
+            return (None, 'unrecognized')

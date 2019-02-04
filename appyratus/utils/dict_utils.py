@@ -1,7 +1,7 @@
 import re
 
 from copy import copy, deepcopy
-from typing import Dict, Tuple, List, Text
+from typing import Dict, Tuple, List, Text, Set
 
 # TODO: Rename DictAccessor to something better
 
@@ -16,10 +16,13 @@ class DictAccessor(object):
         self.keys = tuple(keys)
 
     def __getattr__(self, key):
-        return self.default
+        val = self.default() if self.default else None
+        self.keys = tuple([key] + list(self.keys))
+        setattr(self, key, val)
+        return val
 
-    def get(self, key, default):
-        return getattr(self, key, default)
+    def get(self, key, default=None):
+        return getattr(self, key, default() if default else None)
 
     def to_dict(self) -> Dict:
         return {k: getattr(self, k) for k in self.keys}
@@ -219,7 +222,10 @@ class DictUtils(object):
 
     @staticmethod
     def remove_keys(
-        data: Dict, keys: List = None, values: List = None
+        data: Dict,
+        keys: Set = None,
+        values: Set = None,
+        in_place=False,
     ) -> Dict:
         """
         Providing a list of keys remove them from a dictionary.
@@ -228,19 +234,31 @@ class DictUtils(object):
         the key contains.
         """
         if not keys and not values:
-            return data
+            return data if in_place else deepcopy(data)
+
         if not keys:
-            keys = []
+            keys = set()
+        elif not isinstance(keys, set):
+            keys = set(keys)
+
         if not values:
-            values = []
+            values = set()
+        elif not isinstance(values, set):
+            values = set(values)
+
         if not isinstance(data, dict):
-            return data
-        new_data = deepcopy(data)
+            raise ValueError(str(data))
+
+        if not in_place:
+            new_data = deepcopy(data)
+        else:
+            new_data = data
+
         for k, v in data.items():
             if k in keys:
-                new_data.pop(k)
+                del new_data[k]
             elif v in values:
-                new_data.pop(k)
+                del new_data[k]
             if k not in new_data:
                 continue
             if isinstance(v, list):
@@ -248,14 +266,14 @@ class DictUtils(object):
                 for listk in v:
                     vres = DictUtils.remove_keys(listk, keys, values)
                     if vres in values:
-                        new_data.pop(k)
+                        del new_data[k]
                     else:
                         vlist.append(vres)
                 new_data[k] = vlist
             elif isinstance(v, dict):
                 dres = DictUtils.remove_keys(new_data[k], keys, values)
                 if dres in values:
-                    new_data.pop(k)
+                    del new_data[k]
                 else:
                     new_data[k] = dres
         return new_data
