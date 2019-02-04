@@ -1,3 +1,6 @@
+from appyratus.utils import DictUtils
+
+
 class Arg(object):
     """
     # Arg
@@ -11,6 +14,7 @@ class Arg(object):
         default=None,
         usage=None,
         action=None,
+        nargs=None,
     ):
         """
         # Args
@@ -22,22 +26,32 @@ class Arg(object):
         """
         self.name = name
         self.flags = flags
-        self.dtype = dtype or str
+        self.dtype = dtype
         self.default = default
         self.usage = usage
         self.action = action
+        self.nargs = nargs
+
+    @property
+    def kwargs(self):
+        return {
+            'default': self.default,
+            'help': self.usage,
+            'action': self.action,
+            'nargs': self.nargs,
+            'dtype': self.dtype,
+        }
 
     def build(self, parent):
         """
         """
         # add arguments
-        return parent._parser.add_argument(
-            *self.flags,
-            type=self.dtype,
-            default=self.default,
-            help=self.usage,
-            action=self.action
-        )
+
+        # remove empty values from kwargs. argparser will shit the
+        # bed if it finds one that is empty and shouldn't belong in
+        # conjunction with another Args' kwargs
+        kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
+        return parent._parser.add_argument(*self.flags, **kwargs)
 
 
 class PositionalArg(Arg):
@@ -47,10 +61,10 @@ class PositionalArg(Arg):
     to match the provided name of the argument.
     """
 
-    def __init__(self, name=None, flags=None, *args, **kwargs):
+    def __init__(self, name=None, flags=None, usage=None, dtype=None):
         if name and not flags:
             flags = (name, )
-        super().__init__(name=name, flags=flags, *args, **kwargs)
+        super().__init__(name=name, flags=flags, usage=usage, dtype=dtype)
 
 
 class OptionalArg(Arg):
@@ -78,19 +92,35 @@ class OptionalArg(Arg):
                 flags.append('-{}'.format(name[0]))
             if long_flag:
                 flags.append('--{}'.format(name))
-        print(name, flags)
         super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
 
 
 class FlagArg(Arg):
     """
     # Flag Arg
-    An argument for specifying a client flag, likely connected to a
-    boolean value.  This is similar to an optional argument, in that
-    it is not required, yet it only exists with a single dash prefix,
-    and requires no value to be specified.  E.g., `-verbose`, `-all`
+    An argument for specifying a client flag, most commonly connected to a boolean
+    "on/off" value.  This is similar to an optional argument, in that it is
+    not required, yet it only exists with a single dash prefix, and
+    requires no value to be specified.  E.g., `-lame`, `-lamest`
     """
 
-    def __init__(self, name=None, flags=None, *args, **kwargs):
+    def __init__(self, name=None, default=None, usage=None):
+        """
+        # Intialize the Flag Arg
+
+        # Args
+        - `name`,
+        - `default`,
+        """
         flags = ('-{}'.format(name), )
-        super().__init__(name=name, flags=flags, *args, **kwargs)
+        if default is None:
+            default = True
+        if default:
+            action = 'store_true'
+        else:
+            action = 'store_false'
+        super().__init__(name=name, action=action, flags=flags, usage=usage)
+
+
+class FileArg(Arg):
+    pass

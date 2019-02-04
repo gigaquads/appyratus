@@ -147,5 +147,6 @@ class CliProgram(Parser):
 
         # build a custom type with the combined argument names as attributes
         arguments = type('Arguments', (object, ), args_dict)()
+        arguments.data = args_dict
 
         return arguments
