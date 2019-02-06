@@ -14,6 +14,24 @@ from appyratus.utils import TimeUtils
 
 
 class Field(object):
+
+    class TypeAdapter(object):
+        def __init__(
+            self,
+            field_type: Type['Field'],
+            on_adapt=None,
+            on_encode=None,
+            on_decode=None,
+        ):
+            self.field_type = field_type
+            self.on_adapt = on_adapt
+            self.on_encode = on_encode
+            self.on_decode = on_decode
+
+    @classmethod
+    def adapt(cls, on_adapt, **kwargs) -> TypeAdapter:
+        return cls.TypeAdapter(cls, on_adapt, **kwargs)
+
     def __init__(
         self,
         source: typing.Text=None,
@@ -233,8 +251,8 @@ class UuidString(String):
 
 
 class Bool(Field):
-    truthy = {'T', 't', 'True', 'true', 1}
-    falsey = {'F', 'f', 'False', 'false', 0}
+    truthy = {'T', 't', 'True', 'true', 1, '1'}
+    falsey = {'F', 'f', 'False', 'false', 0, '0'}
 
     def process(self, value):
         if isinstance(value, bool):
