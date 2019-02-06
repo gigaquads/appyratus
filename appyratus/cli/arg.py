@@ -39,7 +39,7 @@ class Arg(object):
             'help': self.usage,
             'action': self.action,
             'nargs': self.nargs,
-            'dtype': self.dtype,
+            'type': self.dtype,
         }
 
     def build(self, parent):
@@ -109,13 +109,15 @@ class FlagArg(Arg):
         # Intialize the Flag Arg
 
         # Args
-        - `name`,
-        - `default`,
+        - `name`, the name of the arg
+        - `value`, the boolean value that this flag will take on,
+          True or False.  As this arg is optional and does not
+          require a keyword value to be specified, it would be used
         """
         flags = ('-{}'.format(name), )
-        if default is None:
-            default = True
-        if default:
+        if value is None:
+            value= True
+        if value:
             action = 'store_true'
         else:
             action = 'store_false'

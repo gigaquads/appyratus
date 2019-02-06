@@ -7,10 +7,12 @@ class Parser(object):
     def __init__(self, name=None, args=None, subparsers=None, perform=None):
         """
         # Args
-        - `name`, TODO
-        - `args`, TODO
-        - `subparsers`, TODO
-        - `perform`, TODO
+        - `name`, the name of this parser
+        - `args`, arguments for this parser
+        - `subparsers`, subparsers related to this parser, which are
+          just parsers themselves.  Subparsers can also be defined as
+          a method on the parser class, however this method will take precedence
+        - `perform`, a callable to execute when this parser runs
         """
         self.name = name
         self._parser = None
