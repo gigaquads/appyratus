@@ -19,16 +19,16 @@ class EnvironmentValidationError(EnvironmentError):
         self.errors = errors
 
 
-class Environment(Schema):
-    def __init__(self, allow_additional=False, **fields):
-        super().__init__(allow_additional=allow_additional)
-        if fields:
-            self.fields.update(fields)
-        raw_data = copy.deepcopy(dict(os.environ))
-        data, errors = self.process(raw_data)
+class Environment(object):
+    _data = {}
+    _raw_data = {}
+
+    def __init__(self, **fields):
+        self.schema_type = type('EnvironmentSchema', (Schema, ), fields)
+        self.schema = self.schema_type(allow_additional=True)
+
+        data, errors = self.schema.process(dict(os.environ))
         if not errors:
-            self._raw_data = raw_data
-            self._data = raw_data
             self._data.update(data)
         else:
             raise EnvironmentValidationError(errors)
@@ -37,7 +37,7 @@ class Environment(Schema):
         return self[key]
 
     def __getitem__(self, key):
-        return self._data.get(key, self._raw_data.get(key))
+        return self._data.get(key)
 
     def __repr__(self):
         return '<Environment>'
