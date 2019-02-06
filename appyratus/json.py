@@ -27,3 +27,7 @@ class JsonEncoder(object):
         if func is None:
             raise ValueError('cannot JSON encode {}'.format(target))
         return func(target)
+
+    @staticmethod
+    def decode(*args, **kwargs):
+        return rapidjson.loads(*args, **kwargs)
