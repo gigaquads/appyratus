@@ -78,10 +78,9 @@ class EnumValueMeta(ABCMeta):
 
         for k, v in values.items():
             if isinstance(v, cls._impl):
-                _v = cls(v)
-                cls._allowed_values.add(_v)
-                cls._value2name[_v] = k
-                setattr(cls, k, _v)
+                cls._allowed_values.add(v)
+                cls._value2name[v] = k
+                setattr(cls, k.replace('-' ,'_'), v)
 
         cls._is_cls_init = True
 
@@ -146,7 +145,7 @@ class EnumValueError(Exception):
 class NoSuchEnumValueError(EnumValueError):
     def __init__(self, enum_value: EnumValue, illegal_value):
         super().__init__(
-            '{} does not recognize {} as an allowed value.'.format(
+            '{} does not recognize "{}" as an allowed value.'.format(
                 enum_value.__class__.__name__, illegal_value
             ))
 
@@ -154,7 +153,7 @@ class NoSuchEnumValueError(EnumValueError):
 class IllegalEnumValueError(EnumValueError):
     def __init__(self, enum_value_class, illegal_value):
         super().__init__(
-            '{0} does not recognize {1} as an allowed value '
+            '{0} does not recognize "{1}" as an allowed value '
             'because it has the wrong type. Got {2}, expects {3}.'.format(
                 enum_value_class.__name__,
                 illegal_value,

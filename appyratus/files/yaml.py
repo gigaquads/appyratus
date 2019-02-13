@@ -20,7 +20,7 @@ class Yaml(BaseFile):
             multi = True
         if multi:
             return cls.load_all_file(file_path)
-    
+
     @classmethod
     def from_string(cls, data: str):
         return cls.load_string(data)
@@ -62,5 +62,5 @@ class Yaml(BaseFile):
             yaml_file.write(data.encode())
 
     @classmethod
-    def format_file_name(cls, file_name):
-        return "{}.yml".format(file_name)
+    def format_file_name(cls, basename):
+        return f'{basename}.yml'
