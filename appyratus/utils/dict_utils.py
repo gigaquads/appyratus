@@ -230,8 +230,8 @@ class DictUtils(object):
         """
         Providing a list of keys remove them from a dictionary.
 
-        This additionally supports removing keys based on a list of values that
-        the key contains.
+        This additionally supports removing keys based on a list of
+        values that the key contains.
         """
         if not keys and not values:
             return data if in_place else deepcopy(data)

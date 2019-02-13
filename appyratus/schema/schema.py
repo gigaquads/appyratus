@@ -137,15 +137,21 @@ class Schema(Field, metaclass=schema_type):
 
             if (source_val is None):
                 if field.default is not None:
+                    # field has a default specified, attempt to generate
+                    # the default from it
                     skip_field = False
                     source_val = generate_default(field)
-                # source value is None
                 if not field.nullable:
-                    # but None not allowed!
-                    errors[field.name] = 'null'
+                    # field cannot be null
+                    if source_val is not None:
+                        # source val is now populated with a default, set it
+                        dest[field.name] = source_val
+                    else:
+                        # but None not allowed!
+                        errors[field.name] = 'null'
                     continue
                 else:
-                    # when it is then set the dest to None
+                    # when it is nullable then set to None
                     dest[field.name] = None
                     continue
 
