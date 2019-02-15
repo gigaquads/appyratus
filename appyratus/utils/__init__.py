@@ -1,4 +1,4 @@
-from .dict_utils import DictUtils, DictAccessor
+from .dict_utils import DictUtils, DictObject
 from .template_utils import TemplateEnvironment
 from .string_utils import StringUtils
 from .time_utils import TimeUtils

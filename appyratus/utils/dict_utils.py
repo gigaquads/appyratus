@@ -3,29 +3,26 @@ import re
 from copy import copy, deepcopy
 from typing import Dict, Tuple, List, Text, Set
 
-# TODO: Rename DictAccessor to something better
+# TODO: Rename DictObject to something better
 
 
-class DictAccessor(object):
-    def __init__(self, data: Dict, default=None):
-        keys = []
-        for k, v in (data or {}).items():
-            setattr(self, k, v)
-            keys.append(k)
+class DictObject(object):
+    def __init__(self, data: Dict = None, default=None):
+        self.data = deepcopy(data or {})
         self.default = default
-        self.keys = tuple(keys)
 
     def __getattr__(self, key):
-        val = self.default() if self.default else None
-        self.keys = tuple([key] + list(self.keys))
-        setattr(self, key, val)
-        return val
+        if key in self.data:
+            return self.data[key]
+        else:
+            defval = self.default() if callable(self.default) else self.default
+            return self.data.setdefault(key, defval)
 
-    def get(self, key, default=None):
-        return getattr(self, key, default() if default else None)
+    def __setattr__(self, key, value):
+        self.data[key] = value
 
     def to_dict(self) -> Dict:
-        return {k: getattr(self, k) for k in self.keys}
+        return deepcopy(self.data)
 
 
 class DictUtils(object):
