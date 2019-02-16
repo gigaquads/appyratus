@@ -21,7 +21,7 @@ class schema_type(type):
                 schema = field
             if isinstance(field, Nested):
                 schema = field.schema
-            if isinstance(field, List):
+            if isinstance(field, List) and isinstance(field.nested, Schema):
                 schema = field.nested
             return schema
 

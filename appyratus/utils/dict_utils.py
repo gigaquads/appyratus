@@ -3,23 +3,19 @@ import re
 from copy import copy, deepcopy
 from typing import Dict, Tuple, List, Text, Set
 
-# TODO: Rename DictObject to something better
-
 
 class DictObject(object):
-    def __init__(self, data: Dict = None, default=None):
-        self.data = deepcopy(data or {})
-        self.default = default
+    def __init__(self, data: Dict = None):
+        self.__dict__['data'] = deepcopy(data or {})
 
     def __getattr__(self, key):
-        if key in self.data:
-            return self.data[key]
-        else:
-            defval = self.default() if callable(self.default) else self.default
-            return self.data.setdefault(key, defval)
+        return self.data.get(key)
 
     def __setattr__(self, key, value):
         self.data[key] = value
+
+    def __repr__(self):
+        return f'<DictObject({self.data})>'
 
     def to_dict(self) -> Dict:
         return deepcopy(self.data)

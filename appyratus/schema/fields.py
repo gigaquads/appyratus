@@ -360,6 +360,28 @@ class List(Field):
             return (None, idx2error)
 
 
+class Set(Field):
+    def __init__(self, nested: Field = None, **kwargs):
+        super().__init__(**kwargs)
+        self.nested = nested or Field()
+
+    def __repr__(self):
+        if self.source != self.name:
+            load_to = ' -> ' + self.name
+        else:
+            load_to = ''
+        return '{}({}{}, {})'.format(
+            self.__class__.__name__,
+            self.source,
+            load_to,
+            self.nested.__class__.__name__,
+        )
+
+    def process(self, sequence):
+        result, error = super().process(sequence)
+        return ((set(result) if not error else result), error)
+
+
 class Nested(Field):
     """
     # Example:
@@ -412,18 +434,5 @@ class FilePath(String):
         if isinstance(value, str):
             value = abspath(expanduser(value))
             return (value, None)
-        else:
-            return (None, 'unrecognized')
-
-
-class Set(Field):
-    """
-    """
-    dict_keys_type = type({}.keys())
-    dict_vals_type = type({}.values())
-
-    def process(self, value):
-        if isinstance(value, (list, tuple, set, dict_keys_type, dict_values)):
-            return (set(value), None)
         else:
             return (None, 'unrecognized')
