@@ -1,6 +1,7 @@
 import os
 import re
 import copy
+import inspect
 
 from appyratus.schema import Schema
 
@@ -24,7 +25,15 @@ class Environment(object):
     _raw_data = {}
 
     def __init__(self, **fields):
-        self.schema_type = type('EnvironmentSchema', (Schema, ), fields)
+        base_fields = {}
+        for k, v in inspect.getmembers(
+            self.__class__, predicate=lambda v: isinstace(v, Field)
+        ):
+            base_fields[k] = v
+
+        merged_fields = base_fields.update(fields)
+        
+        self.schema_type = type('EnvironmentSchema', (Schema, ), merged_fields)
         self.schema = self.schema_type(allow_additional=True)
 
         data, errors = self.schema.process(dict(os.environ))
