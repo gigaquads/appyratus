@@ -3,7 +3,7 @@ import re
 import copy
 import inspect
 
-from appyratus.schema import Schema
+from appyratus.schema import Schema, Field
 
 
 class EnvironmentError(Exception):
@@ -27,12 +27,12 @@ class Environment(object):
     def __init__(self, **fields):
         base_fields = {}
         for k, v in inspect.getmembers(
-            self.__class__, predicate=lambda v: isinstace(v, Field)
+            self.__class__, predicate=lambda v: isinstance(v, Field)
         ):
             base_fields[k] = v
 
-        merged_fields = base_fields.update(fields)
-        
+        merged_fields = dict(base_fields, **(fields or {}))
+
         self.schema_type = type('EnvironmentSchema', (Schema, ), merged_fields)
         self.schema = self.schema_type(allow_additional=True)
 
