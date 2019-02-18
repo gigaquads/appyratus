@@ -7,6 +7,7 @@ import dateutil.parser
 
 from datetime import datetime, date
 from os.path import abspath, expanduser
+from copy import deepcopy
 from typing import Type
 from uuid import UUID, uuid4
 
@@ -327,8 +328,33 @@ class Timestamp(Field):
 
 class List(Field):
     def __init__(self, nested: Field = None, **kwargs):
-        super().__init__(**kwargs)
+        on_create_kwarg = kwargs.pop('on_create', None)
+
+        def on_create(schema_type: Type['Schema']):
+            if on_create_kwarg:
+                on_create_kwarg(schema_type)
+
+            from appyratus.schema import Schema
+
+            if isinstance(self.nested, Schema):
+                self.nested = deepcopy(self.nested)
+                nested_type_name = '{}Schema'.format(
+                    self.name.title().replace('_', '')
+                )
+                self.nested.name = self.name
+                self.nested.source = self.name
+                self.nested.__class__.__name__ = nested_type_name
+            elif isinstance(self.nested, Nested):
+                self.nested.name = self.name
+                self.nested.source = self.name
+
+            if self.nested.on_create:
+                self.nested.on_create(schema_type)
+
+
         self.nested = nested or Field()
+
+        super().__init__(on_create=on_create, **kwargs)
 
     def __repr__(self):
         if self.source != self.name:
@@ -396,7 +422,8 @@ class Nested(Field):
     def __init__(self, fields: dict, **kwargs):
         def on_create(schema_type: Type['Schema']):
             name = self.name.replace('_', ' ').title().replace(' ', '')
-            self.schema_type = schema_type.factory(name + 'Schema', fields)
+            name = f'{name}Schema'
+            self.schema_type = schema_type.factory(name, fields)
             self.schema = self.schema_type()
 
         super().__init__(on_create=on_create, **kwargs)

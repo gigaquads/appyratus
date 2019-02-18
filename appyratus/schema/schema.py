@@ -21,8 +21,11 @@ class schema_type(type):
                 schema = field
             if isinstance(field, Nested):
                 schema = field.schema
-            if isinstance(field, List) and isinstance(field.nested, Schema):
-                schema = field.nested
+            if isinstance(field, List):
+                if isinstance(field.nested, Schema):
+                    schema = field.nested
+                elif isinstance(field.nested, Nested):
+                    schema = field.nested.schema
             return schema
 
         for k, v in dict_.items():
