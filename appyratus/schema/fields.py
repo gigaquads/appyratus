@@ -15,7 +15,6 @@ from appyratus.utils import TimeUtils
 
 
 class Field(object):
-
     class TypeAdapter(object):
         def __init__(
             self,
@@ -35,14 +34,14 @@ class Field(object):
 
     def __init__(
         self,
-        source: typing.Text=None,
-        name: typing.Text=None,
-        required: bool=False,
-        nullable: bool=True,
-        default: object=None,
-        meta: typing.Dict=None,
-        on_create: object=None,
-        post_process: object=None,
+        source: typing.Text = None,
+        name: typing.Text = None,
+        required: bool = False,
+        nullable: bool = True,
+        default: object = None,
+        meta: typing.Dict = None,
+        on_create: object = None,
+        post_process: object = None,
         **kwargs,
     ):
         """
@@ -123,10 +122,7 @@ class String(Field):
 
 class FormatString(String):
     def __init__(self, **kwargs):
-        super().__init__(
-            post_process=self.do_format,
-            **kwargs
-        )
+        super().__init__(post_process=self.do_format, **kwargs)
 
     def do_format(self, fstr, data, context=None):
         value = fstr.format(**data)
@@ -463,3 +459,24 @@ class FilePath(String):
             return (value, None)
         else:
             return (None, 'unrecognized')
+
+
+class IpAddress(String):
+    """
+    # IPv4
+    """
+    pass
+
+
+class DomainName(String):
+    """
+    # Domain Name
+    """
+    pass
+
+
+class Url(String):
+    """
+    # Web URL
+    """
+    pass
