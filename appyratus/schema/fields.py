@@ -336,6 +336,9 @@ class List(Field):
 
             from appyratus.schema import Schema
 
+            if isinstance(self.nested, dict):
+                self.nested = Nested(nested)
+
             if isinstance(self.nested, Schema):
                 self.nested = deepcopy(self.nested)
                 nested_type_name = '{}Schema'.format(

@@ -1,6 +1,6 @@
 import venusian
 
-from typing import Type, Dict
+from typing import Type, Dict, Text
 from copy import deepcopy
 from collections import namedtuple
 
@@ -80,6 +80,9 @@ class Schema(Field, metaclass=schema_type):
             'results', field_names=['data', 'errors']
         )
         self.allow_additional = allow_additional
+
+    def __getitem__(self, field_name: Text) -> 'Field':
+        return self.fields[field_name]
 
     def process(
         self,
