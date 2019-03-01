@@ -116,8 +116,10 @@ class String(Field):
     def process(self, value):
         if isinstance(value, str):
             return (value, None)
+        elif value is not None:
+            return (str(value), None)
         else:
-            return (None, 'unrecognized')
+            return (value, 'unrecognized')
 
 
 class FormatString(String):
@@ -167,14 +169,6 @@ class Sint32(Int):
 class Sint64(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
-
-
-class String(Field):
-    def process(self, value):
-        if isinstance(value, str):
-            return (value, None)
-        else:
-            return (None, 'unrecognized')
 
 
 class Float(Field):
@@ -346,7 +340,6 @@ class List(Field):
 
             if self.nested.on_create:
                 self.nested.on_create(schema_type)
-
 
         self.nested = nested or Field()
 
