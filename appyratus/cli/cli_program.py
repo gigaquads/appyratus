@@ -44,9 +44,18 @@ class CliProgram(Parser):
         self.tagline = tagline
         self.defaults = defaults or {}
         self._func = None
-        self._cli_args = cli_args or None
-        self._unknown_cli_args = None
+        self._cli_args = None
+        self._unknown_cli_args = None or cli_args
+        self._raw_cli_args = cli_args
         self._merge_unknown = merge_unknown or False
+
+    @property
+    def cli_args(self):
+        return self._cli_args
+
+    @property
+    def unknown_cli_args(self):
+        return self._unknown_cli_args
 
     def build(self, *args, **kwargs):
         """
@@ -55,7 +64,7 @@ class CliProgram(Parser):
         super().build(*args, **kwargs)
         self.add_version_arg()
         self._cli_args, self._unknown_cli_args = self.parse_cli_args(
-            merge_unknown=self._merge_unknown
+            args=self._unknown_cli_args, merge_unknown=self._merge_unknown
         )
 
     def build_parser(self, *args, **kwargs):
@@ -129,12 +138,12 @@ class CliProgram(Parser):
         self.build()
         action_res = self.route_action()
 
-    def parse_cli_args(self, merge_unknown: bool = True):
+    def parse_cli_args(self, args: list = None, merge_unknown: bool = True):
         """
         # Parse arguments from command-line
         """
         # let argparser do the initial parsing
-        cli_args, unknown_args = self._parser.parse_known_args(self._cli_args)
+        cli_args, unknown_args = self._parser.parse_known_args(args)
 
         # now combine known and unknown arguments into a single dict
         args_dict = {
@@ -158,8 +167,5 @@ class CliProgram(Parser):
                 except Exception as err:
                     print('unmatched arg "{}"'.format(k))
 
-        # build a custom type with the combined argument names as attributes
         arguments = type('Arguments', (object, ), args_dict)()
-        arguments.data = args_dict
-
         return arguments, unknown_args
