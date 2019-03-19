@@ -1,6 +1,6 @@
 import venusian
 
-from typing import Type, Dict, Text
+from typing import Type, Dict, Text, Set
 from copy import deepcopy
 from collections import namedtuple
 
@@ -89,8 +89,10 @@ class Schema(Field, metaclass=schema_type):
         source: Dict,
         context: Dict = None,
         strict=False,
+        ignore_required=False,
+        ignore_nullable=False,
         pre_process=None,
-        post_process=None
+        post_process=None,
     ):
         """
         Marshal each value in the "source" dict into a new "dest" dict.
@@ -135,7 +137,7 @@ class Schema(Field, metaclass=schema_type):
                 if field.default is not None:
                     skip_field = False
                     source_val = generate_default(field)
-                elif field.required:
+                elif field.required and not ignore_required:
                     errors[field.name] = 'missing'
                     continue
                 else:
@@ -152,7 +154,7 @@ class Schema(Field, metaclass=schema_type):
                     if source_val is not None:
                         # source val is now populated with a default, set it
                         dest[field.name] = source_val
-                    else:
+                    elif not ignore_nullable:
                         # but None not allowed!
                         errors[field.name] = 'null'
                     continue
@@ -185,7 +187,10 @@ class Schema(Field, metaclass=schema_type):
                 dest_val, dest, context=context
             )
             # now recheck nullity of the post-processed field value
-            if (dest_val is None) and (not field.nullable):
+            if (
+                (dest_val is None) and
+                (not field.nullable and not ignore_nullable)
+            ):
                 errors[field.name] = 'null'
             elif not field_err:
                 dest[field.name] = field_val

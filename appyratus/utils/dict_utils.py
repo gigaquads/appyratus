@@ -6,7 +6,13 @@ from typing import Dict, Tuple, List, Text, Set
 
 class DictObject(object):
     def __init__(self, data: Dict = None):
-        self.__dict__['data'] = deepcopy(data or {})
+        self.__dict__['data'] = data if data is not None else {}
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
 
     def __getattr__(self, key):
         return self.data.get(key)
@@ -17,8 +23,17 @@ class DictObject(object):
     def __repr__(self):
         return f'<DictObject({self.data})>'
 
+    def __iter__(self):
+        return iter(self.data)
+
+    def __contains__(self, key):
+        return key in self.data
+
+    def __len__(self):
+        return len(self.data)
+
     def to_dict(self) -> Dict:
-        return deepcopy(self.data)
+        return self.data.copy()
 
 
 class DictUtils(object):

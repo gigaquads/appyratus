@@ -71,11 +71,7 @@ class Field(object):
             load_to = ' -> ' + self.name
         else:
             load_to = ''
-        return '{}({}{})'.format(
-            self.__class__.__name__,
-            self.source,
-            load_to
-        )
+        return f'<{self.__class__.__name__}({self.source}{load_to})>'
 
     def process(self, value):
         return (value, None)
@@ -119,6 +115,19 @@ class String(Field):
             return (value, None)
         else:
             return (None, 'unrecognized')
+
+
+class Bytes(Field):
+    def __init__(self, encoding='utf-8', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.encoding = encoding
+
+    def process(self, value):
+        if isinstance(value, bytes):
+            return (value, None)
+        if isinstance(value, str):
+            return (value.encode(self.encoding), None)
+        return (None, 'unrecognized')
 
 
 class FormatString(String):
@@ -199,7 +208,7 @@ class Float(Field):
 
 
 class Email(String):
-    re_email = re.compile(r'^[a-f]\w*(\.\w+)?@\w+\.\w+$', re.I)
+    re_email = re.compile(r'^[a-z][\w\.]*@[\w\.]*\w\.\w+$', re.I)
 
     def process(self, value):
         dest, error = super().process(value)
