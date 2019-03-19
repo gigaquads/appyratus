@@ -15,7 +15,6 @@ from appyratus.utils import TimeUtils
 
 
 class Field(object):
-
     class TypeAdapter(object):
         def __init__(
             self,
@@ -35,14 +34,14 @@ class Field(object):
 
     def __init__(
         self,
-        source: typing.Text=None,
-        name: typing.Text=None,
-        required: bool=False,
-        nullable: bool=True,
-        default: object=None,
-        meta: typing.Dict=None,
-        on_create: object=None,
-        post_process: object=None,
+        source: typing.Text = None,
+        name: typing.Text = None,
+        required: bool = False,
+        nullable: bool = True,
+        default: object = None,
+        meta: typing.Dict = None,
+        on_create: object = None,
+        post_process: object = None,
         **kwargs,
     ):
         """
@@ -113,8 +112,10 @@ class String(Field):
     def process(self, value):
         if isinstance(value, str):
             return (value, None)
+        elif value is not None:
+            return (str(value), None)
         else:
-            return (None, 'unrecognized')
+            return (value, 'unrecognized')
 
 
 class Bytes(Field):
@@ -132,10 +133,7 @@ class Bytes(Field):
 
 class FormatString(String):
     def __init__(self, **kwargs):
-        super().__init__(
-            post_process=self.do_format,
-            **kwargs
-        )
+        super().__init__(post_process=self.do_format, **kwargs)
 
     def do_format(self, fstr, data, context=None):
         value = fstr.format(**data)
@@ -180,14 +178,6 @@ class Sint32(Int):
 class Sint64(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
-
-
-class String(Field):
-    def process(self, value):
-        if isinstance(value, str):
-            return (value, None)
-        else:
-            return (None, 'unrecognized')
 
 
 class Float(Field):
@@ -363,7 +353,6 @@ class List(Field):
             if self.nested.on_create:
                 self.nested.on_create(schema_type)
 
-
         self.nested = nested or Field()
 
         super().__init__(on_create=on_create, **kwargs)
@@ -475,3 +464,24 @@ class FilePath(String):
             return (value, None)
         else:
             return (None, 'unrecognized')
+
+
+class IpAddress(String):
+    """
+    # IPv4
+    """
+    pass
+
+
+class DomainName(String):
+    """
+    # Domain Name
+    """
+    pass
+
+
+class Url(String):
+    """
+    # Web URL
+    """
+    pass
