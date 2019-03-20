@@ -1,16 +1,16 @@
+import re
 import time
 import typing
-import re
-
-import pytz
-import dateutil.parser
-
-from datetime import datetime, date
-from os.path import abspath, expanduser
 from copy import deepcopy
+from datetime import date, datetime
+from os.path import abspath, expanduser
 from typing import Type
 from uuid import UUID, uuid4
 
+import pytz
+
+import bcrypt
+import dateutil.parser
 from appyratus.utils import TimeUtils
 
 
@@ -485,3 +485,23 @@ class Url(String):
     # Web URL
     """
     pass
+
+
+class BcryptString(String):
+    class hash_str(str):
+        def __eq__(self, other: str):
+            return bcrypt.checkpw(other.encode('utf8'), self)
+
+    def __init__(self, rounds=14, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rounds = rounds
+
+    def process(self, value):
+        value, error = super().process(value)
+        if error:
+            return (None, error)
+        else:
+            hashy = bcrypt.hashpw(value.encode('utf8'), bcrypt.gensalt(self.rounds))
+            hashed = BcryptString.hash_str(hashy)
+            print('>>', hashy, type(hashy), str(hashy), "\n>> ", hashed, type(hashed), str(hashed))
+            return (str(hashed), None)
