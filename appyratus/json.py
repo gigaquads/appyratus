@@ -25,7 +25,7 @@ class JsonEncoder(object):
     def default(self, target):
         func = self.defaults.get(target.__class__)
         if func is None:
-            raise ValueError('cannot JSON encode {}'.format(target))
+            return str(target)
         return func(target)
 
     @staticmethod
