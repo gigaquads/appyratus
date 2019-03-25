@@ -487,10 +487,14 @@ class Url(String):
     pass
 
 
+class hash_str(str):
+    def __eq__(self, other: str):
+        return bcrypt.checkpw(other.encode('utf8'), self.encode('utf8'))
+
+
 class BcryptString(String):
-    class hash_str(str):
-        def __eq__(self, other: str):
-            return bcrypt.checkpw(other.encode('utf8'), self)
+
+    re_bcrypt_hash = re.compile(r'^\$2[ayb]\$.{56}$')
 
     def __init__(self, rounds=14, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -500,8 +504,9 @@ class BcryptString(String):
         value, error = super().process(value)
         if error:
             return (None, error)
+        elif self.re_bcrypt_hash.match(value):
+            return (value, None)
         else:
-            hashy = bcrypt.hashpw(value.encode('utf8'), bcrypt.gensalt(self.rounds))
-            hashed = BcryptString.hash_str(hashy)
-            print('>>', hashy, type(hashy), str(hashy), "\n>> ", hashed, type(hashed), str(hashed))
-            return (str(hashed), None)
+            salt = bcrypt.gensalt(self.rounds)
+            raw_hash = bcrypt.hashpw(value.encode('utf8'), salt).decode('utf8')
+            return (hash_str(raw_hash), None)
