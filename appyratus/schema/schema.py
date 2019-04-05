@@ -172,6 +172,7 @@ class Schema(Field, metaclass=schema_type):
             # apply field to the source value
             dest_val, field_err = field.process(source_val)
 
+
             if not field_err:
                 dest[field.name] = dest_val
             else:

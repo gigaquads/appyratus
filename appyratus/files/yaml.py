@@ -1,8 +1,13 @@
 from __future__ import absolute_import
 
+from typing import Dict
+
 import yaml
 
-from .base import BaseFile, File
+from .base import (
+    BaseFile,
+    File,
+)
 
 
 class Yaml(BaseFile):
@@ -46,20 +51,24 @@ class Yaml(BaseFile):
     def load_string(cls, data: str):
         return yaml.load(data)
 
-
     @classmethod
     def to_file(cls, file_path: str, data=None, multi=False):
         with open(file_path, 'wb') as yaml_file:
-            yaml_args = dict(
-                default_flow_style=False,
-                explicit_start=True,
-                explicit_end=True
-            )
-            if multi:
-                data = yaml.dump_all(data, **yaml_args)
-            else:
-                data = yaml.dump(data, **yaml_args)
+            data = cls.from_data(data, multi=multi)
             yaml_file.write(data.encode())
+
+    @classmethod
+    def from_data(cls, data: Dict, multi: bool = False):
+        yaml_args = dict(
+            default_flow_style=False,
+            explicit_start=True,
+            explicit_end=True
+        )
+        if multi:
+            data = yaml.dump_all(data, **yaml_args)
+        else:
+            data = yaml.dump(data, **yaml_args)
+        return data
 
     @classmethod
     def format_file_name(cls, basename):
