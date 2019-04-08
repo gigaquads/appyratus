@@ -11,3 +11,4 @@ jinja2
 ujson
 python-rapidjson
 aiohttp
+bcrypt
