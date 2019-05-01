@@ -1,16 +1,12 @@
 Appyratus Table of Contents
 ---------------------------------
 
-#### `io` - File system and IO utilities
+- `enum.py` - Classes for implementing enumeration types.
+- `json.py` - JSON serialization/deserialization components.
+- `memoize.py` - Memoization decorators.
 
-#### `validation` - Data structure validation and transformation
-
-#### `types` - Generic reusable types
-
-#### `fe` - Front-end toolkits, like tkinter
-
-#### `time` - Utilities related to dates and times
-
-#### `grpc` - High-level interface to grpcio
-
-#### `decorators` - Assortment of various decorators
+- `asynchronous/` - Components that harness async/await
+- `files/` - High-level file-type abstractions, like Yaml, Json, etc.
+- `schema/` - A data marshaling/validation library
+- `test/` - Unit testing components, namely pytest components.
+- `utils/` - General-pupose data structure utility classes

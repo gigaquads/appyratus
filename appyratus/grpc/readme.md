@@ -1,1 +1,0 @@
-# gRPC High-level Interface

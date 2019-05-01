@@ -9,6 +9,8 @@ class Subparser(Parser):
 
     def __init__(self, usage=None, defaults=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        #if not self.name:
+        #    self.name = self.__class__
         self.usage = usage or ''
         self.defaults = defaults if defaults and defaults is not None else {}
         self.defaults['func'] = self._perform

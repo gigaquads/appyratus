@@ -1,5 +1,5 @@
 from appyratus.test import mark, BaseTests
-from appyratus.util import DictUtils
+from appyratus.utils import DictUtils
 
 from collections import namedtuple
 
@@ -157,7 +157,11 @@ class TestDictUtils(BaseTests):
             }, {
                 'a.1': 'z',
                 'a.3': 'x'
-            }, {})
+            }, {}),
+    # an empty dict returns an empty dict
+            ({}, {}, {}),
+    # nothing returns nothing
+            (None, None, {})
         ]
     )
     def test__flatten_keys(self, actual, expected, whatever):

@@ -1,18 +1,19 @@
 from abc import abstractmethod
 
-from appyratus.decorators import memoized_property
+from appyratus.memoize import memoized_property
 
 
 class Parser(object):
     def __init__(self, name=None, args=None, subparsers=None, perform=None):
         """
         # Args
-        - `name`, TODO
-        - `args`, TODO
-        - `subparsers`, TODO
-        - `perform`, TODO
+        - `name`, the name of this parser
+        - `args`, arguments for this parser
+        - `subparsers`, subparsers related to this parser, which are
+          just parsers themselves.  Subparsers can also be defined as
+          a method on the parser class, however this method will take precedence
+        - `perform`, a callable to execute when this parser runs
         """
-        #print('>>> INIT {} ({})'.format(name, self.__class__.__name__))
         self.name = name
         self._parser = None
         self._subparser = None
@@ -40,7 +41,6 @@ class Parser(object):
         """
         Build
         """
-        #print('>>> BUILD {} ({})'.format(self.name, self.__class__.__name__))
         self.parent = parent
         self._parser = self.build_parser()
         if self._subparsers:
