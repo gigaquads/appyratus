@@ -7,7 +7,7 @@ from typing import Dict
 from .base import File
 
 
-class Python(File):
+class PythonModule(File):
     @staticmethod
     def extensions():
         return {'py'}
@@ -42,7 +42,6 @@ class Python(File):
     @classmethod
     def to_file(cls, file_path: str, contents=None):
         with open(file_path, 'wb') as python_file:
-            import ipdb; ipdb.set_trace(); print('=' * 100)
             data = cls.dump_data(contents) if contents else ''
             python_file.write(data.encode())
 
