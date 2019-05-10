@@ -1,10 +1,19 @@
 import re
 
+from collections import OrderedDict
 from copy import copy, deepcopy
 from typing import Dict, Tuple, List, Text, Set
 
 
 class DictObject(object):
+    @classmethod
+    def from_list(cls, key, data):
+        newdata = OrderedDict()
+        for d in data:
+            k = getattr(d, key)
+            newdata[k] = d
+        return cls(newdata)
+
     def __init__(self, data: Dict = None):
         self.__dict__['data'] = data if data is not None else {}
 
