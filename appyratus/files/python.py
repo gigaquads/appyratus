@@ -41,10 +41,17 @@ class PythonModule(File):
 
     @classmethod
     def to_file(cls, file_path: str, contents=None):
+        """
+        # To File
+        """
         with open(file_path, 'wb') as python_file:
-            data = cls.dump_data(contents) if contents else ''
-            python_file.write(data.encode())
+            source = cls.to_source(contents) if contents else ''
+            python_file.write(source.encode())
 
     @classmethod
-    def dump_data(cls, data: Dict):
-        return astor.to_source(data)
+    def to_source(cls, ast):
+        """
+        # Dump Source
+        Dump AST to source code
+        """
+        return astor.to_source(ast)
