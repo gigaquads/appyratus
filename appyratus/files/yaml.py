@@ -11,7 +11,6 @@ from .base import (
 
 
 class Yaml(BaseFile):
-
     @staticmethod
     def extensions():
         return {'yml', 'yaml'}
@@ -49,7 +48,7 @@ class Yaml(BaseFile):
 
     @classmethod
     def load_string(cls, data: str):
-        return yaml.load(data)
+        return yaml.load(data, Loader=yaml.FullLoader)
 
     @classmethod
     def to_file(cls, file_path: str, data=None, multi=False):
