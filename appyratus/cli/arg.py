@@ -50,13 +50,21 @@ class Arg(object):
         # remove empty values from kwargs. argparser will shit the
         # bed if it finds one that is empty and shouldn't belong in
         # conjunction with another Args' kwargs
-        kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
+        kwargs = DictUtils.remove_keys(
+            self.kwargs, values=[None]
+        )
         # not all types are callable, like if you reference a class in a string
         if 'type' in kwargs:
-            type_known = kwargs['type'] in (str, int, dict, list)
-            if not callable(kwargs['type']) or not type_known:
+            type_known = kwargs['type'] in (
+                str, int, dict, list
+            )
+            if not callable(
+                kwargs['type']
+            ) or not type_known:
                 kwargs['type'] = str
-        return parent._parser.add_argument(*self.flags, **kwargs)
+        return parent._parser.add_argument(
+            *self.flags, **kwargs
+        )
 
 
 class PositionalArg(Arg):
@@ -66,10 +74,23 @@ class PositionalArg(Arg):
     to match the provided name of the argument.
     """
 
-    def __init__(self, name=None, flags=None, usage=None, dtype=None):
+    def __init__(
+        self,
+        name=None,
+        flags=None,
+        usage=None,
+        dtype=None,
+        action=None
+    ):
         if name and not flags:
             flags = (name, )
-        super().__init__(name=name, flags=flags, usage=usage, dtype=dtype)
+        super().__init__(
+            name=name,
+            flags=flags,
+            usage=usage,
+            dtype=dtype,
+            action=action
+        )
 
 
 class OptionalArg(Arg):
@@ -97,7 +118,9 @@ class OptionalArg(Arg):
                 flags.append('-{}'.format(name[0]))
             if long_flag:
                 flags.append('--{}'.format(name))
-        super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
+        super().__init__(
+            name=name, flags=tuple(flags), *args, **kwargs
+        )
 
 
 class FlagArg(Arg):
@@ -126,7 +149,12 @@ class FlagArg(Arg):
             action = 'store_true'
         else:
             action = 'store_false'
-        super().__init__(name=name, action=action, flags=flags, usage=usage)
+        super().__init__(
+            name=name,
+            action=action,
+            flags=flags,
+            usage=usage
+        )
 
 
 class FileArg(Arg):
