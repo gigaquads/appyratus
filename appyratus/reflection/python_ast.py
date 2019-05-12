@@ -16,15 +16,16 @@ class BaseNode(object):
             values = ','.join(self.repr_values)
         else:
             values = ''
-        return f'<{self.__class__.__name__}(values)>'
+        return f'<{self.__class__.__name__}({values})>'
 
 
 class NamedNode(BaseNode):
     def __init__(self, name: Text, *args, **kwargs):
         self._name = name
 
+    @property
     def repr_values(self):
-        return ['"{self.name}"']
+        return [f'"{self.name}"']
 
     @property
     def name(self):

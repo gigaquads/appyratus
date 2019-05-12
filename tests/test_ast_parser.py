@@ -38,3 +38,4 @@ class TestPythonModule(BaseTests):
 
     def test__from_filepath(self):
         mymodule = self.klass.from_filepath(python_ast.__file__)
+        assert isinstance(mymodule, PythonModule)
