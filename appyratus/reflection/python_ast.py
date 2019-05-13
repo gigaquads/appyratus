@@ -7,6 +7,9 @@ from .ast_parser import AstParser
 
 
 class BaseNode(object):
+    def __init__(self, ast = None, *args, **kwargs):
+        self._ast = ast
+
     @property
     def repr_values(self):
         return []
@@ -18,9 +21,18 @@ class BaseNode(object):
             values = ''
         return f'<{self.__class__.__name__}({values})>'
 
+    def resolve_objects(self, klass: 'BaseNode', data: List, key: Text = None):
+        if not key:
+            key = 'name'
+        if not data:
+            return []
+
+        return DictObject.from_list(key, [klass(**d) for d in data])
+
 
 class NamedNode(BaseNode):
     def __init__(self, name: Text, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._name = name
 
     @property
@@ -46,35 +58,49 @@ class PythonModule(NamedNode):
     def __init__(
         self,
         path: Text,
-        classes: List['Class'] = None,
-        functions: List['Function'] = None,
-        imports: List['Import'] = None,
+        classes: List['PythonClass'] = None,
+        functions: List['PythonFunction'] = None,
+        imports: List['PythonImport'] = None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self._path = path
-        self._classes = DictObject.from_list(
-            'name', [PythonClass(**c) for c in classes]
+        self._classes = self.resolve_objects(PythonClass, classes)
+        self._functions = self.resolve_objects(PythonFunction, functions)
+        self._imports = self.resolve_objects(
+            PythonImport, imports, key='_module'
         )
-
-        self._functions = DictObject.from_list(
-            'name', [PythonFunction(**f) for f in functions]
-        )
-        self._imports = imports or []
 
     @classmethod
     def from_filepath(cls, filepath: Text):
         source = File.from_file(filepath)
         ast = AstParser().parse_module(filepath)
-        mod = cls(
+        module = cls(
             name=ast['module'],
             path=ast['file'],
             classes=ast['classes'],
             functions=ast['functions'],
-            imports=ast['imports']
+            imports=ast['imports'],
+            ast=ast,
         )
-        return mod
+        return module
+
+    @classmethod
+    def from_package(cls, package: Text):
+        modules = []
+        ast_modules = AstParser().parse_package(package)
+        for ast in ast_modules:
+            mod = cls(
+                name=ast['module'],
+                path=ast['file'],
+                classes=ast['classes'],
+                functions=ast['functions'],
+                imports=ast['imports'],
+                ast=ast,
+            )
+            modules.append(mod)
+        return modules
 
 
 class PythonClass(NamedNode):
@@ -94,21 +120,17 @@ class PythonClass(NamedNode):
     def __init__(
         self,
         docstring: Text = None,
-        bases: List['Base'] = None,
-        methods: List['Function'] = None,
-        classes: List['Class'] = None,
+        bases: List['PythonBase'] = None,
+        methods: List['PythonFunction'] = None,
+        classes: List['PythonClass'] = None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self._docstring = docstring
         self._bases = bases
-        self._methods = DictObject.from_list(
-            'name', [PythonMethod(**m) for m in methods]
-        )
-        self._classes = DictObject.from_list(
-            'name', [PythonClass(**c) for c in classes]
-        )
+        self._methods = self.resolve_objects(PythonMethod, methods)
+        self._classes = self.resolve_objects(PythonClass, classes)
 
 
 class PythonFunction(NamedNode):
@@ -125,32 +147,31 @@ class PythonFunction(NamedNode):
     def __init__(
         self,
         docstring: Text = None,
-        fargs: List['Argument'] = None,
-        fkwargs: List['KeywordArgument'] = None,
-        decorators: List['Decorator'] = None,
+        pargs: List['PythonArgument'] = None,
+        pkwargs: List['PythonKeywordArgument'] = None,
+        decorators: List['PythonDecorator'] = None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self._docstring = docstring
-        self._args = fargs
-        self._kwargs = fkwargs
-        self._decorators = DictObject.from_list(
-            'name', [PythonDecorator(**d) for d in decorators]
-        )
+        self._args = self.resolve_objects(PythonArgument, pargs)
+        self._kwargs = self.resolve_objects(PythonKeywordArgument, pkwargs)
+        self._decorators = self.resolve_objects(PythonDecorator, decorators)
         self._is_staticmethod = False
         self._is_classmethod = False
         self._is_property = False
         self._is_property_setter = False
-        for d in self._decorators.data.values():
-            if d.name == 'staticmethod':
-                self._is_staticmethod = True
-            elif d.name == 'classmethod':
-                self._is_classmethod = True
-            elif d.name == 'property':
-                self._is_property = True
-            elif re.match(r'\w+\.setter', d.name):
-                self._is_property_setter = True
+        if self._decorators:
+            for d in self._decorators.data.values():
+                if d.name == 'staticmethod':
+                    self._is_staticmethod = True
+                elif d.name == 'classmethod':
+                    self._is_classmethod = True
+                elif d.name == 'property':
+                    self._is_property = True
+                elif re.match(r'\w+\.setter', d.name):
+                    self._is_property_setter = True
 
 
 class PythonMethod(PythonFunction):
@@ -167,9 +188,17 @@ class PythonImport(BaseNode):
     # alias
     """
 
-    def __init__(self, module: Text, alias: Text):
+    def __init__(
+        self,
+        type: Text,
+        module: Text,
+        alias: Text = None,
+        objects: List[Dict] = None
+    ):
+        self._type = type
         self._module = module
         self._alias = alias
+        self._objects = objects
 
 
 class PythonImportFrom(BaseNode):
@@ -184,7 +213,7 @@ class PythonImportFrom(BaseNode):
     - targets [{name, alias}]
     """
 
-    def __init__(self, module: Text, targets: List[Dict]):
+    def __init__(self, type: Text, module: Text, targets: List[Dict]):
         self._module = module
         self._targets = targets
 
@@ -200,8 +229,8 @@ class PythonDecorator(NamedNode):
 
     def __init__(
         self,
-        fargs: List['Argument'] = None,
-        fkwargs: List['KeywordArgument'] = None,
+        fargs: List['PythonArgument'] = None,
+        fkwargs: List['PythonKeywordArgument'] = None,
         *args,
         **kwargs
     ):
@@ -210,12 +239,11 @@ class PythonDecorator(NamedNode):
         self._kwargs = fkwargs
 
 
-class PythonCall(BaseNode):
+class PythonCall(NamedNode):
     """
     # Call
 
     ## Fields
-    - function
     - decorators
     - args
     - kwargs
@@ -223,15 +251,16 @@ class PythonCall(BaseNode):
 
     def __init__(
         self,
-        function: Text,
-        decorators: List['Decorator'] = None,
-        args: List['Argument'] = None,
-        kwargs: List['KeywordArgument'] = None
+        decorators: List['PythonDecorator'] = None,
+        pargs: List['PythonArgument'] = None,
+        pkwargs: List['PythonKeywordArgument'] = None,
+        *args,
+        **kwargs
     ):
-        self._function = function
-        self._decorators = decorators
-        self._args = args
-        self._kwargs = kwargs
+        super().__init__(*args, **kwargs)
+        self._decorators = self.resolve_objects(PythonDecorator, decorators)
+        self._args = self.resolve_objects(PythonArgument, pargs)
+        self._kwargs = self.resovle_objects(PythonKeywordArgument, pkwargs)
 
 
 class PythonAttribute(BaseNode):

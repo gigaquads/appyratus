@@ -1,3 +1,4 @@
+from typing import Text
 import os
 import importlib
 import traceback
@@ -18,10 +19,11 @@ class AstParser(object):
 
         return results
 
-    def parse_module(self, file_path) -> Dict:
-        module = os.path.splitext(os.path.basename(file_path))[0]
+    def parse_module(self, file_path, module_path: Text = None) -> Dict:
+        if not module_path:
+            module_path = os.path.splitext(os.path.basename(file_path))[0]
         data = {
-            'module': module,
+            'module': module_path,
             'file': file_path,
             'classes': [],
             'functions': [],
@@ -66,8 +68,6 @@ class AstParser(object):
         if isinstance(node, ast.Num):
             return node.n
 
-        import ipdb
-        ipdb.set_trace()
         raise ValueError(str(node))
 
     def _parse_node_Module(self, module_node):
@@ -155,7 +155,7 @@ class AstParser(object):
 
     def _parse_node_Call(self, node):
         return {
-            'function': node.name if hasattr(node, 'name') else node.func.id,
+            'name': node.name if hasattr(node, 'name') else node.func.id,
             'decorators': (
                 self._parse_decorator_list(node.decorator_list)
                 if hasattr(node, 'decorator_list') else []
