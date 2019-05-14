@@ -7,7 +7,7 @@ from .ast_parser import AstParser
 
 
 class BaseNode(object):
-    def __init__(self, ast = None, *args, **kwargs):
+    def __init__(self, ast=None, *args, **kwargs):
         self._ast = ast
 
     @property
@@ -72,6 +72,18 @@ class PythonModule(NamedNode):
             PythonImport, imports, key='_module'
         )
 
+    @property
+    def classes(self):
+        return self._classes
+
+    @property
+    def functions(self):
+        return self._functions
+
+    @property
+    def imports(self):
+        return self._imports
+
     @classmethod
     def from_filepath(cls, filepath: Text):
         source = File.from_file(filepath)
@@ -132,6 +144,22 @@ class PythonClass(NamedNode):
         self._methods = self.resolve_objects(PythonMethod, methods)
         self._classes = self.resolve_objects(PythonClass, classes)
 
+    @property
+    def docstring(self):
+        return self._docstring
+
+    @property
+    def bases(self):
+        return self._bases
+
+    @property
+    def methods(self):
+        return self._methods
+
+    @property
+    def classes(self):
+        return self._classes
+
 
 class PythonFunction(NamedNode):
     """
@@ -172,6 +200,39 @@ class PythonFunction(NamedNode):
                     self._is_property = True
                 elif re.match(r'\w+\.setter', d.name):
                     self._is_property_setter = True
+
+    @property
+    def docstring(self):
+        return self._docstring
+    
+    @property
+    def args(self):
+        return self._args
+
+    @property
+    def kwargs(self):
+        return self._kwargs
+
+    @property
+    def decorators(self):
+        return self._decorators
+
+    @property
+    def is_classmethod(self):
+        return self._is_classmethod
+    
+    @property
+    def is_staticmethod(self):
+        return self._is_staticmethod
+
+    @property
+    def is_property(self):
+        return self._is_property
+
+    @property
+    def is_property_setter(self):
+        return self._is_property_setter
+
 
 
 class PythonMethod(PythonFunction):
@@ -263,7 +324,7 @@ class PythonCall(NamedNode):
         self._kwargs = self.resovle_objects(PythonKeywordArgument, pkwargs)
 
 
-class PythonAttribute(BaseNode):
+class PythonAttribute(NamedNode):
     """
     # Attribute
 
@@ -272,21 +333,18 @@ class PythonAttribute(BaseNode):
     - attr
     """
 
-    def __init__(self, name: Text, value: Text):
-        self._name = name
+    def __init__(self, value: Text):
         self._value = value
 
 
-class PythonArgument(BaseNode):
+class PythonArgument(NamedNode):
     """
     # Argument
 
     ## Fields
     - value
     """
-
-    def __init__(self, value: Text):
-        self._value = value
+    pass
 
 
 class PythonKeywordArgument(BaseNode):
