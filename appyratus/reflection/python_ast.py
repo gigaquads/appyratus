@@ -21,13 +21,14 @@ class BaseNode(object):
             values = ''
         return f'<{self.__class__.__name__}({values})>'
 
-    def resolve_objects(self, klass: 'BaseNode', data: List, key: Text = None):
+    def build_nodes(
+        self, node_class: 'BaseNode', data: List, key: Text = None
+    ):
         if not key:
             key = 'name'
         if not data:
             return []
-
-        return DictObject.from_list(key, [klass(**d) for d in data])
+        return DictObject.from_list(key, [node_class(**d) for d in data])
 
 
 class NamedNode(BaseNode):
@@ -44,6 +45,29 @@ class NamedNode(BaseNode):
         return self._name
 
 
+class PythonPackage(NamedNode):
+    """
+    # Python Package
+    """
+
+    def __init__(self, modules: List['PythonModule'] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._modules = {
+            m['module']: PythonModule(name=m['module'], **m)
+            for m in modules
+        }
+
+    @property
+    def modules(self):
+        return self._modules
+
+    @classmethod
+    def from_dotted_path(cls, package: Text):
+        modules = []
+        module_data = AstParser().parse_package(package)
+        return cls(name=package, modules=module_data)
+
+
 class PythonModule(NamedNode):
     """
     # Module
@@ -57,7 +81,7 @@ class PythonModule(NamedNode):
 
     def __init__(
         self,
-        path: Text,
+        path: Text = None,
         classes: List['PythonClass'] = None,
         functions: List['PythonFunction'] = None,
         imports: List['PythonImport'] = None,
@@ -66,11 +90,9 @@ class PythonModule(NamedNode):
     ):
         super().__init__(*args, **kwargs)
         self._path = path
-        self._classes = self.resolve_objects(PythonClass, classes)
-        self._functions = self.resolve_objects(PythonFunction, functions)
-        self._imports = self.resolve_objects(
-            PythonImport, imports, key='_module'
-        )
+        self._classes = self.build_nodes(PythonClass, classes)
+        self._functions = self.build_nodes(PythonFunction, functions)
+        self._imports = self.build_nodes(PythonImport, imports, key='_module')
 
     @property
     def classes(self):
@@ -141,8 +163,8 @@ class PythonClass(NamedNode):
         super().__init__(*args, **kwargs)
         self._docstring = docstring
         self._bases = bases
-        self._methods = self.resolve_objects(PythonMethod, methods)
-        self._classes = self.resolve_objects(PythonClass, classes)
+        self._methods = self.build_nodes(PythonMethod, methods)
+        self._classes = self.build_nodes(PythonClass, classes)
 
     @property
     def docstring(self):
@@ -175,17 +197,17 @@ class PythonFunction(NamedNode):
     def __init__(
         self,
         docstring: Text = None,
-        pargs: List['PythonArgument'] = None,
-        pkwargs: List['PythonKeywordArgument'] = None,
+        py_args: List['PythonArgument'] = None,
+        py_kwargs: List['PythonKeywordArgument'] = None,
         decorators: List['PythonDecorator'] = None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self._docstring = docstring
-        self._args = self.resolve_objects(PythonArgument, pargs)
-        self._kwargs = self.resolve_objects(PythonKeywordArgument, pkwargs)
-        self._decorators = self.resolve_objects(PythonDecorator, decorators)
+        self._args = self.build_nodes(PythonArgument, py_args)
+        self._kwargs = self.build_nodes(PythonKeywordArgument, py_kwargs)
+        self._decorators = self.build_nodes(PythonDecorator, decorators)
         self._is_staticmethod = False
         self._is_classmethod = False
         self._is_property = False
@@ -204,7 +226,7 @@ class PythonFunction(NamedNode):
     @property
     def docstring(self):
         return self._docstring
-    
+
     @property
     def args(self):
         return self._args
@@ -220,7 +242,7 @@ class PythonFunction(NamedNode):
     @property
     def is_classmethod(self):
         return self._is_classmethod
-    
+
     @property
     def is_staticmethod(self):
         return self._is_staticmethod
@@ -232,7 +254,6 @@ class PythonFunction(NamedNode):
     @property
     def is_property_setter(self):
         return self._is_property_setter
-
 
 
 class PythonMethod(PythonFunction):
@@ -313,15 +334,15 @@ class PythonCall(NamedNode):
     def __init__(
         self,
         decorators: List['PythonDecorator'] = None,
-        pargs: List['PythonArgument'] = None,
-        pkwargs: List['PythonKeywordArgument'] = None,
+        py_args: List['PythonArgument'] = None,
+        py_kwargs: List['PythonKeywordArgument'] = None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self._decorators = self.resolve_objects(PythonDecorator, decorators)
-        self._args = self.resolve_objects(PythonArgument, pargs)
-        self._kwargs = self.resovle_objects(PythonKeywordArgument, pkwargs)
+        self._decorators = self.build_nodes(PythonDecorator, decorators)
+        self._args = self.build_nodes(PythonArgument, py_args)
+        self._kwargs = self.build_nodes(PythonKeywordArgument, py_kwargs)
 
 
 class PythonAttribute(NamedNode):
