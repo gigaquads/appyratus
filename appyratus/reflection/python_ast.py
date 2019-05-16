@@ -282,6 +282,14 @@ class PythonImport(BaseNode):
         self._alias = alias
         self._objects = objects
 
+    @property
+    def module(self):
+        return self._module
+
+    @property
+    def repr_values(self):
+        return [f'"{self._module}"']
+
 
 class PythonImportFrom(BaseNode):
     """
