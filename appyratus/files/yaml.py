@@ -41,17 +41,23 @@ class Yaml(BaseFile):
         data = File.read(file_path)
         if not data:
             return []
-        docs = yaml.load_all(data)
+        docs = cls.load_string(data, multi=True)
         if not docs:
             return []
         return [doc for doc in docs]
 
     @classmethod
-    def load_string(cls, data: str):
-        return yaml.load(data, Loader=yaml.FullLoader)
+    def load_string(cls, data: str, multi: bool = False):
+        load_args = {'Loader': yaml.FullLoader}
+        if multi:
+            return yaml.load_all(data, **load_args)
+        else:
+            return yaml.load(data, **load_args)
 
     @classmethod
-    def to_file(cls, file_path: str, data=None, multi=False):
+    def to_file(
+        cls, file_path: str, data=None, multi=False
+    ):
         with open(file_path, 'wb') as yaml_file:
             data = cls.from_data(data, multi=multi)
             yaml_file.write(data.encode())
