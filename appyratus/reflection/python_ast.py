@@ -52,6 +52,7 @@ class PythonPackage(NamedNode):
 
     def __init__(self, modules: List['PythonModule'] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        modules = sorted(modules, key=lambda x: x['module'])
         self._modules = {
             m['module']: PythonModule(name=m['module'], **m)
             for m in modules
