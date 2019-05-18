@@ -1,0 +1,98 @@
+{
+  "project/base": [
+    {
+      "embryo": {
+        "action": "hatch",
+        "destination": "/Users/admin/code/appyratus",
+        "name": "project/base",
+        "timestamp": 1558192313
+      },
+      "project": {
+        "name": "appyratus"
+      }
+    }
+  ],
+  "python-project/setup": [
+    {
+      "author": null,
+      "author_email": null,
+      "classifiers": null,
+      "dependency_links": null,
+      "description": null,
+      "embryo": {
+        "action": "hatch",
+        "destination": "/Users/admin/code/appyratus",
+        "name": "python-project/setup",
+        "timestamp": 1558149082
+      },
+      "find_packages": null,
+      "install_requires": null,
+      "keywords": null,
+      "license": null,
+      "long_description": null,
+      "name": null,
+      "packages": null,
+      "project": null,
+      "refresh_scripts": true,
+      "scripts": null,
+      "tagline": null,
+      "url": null,
+      "version": null,
+      "zip_safe": null
+    },
+    {
+      "author": null,
+      "author_email": null,
+      "classifiers": null,
+      "dependency_links": null,
+      "description": null,
+      "embryo": {
+        "action": "hatch",
+        "destination": "/Users/admin/code/appyratus",
+        "name": "python-project/setup",
+        "timestamp": 1558192305
+      },
+      "find_packages": null,
+      "install_requires": null,
+      "keywords": null,
+      "license": null,
+      "long_description": null,
+      "name": null,
+      "packages": null,
+      "project": null,
+      "refresh_scripts": true,
+      "scripts": null,
+      "tagline": null,
+      "url": null,
+      "version": null,
+      "zip_safe": null
+    },
+    {
+      "author": null,
+      "author_email": null,
+      "classifiers": null,
+      "dependency_links": null,
+      "description": null,
+      "embryo": {
+        "action": "hatch",
+        "destination": "/Users/admin/code/appyratus",
+        "name": "python-project/setup",
+        "timestamp": 1558192316
+      },
+      "find_packages": null,
+      "install_requires": null,
+      "keywords": null,
+      "license": null,
+      "long_description": null,
+      "name": null,
+      "packages": null,
+      "project": null,
+      "refresh_scripts": true,
+      "scripts": null,
+      "tagline": null,
+      "url": null,
+      "version": null,
+      "zip_safe": null
+    }
+  ]
+}

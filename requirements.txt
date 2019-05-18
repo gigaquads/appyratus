@@ -12,3 +12,4 @@ ujson
 python-rapidjson
 aiohttp
 bcrypt
+beautifulsoup4
