@@ -28,7 +28,8 @@ class BaseNode(object):
             key = 'name'
         if not data:
             return []
-        return DictObject.from_list(key, [node_class(**d) for d in data])
+        sorted_data = sorted(data, key=lambda x: (x.get(key) or ''))
+        return DictObject.from_list(key, [node_class(**d) for d in sorted_data])
 
 
 class NamedNode(BaseNode):
@@ -93,7 +94,7 @@ class PythonModule(NamedNode):
         self._path = path
         self._classes = self.build_nodes(PythonClass, classes)
         self._functions = self.build_nodes(PythonFunction, functions)
-        self._imports = self.build_nodes(PythonImport, imports, key='_module')
+        self._imports = self.build_nodes(PythonImport, imports, key='module')
 
     @property
     def classes(self):
@@ -258,6 +259,10 @@ class PythonFunction(NamedNode):
 
 
 class PythonMethod(PythonFunction):
+    """
+    # Python Method
+    This is just a Python Function
+    """
     pass
 
 
