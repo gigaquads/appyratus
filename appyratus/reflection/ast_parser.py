@@ -11,7 +11,6 @@ class AstParser(object):
     def parse_package(self, pkg: str) -> List[Dict]:
         paths = self._get_python_filepaths(pkg)
         results = []
-
         for file_path, module_path in paths.items():
             data = self.parse_module(file_path, module_path)
             if data is not None:
@@ -28,11 +27,13 @@ class AstParser(object):
             'classes': [],
             'functions': [],
             'imports': [],
+            'ast': None,
         }
         try:
             root = self._load_ast_from_source(file_path)
             if root is not None:
                 data.update(self._parse_node_Module(root))
+            data['ast'] = root
             return data
         except:
             traceback.print_exc()
@@ -44,8 +45,7 @@ class AstParser(object):
             try:
                 return ast.parse(source)
             except:
-                pass    # log this?
-
+                traceback.print_exc()  # log this?
         return None
 
     def _extract_string_value(self, node):
@@ -111,6 +111,7 @@ class AstParser(object):
                 raise ValueError()
 
         return {
+            'ast': class_def,
             'name': class_def.name,
             'docstring': ast.get_docstring(class_def),
             'bases': bases,
@@ -134,6 +135,7 @@ class AstParser(object):
                         'type': 'import',
                         'module': x.name,
                         'alias': x.asname,
+                        'ast': x,
                     }
                 )
             else:
@@ -143,6 +145,7 @@ class AstParser(object):
 
     def _parse_node_ImportFrom(self, node):
         return {
+            'ast': node,
             'type': 'from',
             'module': node.module,
             'objects': [
@@ -150,7 +153,7 @@ class AstParser(object):
                     'name': alias.name,
                     'alias': alias.asname,
                 } for alias in node.names
-            ]
+            ],
         }
 
     def _parse_node_Call(self, node):
@@ -178,6 +181,7 @@ class AstParser(object):
                 'name': None,
                 'args': [],
                 'kwargs': [],
+                'ast': x,
             }
             decorators.append(item)
 
@@ -209,24 +213,38 @@ class AstParser(object):
 
     def _parse_node_FunctionDef(self, node):
         decorators = self._parse_decorator_list(node.decorator_list)
+        args = self._parse_args(node.args)
         results = {
             'name': node.name,
             'docstring': ast.get_docstring(node),
-            'args': self._parse_args(node.args),
-            'kwargs': self._parse_kwargs(node.args),
+            'args': args,
+            'kwargs': self._parse_kwargs(node.args, len(args)),
             'decorators': decorators,
+            'ast': node,
         }
         return results
 
     def _parse_args(self, arguments):
-        return [arg.arg for arg in arguments.args]
-
-    def _parse_kwargs(self, arguments):
         return [
             {
                 'key': arg.arg,
-                'value': self._extract_string_value(val)
-            } for arg, val in zip(arguments.kwonlyargs, arguments.kw_defaults)
+                'index': idx,
+            }
+            for idx, arg in enumerate(arguments.args)
+        ]
+
+    def _parse_kwargs(self, arguments, index):
+        kwarg_count = len(arguments.defaults)
+        return [
+            {
+                'key': arg.arg,
+                'value': self._extract_string_value(val),
+                'index': index + 1 + idx,
+            }
+            for idx, (arg, val) in
+            enumerate(
+                zip(arguments.args[-kwarg_count:], arguments.kw_defaults)
+            )
         ]
 
     @staticmethod
@@ -234,6 +252,12 @@ class AstParser(object):
         pkg = importlib.import_module(pkg_name)
         pkg_filepath = os.path.dirname(pkg.__file__)
         file_paths = {}
+
+        # if pkg_name is actually the name of a module, not contained in a
+        # package, just return a single filepath for the module file. do not
+        # recurse on its parent directory.
+        if '__init__.py' not in os.listdir(pkg_filepath):
+            return {pkg.__file__: pkg_name}
 
         for dir_path, subdir_names, file_names in os.walk(pkg_filepath):
             for k in file_names:

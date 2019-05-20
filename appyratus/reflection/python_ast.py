@@ -1,18 +1,22 @@
 import re
+import ast
+import _ast
+import inspect
+import astor
+import sys
+
+from typing import Text, List, Dict
 from appyratus.files import File
 from appyratus.utils import DictObject
-from typing import Text, List, Dict
 
 from .ast_parser import AstParser
 
+NIL = sys.maxsize
 
-class BaseNode(object):
+
+class PythonNode(object):
     def __init__(self, ast=None, *args, **kwargs):
         self._ast = ast
-
-    @property
-    def repr_values(self):
-        return []
 
     def __repr__(self):
         if self.repr_values:
@@ -21,8 +25,46 @@ class BaseNode(object):
             values = ''
         return f'<{self.__class__.__name__}({values})>'
 
+    @property
+    def repr_values(self):
+        return []
+
+    def to_source(self):
+        return astor.to_source(self._ast).strip() if self._ast else None
+
+    def execute(self, namespace: Dict = None):
+        if self._ast is not None:
+            exec(self.to_source())
+            if namespace is not None:
+                namespace.update(locals())
+
+    def insert(self, obj, index: int) -> 'PythonNode':
+        if isinstance(obj, str):
+            ast_node = ast.parse(obj).body[0]
+        elif isinstance(obj, ast.AST):
+            ast_node = obj
+        elif isinstance(obj, PythonNode):
+            ast_node = obj._ast
+        else:
+            # assume it is a Python callable
+            func_source = inspect.getsource(obj).strip()
+            ast_node = ast.parse(func_source).body[0]
+
+        if index == -1:
+            self._ast.body.append(ast_node)
+        else:
+            self._ast.body.insert(index, ast_node)
+
+        return self
+
+    def append(self, obj) -> 'PythonNode':
+        return self.insert(obj, index=-1)
+
+    def prepend(self, obj) -> 'PythonNode':
+        return self.insert(obj, index=0)
+
     def build_nodes(
-        self, node_class: 'BaseNode', data: List, key: Text = None
+        self, node_class: 'PythonNode', data: List, key: Text = None
     ):
         if not key:
             key = 'name'
@@ -31,7 +73,7 @@ class BaseNode(object):
         return DictObject.from_list(key, [node_class(**d) for d in data])
 
 
-class NamedNode(BaseNode):
+class NamedPythonNode(PythonNode):
     def __init__(self, name: Text, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._name = name
@@ -45,17 +87,17 @@ class NamedNode(BaseNode):
         return self._name
 
 
-class PythonPackage(NamedNode):
+class PythonPackage(NamedPythonNode):
     """
     # Python Package
     """
 
     def __init__(self, modules: List['PythonModule'] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._modules = {
-            m['module']: PythonModule(name=m['module'], **m)
+        self._modules = DictObject({
+            m['module'].replace('.', '_'): PythonModule(name=m['module'], **m)
             for m in modules
-        }
+        })
 
     @property
     def modules(self):
@@ -68,7 +110,7 @@ class PythonPackage(NamedNode):
         return cls(name=package, modules=module_data)
 
 
-class PythonModule(NamedNode):
+class PythonModule(NamedPythonNode):
     """
     # Module
 
@@ -137,7 +179,7 @@ class PythonModule(NamedNode):
         return modules
 
 
-class PythonClass(NamedNode):
+class PythonClass(NamedPythonNode):
     """
     # Class
 
@@ -183,7 +225,7 @@ class PythonClass(NamedNode):
         return self._classes
 
 
-class PythonFunction(NamedNode):
+class PythonFunction(NamedPythonNode):
     """
     # Function
 
@@ -205,6 +247,7 @@ class PythonFunction(NamedNode):
     ):
         super().__init__(*args, **kwargs)
         self._docstring = docstring
+        self.arguments = Arguments(self)
         self._args = self.build_nodes(PythonArgument, py_args)
         self._kwargs = self.build_nodes(PythonKeywordArgument, py_kwargs)
         self._decorators = self.build_nodes(PythonDecorator, decorators)
@@ -248,6 +291,10 @@ class PythonFunction(NamedNode):
         return self._is_staticmethod
 
     @property
+    def is_instancemethod(self):
+        return not (self._is_staticmethod or self._is_classmethod)
+
+    @property
     def is_property(self):
         return self._is_property
 
@@ -256,11 +303,44 @@ class PythonFunction(NamedNode):
         return self._is_property_setter
 
 
+class Arguments(object):
+    def __init__(self, func: 'PythonFunction'):
+        self._func = func
+
+    def insert(self, index, name, annotation=None, default=NIL):
+        if default is NIL:
+            self._insert_arg(index, name, annotation=annotation)
+        else:
+            self._insert_kwarg(index, name, default, annotation=annotation)
+        return self
+
+    def _insert_arg(self, index, name, annotation=None):
+        if self._func.is_instancemethod:
+            index = max(index, 1)
+        arg = _ast.arg(arg=name, annotation=annotation)
+        self._func.args.insert(index, arg)
+        self._func._ast.args.args.insert(index, arg)
+
+    def _insert_kwarg(self, index, name, default, annotation=None):
+        if self._func.is_instancemethod:
+            index = max(index, 1 + len(self._func.args))
+        abs_index = index - len(self._func.args)
+        if isinstance(default, str):
+            default = ast.Str(default)
+        elif isinstance(default, PythonNode):
+            default = default._ast
+        arg = _ast.arg(arg=name, annotation=annotation)
+        self._func.kwargs.insert(abs_index, arg)
+        self._func._ast.args.args.insert(index, arg)
+        self._func._ast.args.defaults.insert(index, default)
+
+
+
 class PythonMethod(PythonFunction):
     pass
 
 
-class PythonImport(BaseNode):
+class PythonImport(PythonNode):
     """
     # Import
     type = import
@@ -275,7 +355,8 @@ class PythonImport(BaseNode):
         type: Text,
         module: Text,
         alias: Text = None,
-        objects: List[Dict] = None
+        objects: List[Dict] = None,
+        ast = None,
     ):
         self._type = type
         self._module = module
@@ -283,7 +364,7 @@ class PythonImport(BaseNode):
         self._objects = objects
 
 
-class PythonImportFrom(BaseNode):
+class PythonImportFrom(PythonNode):
     """
     # Import From
     type = from
@@ -300,7 +381,7 @@ class PythonImportFrom(BaseNode):
         self._targets = targets
 
 
-class PythonDecorator(NamedNode):
+class PythonDecorator(NamedPythonNode):
     """
     # Decorator
 
@@ -313,6 +394,7 @@ class PythonDecorator(NamedNode):
         self,
         fargs: List['PythonArgument'] = None,
         fkwargs: List['PythonKeywordArgument'] = None,
+        ast = None,
         *args,
         **kwargs
     ):
@@ -321,7 +403,7 @@ class PythonDecorator(NamedNode):
         self._kwargs = fkwargs
 
 
-class PythonCall(NamedNode):
+class PythonCall(NamedPythonNode):
     """
     # Call
 
@@ -345,7 +427,7 @@ class PythonCall(NamedNode):
         self._kwargs = self.build_nodes(PythonKeywordArgument, py_kwargs)
 
 
-class PythonAttribute(NamedNode):
+class PythonAttribute(NamedPythonNode):
     """
     # Attribute
 
@@ -358,25 +440,38 @@ class PythonAttribute(NamedNode):
         self._value = value
 
 
-class PythonArgument(NamedNode):
+class PythonArgument(NamedPythonNode):
     """
     # Argument
 
     ## Fields
     - value
+    - index
     """
     pass
 
 
-class PythonKeywordArgument(BaseNode):
+class PythonKeywordArgument(PythonNode):
     """
     # Keyword Argument
 
     ## Fields
     - key
     - value
+    - index
     """
 
-    def __init__(self, key: Text, value=None):
+    def __init__(self, key: Text, value=None, index=None):
         self._key = key
         self._value = value
+        self._index = index
+
+
+if __name__ == '__main__':
+    class Person(object):
+        def talk(self):
+            print('talking')
+
+
+
+
