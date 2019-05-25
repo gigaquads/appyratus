@@ -7,7 +7,6 @@ from .base import File
 
 
 class Ini(File):
-
     @staticmethod
     def extensions():
         return {'ini'}
@@ -20,10 +19,14 @@ class Ini(File):
     @classmethod
     def to_file(cls, file_path: str, data):
         output = io.StringIO()
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation()
+        )
         config.read_dict(data)
         config.write(output)
-        cls.write(file_path=file_path, contents=output.getvalue())
+        cls.write(
+            file_path=file_path, contents=output.getvalue()
+        )
 
     @classmethod
     def load_file(cls, file_path: str):
