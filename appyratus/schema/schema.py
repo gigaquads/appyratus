@@ -45,8 +45,10 @@ class schema_type(type):
         cls.children = []
         cls.required_fields = {}
         cls.optional_fields = {}
+        cls.source_2_field = {}
 
         for k, field in cls.fields.items():
+            cls.source_2_field[field.source] = field
             # track required and optional fields
             if field.required:
                 cls.required_fields[k] = field
@@ -109,7 +111,8 @@ class Schema(Field, metaclass=schema_type):
 
         for field in self.fields.values():
             # is key simply present in source?
-            exists_key = field.source in source
+            field_key = field.source or field.name
+            exists_key = field_key in source
 
             # do we ultimately call field.process?
             skip_field = not exists_key
@@ -172,7 +175,6 @@ class Schema(Field, metaclass=schema_type):
             # apply field to the source value
             dest_val, field_err = field.process(source_val)
 
-
             if not field_err:
                 dest[field.name] = dest_val
             else:
@@ -205,6 +207,12 @@ class Schema(Field, metaclass=schema_type):
         results = self.tuple_factory(dest, errors)
         return results
 
-    @memoized_property
-    def children(self):
-        pass
+    def translate_source(self, data: Dict) -> Dict:
+        results = {}
+        for k, v in data.items():
+            field = self.source_2_field.get(k)
+            if field:
+                results[field.name] = v
+            else:
+                results[k] = v
+        return results
