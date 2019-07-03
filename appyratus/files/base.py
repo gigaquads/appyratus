@@ -18,7 +18,7 @@ class BaseFile(object):
     def read(cls, file_path: str):
         raise NotImplementedError('override in subclass')
 
-    def write(cls, file_path: str, contents):
+    def write(cls, file_path: str, contents, encode: bool = True):
         raise NotImplementedError('override in subclass')
 
     def from_file(cls, file_path: str, *args, **kwargs):
@@ -70,9 +70,10 @@ class File(BaseFile):
         return data
 
     @classmethod
-    def write(cls, file_path: str, contents=None):
+    def write(cls, file_path: str, contents=None, encode=True):
         with open(file_path, 'wb') as write_bytes:
-            write_bytes.write(contents.encode())
+            write_contents = contents.encode() if encode else contents
+            write_bytes.write(write_contents)
 
     @classmethod
     def dir_path(cls, path):
@@ -83,5 +84,5 @@ class File(BaseFile):
         return cls.read(file_path)
 
     @classmethod
-    def to_file(cls, file_path: str, contents):
-        cls.write(file_path, contents)
+    def to_file(cls, file_path: str, contents, encode: bool = True):
+        cls.write(file_path, contents, encode=encode)

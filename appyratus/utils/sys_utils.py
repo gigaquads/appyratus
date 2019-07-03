@@ -46,4 +46,4 @@ class SysUtils(object):
         """
         Resolve bin path
         """
-        return sys_exec('/usr/bin/env which {}'.format(bin_file), capture=True)
+        return SysUtils.sys_exec('/usr/bin/env which {}'.format(bin_file), capture=True)
