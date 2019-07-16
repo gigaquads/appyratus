@@ -1,8 +1,8 @@
 import re
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from copy import copy, deepcopy
-from typing import Dict, Tuple, List, Text, Set
+from typing import Dict, Tuple, List, Text, Set, Callable
 
 
 class DictObject(object):
@@ -295,6 +295,7 @@ class DictUtils(object):
                     new_data[k] = dres
         return new_data
 
+    @staticmethod
     def traverse(data: Dict, method, depth: int = None) -> Dict:
         """
         Traverse a dictionary while passing values into the provided callable
@@ -323,3 +324,29 @@ class DictUtils(object):
                     lres = method(kl, vl, depth=depth)
                 new_data[kl] = lres
         return new_data
+
+    @staticmethod
+    def index(key, records: List[Dict]) -> Dict:
+        index = {}
+        for record in records:
+            try:
+                k = record[key]
+            except:
+                import ipdb; ipdb.set_trace()
+            if k not in index:
+                index[k] = [record]
+            else:
+                index[k].append(record)
+        return index
+
+    @staticmethod
+    def keep(condition, records) -> List:
+        return [x for x in records if condition(x)]
+
+    @staticmethod
+    def map(mapper: Callable, record: Dict) -> Dict:
+        mapped_records = []
+        for k, v in records.items():
+            k_mapped, v_mapped = mapper(k, v)
+            mapped_records[k_mapped] = v_mapped
+        return mapped_records

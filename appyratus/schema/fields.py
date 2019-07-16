@@ -99,6 +99,8 @@ class Enum(Field):
         super().__init__(**kwargs)
 
     def process(self, value):
+        if value is None and self.nullable:
+            return (value, None)
         nested_value, error = self.nested.process(value)
         if error:
             return (None, error)

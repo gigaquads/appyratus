@@ -29,7 +29,7 @@ class TimeUtils(object):
 
         if isinstance(datetime_obj, datetime):
             if datetime_obj.tzinfo is None:
-                raise ValueError('datetime object has no timezone')
+                datetime_obj = datetime_obj.replace(tzinfo=pytz.utc)
         elif isinstance(datetime_obj, date):
             datetime_obj = datetime\
                 .strptime(str(datetime_obj), "%Y-%m-%d")\
