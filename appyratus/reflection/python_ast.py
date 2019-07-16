@@ -111,6 +111,13 @@ class PythonPackage(NamedPythonNode):
         module_data = AstParser().parse_package(package)
         return cls(name=package, modules=module_data)
 
+    @classmethod
+    def from_string(cls, value: Text):
+        modules = []
+        module_data = AstParser().parse_string(value)
+        package = 'wat'
+        return cls(name=package, modules=module_data)
+
 
 class PythonModule(NamedPythonNode):
     """
@@ -179,6 +186,11 @@ class PythonModule(NamedPythonNode):
             )
             modules.append(mod)
         return modules
+
+    @classmethod
+    def from_string(cls, value: Text):
+        ast_module = AstParser().parse_string(value)
+        import ipdb; ipdb.set_trace(); print('=' * 100)
 
 
 class PythonClass(NamedPythonNode):

@@ -8,6 +8,10 @@ from typing import List, Dict
 
 
 class AstParser(object):
+    def parse_string(self, value: str) -> List[Dict]:
+        data = self._load_ast_from_source(value)
+        import ipdb; ipdb.set_trace(); print('=' * 100)
+
     def parse_package(self, pkg: str) -> List[Dict]:
         paths = self._get_python_filepaths(pkg)
         results = []
@@ -15,7 +19,6 @@ class AstParser(object):
             data = self.parse_module(file_path, module_path)
             if data is not None:
                 results.append(data)
-
         return results
 
     def parse_module(
@@ -43,13 +46,16 @@ class AstParser(object):
             traceback.print_exc()
             return None
 
-    def _load_ast_from_source(self, filepath):
+    def _load_ast_from_source(self, source):
+        try:
+            return ast.parse(source)
+        except:
+            traceback.print_exc()  # log this?
+
+    def _load_ast_from_filepath(self, filepath):
         with open(filepath) as fin:
             source = fin.read()
-            try:
-                return ast.parse(source)
-            except:
-                traceback.print_exc()  # log this?
+            return self._load_ast_from_source(source)
         return None
 
     def _extract_string_value(self, node):
