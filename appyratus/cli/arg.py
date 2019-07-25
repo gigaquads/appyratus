@@ -1,3 +1,4 @@
+from typing import List
 from appyratus.utils import DictUtils
 
 
@@ -15,6 +16,7 @@ class Arg(object):
         usage=None,
         action=None,
         nargs=None,
+        choices: List = None
     ):
         """
         # Args
@@ -31,6 +33,7 @@ class Arg(object):
         self.usage = usage
         self.action = action
         self.nargs = nargs
+        self.choices = choices
 
     @property
     def kwargs(self):
@@ -40,6 +43,7 @@ class Arg(object):
             'action': self.action,
             'nargs': self.nargs,
             'type': self.dtype,
+            'choices': self.choices,
         }
 
     def build(self, parent):
@@ -50,21 +54,14 @@ class Arg(object):
         # remove empty values from kwargs. argparser will shit the
         # bed if it finds one that is empty and shouldn't belong in
         # conjunction with another Args' kwargs
-        kwargs = DictUtils.remove_keys(
-            self.kwargs, values=[None]
-        )
+        kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
+
         # not all types are callable, like if you reference a class in a string
         if 'type' in kwargs:
-            type_known = kwargs['type'] in (
-                str, int, dict, list
-            )
-            if not callable(
-                kwargs['type']
-            ) or not type_known:
+            type_known = kwargs['type'] in (str, int, dict, list)
+            if not callable(kwargs['type']) or not type_known:
                 kwargs['type'] = str
-        return parent._parser.add_argument(
-            *self.flags, **kwargs
-        )
+        return parent._parser.add_argument(*self.flags, **kwargs)
 
 
 class PositionalArg(Arg):
@@ -74,23 +71,10 @@ class PositionalArg(Arg):
     to match the provided name of the argument.
     """
 
-    def __init__(
-        self,
-        name=None,
-        flags=None,
-        usage=None,
-        dtype=None,
-        action=None
-    ):
+    def __init__(self, name=None, flags=None, usage=None, dtype=None, action=None):
         if name and not flags:
             flags = (name, )
-        super().__init__(
-            name=name,
-            flags=flags,
-            usage=usage,
-            dtype=dtype,
-            action=action
-        )
+        super().__init__(name=name, flags=flags, usage=usage, dtype=dtype, action=action)
 
 
 class OptionalArg(Arg):
@@ -102,25 +86,18 @@ class OptionalArg(Arg):
     """
 
     def __init__(
-        self,
-        name=None,
-        flags=None,
-        short_flag=None,
-        long_flag=None,
-        *args,
-        **kwargs
+        self, name=None, flags=None, short_flag=None, long_flag=None, *args, **kwargs
     ):
         short_flag = True if short_flag is None else short_flag
         long_flag = True if long_flag is None else long_flag
-        if name and not flags:
+        if flags is None:
             flags = []
+        if name and not flags:
             if short_flag:
                 flags.append('-{}'.format(name[0]))
             if long_flag:
                 flags.append('--{}'.format(name))
-        super().__init__(
-            name=name, flags=tuple(flags), *args, **kwargs
-        )
+        super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
 
 
 class FlagArg(Arg):
@@ -149,11 +126,23 @@ class FlagArg(Arg):
             action = 'store_true'
         else:
             action = 'store_false'
+        super().__init__(name=name, action=action, flags=flags, usage=usage)
+
+
+class ListArg(OptionalArg):
+    """
+    # List Arg
+    An argument for specifying multiple values for the same argument key
+    """
+
+    def __init__(self, name=None, default=None, usage=None, choices=None, **kwargs):
+        action = 'append'
+        if choices is not None:
+            # dedupe choices
+            pass
+        self._choices = choices
         super().__init__(
-            name=name,
-            action=action,
-            flags=flags,
-            usage=usage
+            name=name, default=default, usage=usage, action=action, choices=choices
         )
 
 

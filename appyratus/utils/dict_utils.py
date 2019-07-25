@@ -101,10 +101,7 @@ class DictUtils(object):
                 kparent = copy(parent)
                 kparent.append(str(k))
                 vacc = DictUtils.flatten_keys(
-                    data=deepcopy(v),
-                    acc=acc,
-                    separator=separator,
-                    parent=kparent
+                    data=deepcopy(v), acc=acc, separator=separator, parent=kparent
                 )
                 if isinstance(vacc, dict) and vacc:
                     acc.update(vacc)
@@ -151,16 +148,15 @@ class DictUtils(object):
                         if not isinstance(xval, dict):
                             if xval:
                                 raise ValueError(
-                                    'Expected value to be a dictionary, got "{}"'
-                                    .format(xval)
+                                    'Expected value to be a dictionary, got "{}"'.
+                                    format(xval)
                                 )
                             obj[xkey] = {}
                     else:
                         if not isinstance(xval, list):
                             if xval:
                                 raise ValueError(
-                                    'Expected value to be a list, got "{}"'.
-                                    format(xval)
+                                    'Expected value to be a list, got "{}"'.format(xval)
                                 )
                             obj[xkey] = []
                         try:
@@ -272,12 +268,6 @@ class DictUtils(object):
             new_data = data
 
         for k, v in data.items():
-            if k in keys:
-                del new_data[k]
-            elif v in values:
-                del new_data[k]
-            if k not in new_data:
-                continue
             if isinstance(v, list):
                 vlist = []
                 for listk in v:
@@ -289,10 +279,14 @@ class DictUtils(object):
                 new_data[k] = vlist
             elif isinstance(v, dict):
                 dres = DictUtils.remove_keys(new_data[k], keys, values)
-                if dres in values:
+                new_data[k] = dres
+            else:
+                if k in keys:
                     del new_data[k]
-                else:
-                    new_data[k] = dres
+                elif v in values:
+                    del new_data[k]
+                if k not in new_data:
+                    continue
         return new_data
 
     def traverse(data: Dict, method, depth: int = None) -> Dict:
