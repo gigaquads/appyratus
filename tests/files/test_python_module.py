@@ -12,17 +12,17 @@ class TestPythonModuleFile(BaseTests):
     def klass(self):
         return PythonModule
 
-    def test__from_file(self):
+    def test__read(self):
         source = "print('hi')\n"
         source_path = '/tmp/wat.py'
-        source_file = PythonModule.to_file(
+        source_file = PythonModule.write(
             source_path, PythonModule.load_string(source)
         )
-        res = self.klass.from_file(source_path)
-        new_source = self.klass.to_source(res)
+        res = self.klass.read(source_path)
+        new_source = self.klass.dump(res)
         assert new_source == source
 
-    def test__from_string(self):
+    def test__load(self):
         file_path = "print('hi')"
-        res = self.klass.from_string(file_path)
+        res = self.klass.load(file_path)
         assert isinstance(res, ast.Module)

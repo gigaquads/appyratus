@@ -159,7 +159,7 @@ class PythonModule(NamedPythonNode):
 
     @classmethod
     def from_filepath(cls, filepath: Text):
-        source = File.from_file(filepath)
+        source = File.read(filepath)
         ast = AstParser().parse_module(filepath)
         module = cls(
             name=ast['module'],

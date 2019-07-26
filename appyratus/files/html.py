@@ -18,55 +18,28 @@ class Html(File):
         return f'{basename}.html'
 
     @classmethod
-    def from_file(cls, file_path: str):
-        return cls.load_file(file_path)
+    def read(cls, path: Text):
+        data = cls.read(path)
+        return cls.load(data)
 
     @classmethod
-    def from_string(cls, data: str):
-        return cls.load_string(data)
+    def write(cls, path: Text, data=None):
+        source = cls.dump(data) if data else ''
+        cls.write(source.encode())
 
     @classmethod
-    def load_file(cls, file_path: str):
-        data = cls.read(file_path)
+    def load(cls, data):
         if not data:
             return
-        return cls.load_string(data)
-
-    @classmethod
-    def load_string(cls, data: str):
-        """
-        # Load String
-        Load a string of HTML into the parser 
-        """
-        parser = cls.to_parser(data)
+        parser = cls.get_parser(data)
         return parser
 
     @classmethod
-    def to_file(cls, file_path: str, contents=None):
-        """
-        # To File
-        """
-        with open(file_path, 'wb') as python_file:
-            source = cls.to_source(
-                contents
-            ) if contents else ''
-            python_file.write(source.encode())
-
-    @classmethod
-    def to_parser(cls, contents):
-        """
-        # To Parse
-        Load HTML contents into the parser
-        """
-        return BeautifulSoup(
-            contents, features='html.parser'
-        )
-
-    @classmethod
-    def to_source(cls, contents):
-        """
-        # Dump Source
-        Dump AST to source code
-        """
-        parser = cls.to_parser(contents)
+    def dump(cls, data):
+        parser = cls.get_parser(data)
         return parser.prettify()
+        pass
+
+    @classmethod
+    def get_parser(cls, data):
+        return BeautifulSoup(data, features='html.parser')

@@ -8,25 +8,25 @@ from typing import Text
 from .base import BaseFile, File
 
 
-class Csv(BaseFile):
+class Csv(File):
 
     @staticmethod
     def extensions():
         return {'csv'}
 
     @classmethod
-    def from_file(cls, file_path: Text, delimiter: Text = None):
-        file_data = cls.load_file(file_path=file_path, delimiter=delimiter)
-        return file_data
-
-    @classmethod
-    def load_file(cls, file_path: Text, delimiter: Text = None):
-        file_data = File.read(file_path=file_path)
-        csv_data = cls.data_from_blob(blob=file_data, delimiter=delimiter)
+    def read(cls, path: Text, delimiter: Text = None):
+        file_data = cls.read(path=path)
+        csv_data = cls.load(file_data, delimiter=delimiter)
         return csv_data
 
     @classmethod
-    def blob_from_data(cls, data):
+    def write(cls, path: Text, data, delimiter: Text = None):
+        file_data = cls.dump(data)
+        cls.write(file_data)
+
+    @classmethod
+    def dump(cls, data):
         """
         Convert a list of dicts into a blob
         """
@@ -51,7 +51,7 @@ class Csv(BaseFile):
         return csv_blob
 
     @classmethod
-    def data_from_blob(cls, blob: Text, delimiter: Text = None):
+    def load(cls, blob: Text, delimiter: Text = None):
         """
         Convert a csv blob into a list of dicts
         """

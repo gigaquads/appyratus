@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import ast
 import astor
 
-from typing import Dict
+from typing import Text
 
 from .base import File
 
@@ -17,41 +17,21 @@ class PythonModule(File):
         return f'{basename}.py'
 
     @classmethod
-    def from_file(cls, file_path: str):
-        return cls.load_file(file_path)
+    def read(cls, path: Text):
+        data = cls.read(path)
+        return cls.load(data)
 
     @classmethod
-    def from_string(cls, data: str):
-        return cls.load_string(data)
+    def write(cls, path: Text, data=None):
+        source = cls.dump(data) if data else ''
+        cls.write(source.encode())
 
     @classmethod
-    def load_file(cls, file_path: str):
-        data = cls.read(file_path)
+    def load(cls, data):
         if not data:
             return
-        return cls.load_string(data)
-
-    @classmethod
-    def load_string(cls, data: str):
-        """
-        # Load String
-        Load a string of python code into AST
-        """
         return ast.parse(data)
 
     @classmethod
-    def to_file(cls, file_path: str, contents=None):
-        """
-        # To File
-        """
-        with open(file_path, 'wb') as python_file:
-            source = cls.to_source(contents) if contents else ''
-            python_file.write(source.encode())
-
-    @classmethod
-    def to_source(cls, ast):
-        """
-        # Dump Source
-        Dump AST to source code
-        """
-        return astor.to_source(ast)
+    def dump(cls, data):
+        return astor.to_source(data)

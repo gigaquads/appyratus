@@ -1,80 +1,56 @@
 from __future__ import absolute_import
-
-from typing import Dict
+from typing import Dict, Text
 
 import yaml
 
-from .base import (
-    BaseFile,
-    File,
-)
+from .base import File
 
 
-class Yaml(BaseFile):
+class Yaml(File):
     @staticmethod
     def extensions():
         return {'yml', 'yaml'}
 
     @classmethod
-    def from_file(cls, file_path: str, multi=False):
+    def format_file_name(cls, basename):
+        return f'{basename}.yml'
+
+    @classmethod
+    def read(cls, file_path: Text, multi=False):
         try:
-            if not multi:
-                return cls.load_file(file_path)
+            data = cls.read(file_path)
+            return cls.load(data, multi=multi)
         except yaml.composer.ComposerError:
-            multi = True
-        if multi:
-            return cls.load_all_file(file_path)
+            # this should occur when you attempt to load in a yaml file that
+            # that contains multiple documents and you did not specify multiple
+            return cls.load(data, multi=True)
 
     @classmethod
-    def from_string(cls, data: str):
-        return cls.load_string(data)
-
-    @classmethod
-    def load_file(cls, file_path: str):
-        data = File.read(file_path)
-        if not data:
-            return
-        return cls.load_string(data)
-
-    @classmethod
-    def load_all_file(cls, file_path: str):
-        data = File.read(file_path)
-        if not data:
-            return []
-        docs = cls.load_string(data, multi=True)
-        if not docs:
-            return []
-        return [doc for doc in docs]
-
-    @classmethod
-    def load_string(cls, data: str, multi: bool = False):
-        load_args = {'Loader': yaml.FullLoader}
-        if multi:
-            return yaml.load_all(data, **load_args)
-        else:
-            return yaml.load(data, **load_args)
-
-    @classmethod
-    def to_file(
-        cls, file_path: str, data=None, multi=False
-    ):
+    def write(cls, file_path: Text, contents=None, multi=False):
         with open(file_path, 'wb') as yaml_file:
             data = cls.from_data(data, multi=multi)
             yaml_file.write(data.encode())
 
     @classmethod
-    def from_data(cls, data: Dict, multi: bool = False):
-        yaml_args = dict(
-            default_flow_style=False,
-            explicit_start=True,
-            explicit_end=True
-        )
+    def load(cls, data, multi: bool = False):
+        load_args = {'Loader': yaml.FullLoader}
         if multi:
-            data = yaml.dump_all(data, **yaml_args)
+            return yaml.load_all(data, **load_args)
         else:
-            data = yaml.dump(data, **yaml_args)
-        return data
+            if not data:
+                return []
+            docs = yaml.load(data, **load_args)
+            return [doc for doc in docs]
 
     @classmethod
-    def format_file_name(cls, basename):
-        return f'{basename}.yml'
+    def dump(cls, data, multi: bool = False):
+        dump_args = {
+            'default_flow_style': False,
+            'explicit_start': True,
+            'explicit_end': True
+        }
+        if multi:
+            data = yaml.dump_all(data, **dump_args)
+        else:
+            data = yaml.dump(data, **dump_args)
+        return data

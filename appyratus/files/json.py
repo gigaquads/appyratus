@@ -3,24 +3,27 @@ from typing import Text
 
 import ujson
 
-from .base import BaseFile, File
+from .base import File
 
 
 class Json(File):
-
     @staticmethod
     def extensions():
         return {'json'}
 
     @classmethod
-    def load_file(cls, file_path):
-        return cls.read(file_path)
+    def read(cls, path: Text):
+        data = cls.read(path)
+        return cls.load(data)
+
+    def write(cls, path: Text, data):
+        json = cls.dump(data)
+        cls.write(json)
 
     @classmethod
-    def dump(cls, content):
-        return ujson.dumps(content)
-
-    @classmethod
-    def read(self, file_path: Text):
-        data = File.read(file_path)
+    def load(cls, data):
         return ujson.loads(data) if data else None
+
+    @classmethod
+    def dump(cls, data):
+        return ujson.dumps(data)
