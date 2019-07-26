@@ -16,9 +16,9 @@ class Json(File):
         data = super().read(path)
         return cls.load(data)
 
-    def write(cls, path: Text, data):
-        json = cls.dump(data)
-        cls.write(json)
+    def write(cls, path: Text, data = None, **kwargs):
+        file_data = cls.dump(data)
+        super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
     def load(cls, data):

@@ -20,7 +20,7 @@ class BaseFile(object):
         """
         raise NotImplementedError('override in subclass')
 
-    def write(cls, path: str, contents, encode: bool = True):
+    def write(cls, path: str, data, encode: bool = True):
         """
         Write the contents to a file's destination
         """
@@ -74,10 +74,10 @@ class File(BaseFile):
         return data
 
     @classmethod
-    def write(cls, path: str, contents=None, encode=True):
+    def write(cls, path: str, data=None, encode=True):
         with open(path, 'wb') as write_bytes:
-            write_contents = contents.encode() if encode else contents
-            write_bytes.write(write_contents)
+            file_data = data.encode() if encode else data
+            write_bytes.write(file_data)
 
     @classmethod
     def load(cls, data: Text):

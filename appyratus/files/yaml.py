@@ -16,9 +16,9 @@ class Yaml(File):
         return f'{basename}.yml'
 
     @classmethod
-    def read(cls, file_path: Text, multi=False):
+    def read(cls, path: Text, multi=False):
         try:
-            data = super().read(file_path)
+            data = super().read(path)
             return cls.load(data, multi=multi)
         except yaml.composer.ComposerError:
             # this should occur when you attempt to load in a yaml file that
@@ -26,10 +26,9 @@ class Yaml(File):
             return cls.load(data, multi=True)
 
     @classmethod
-    def write(cls, file_path: Text, contents=None, multi=False):
-        with open(file_path, 'wb') as yaml_file:
-            data = cls.from_data(data, multi=multi)
-            yaml_file.write(data.encode())
+    def write(cls, path: Text, data=None, multi=False, **kwargs):
+        file_data = cls.dump(data, multi=multi)
+        super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
     def load(cls, data, multi: bool = False):

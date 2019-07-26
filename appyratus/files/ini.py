@@ -19,9 +19,9 @@ class Ini(File):
         return ini_data
 
     @classmethod
-    def write(cls, path: Text, data):
+    def write(cls, path: Text, data = None, **kwargs):
         file_data = cls.dump(data)
-        cls.write(path=path, data=file_data)
+        super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
     def load(cls, data):

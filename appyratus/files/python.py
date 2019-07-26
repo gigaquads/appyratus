@@ -22,9 +22,9 @@ class PythonModule(File):
         return cls.load(data)
 
     @classmethod
-    def write(cls, path: Text, data=None):
-        source = cls.dump(data) if data else ''
-        cls.write(source.encode())
+    def write(cls, path: Text, data=None, **kwargs):
+        file_data = cls.dump(data) if data else ''
+        super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
     def load(cls, data):

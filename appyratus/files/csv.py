@@ -9,7 +9,6 @@ from .base import BaseFile, File
 
 
 class Csv(File):
-
     @staticmethod
     def extensions():
         return {'csv'}
@@ -21,9 +20,9 @@ class Csv(File):
         return csv_data
 
     @classmethod
-    def write(cls, path: Text, data, delimiter: Text = None):
+    def write(cls, path: Text, data=None, delimiter: Text = None, **kwargs):
         file_data = cls.dump(data)
-        cls.write(file_data)
+        super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
     def dump(cls, data):
