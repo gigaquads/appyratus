@@ -137,6 +137,8 @@ class ListArg(OptionalArg):
 
     def __init__(self, name=None, default=None, usage=None, choices=None, **kwargs):
         action = 'append'
+        if not choices:
+            choices = None
         if choices is not None:
             # dedupe choices
             pass
