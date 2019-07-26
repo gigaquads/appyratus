@@ -18,7 +18,7 @@ class PythonModule(File):
 
     @classmethod
     def read(cls, path: Text):
-        data = cls.read(path)
+        data = super().read(path)
         return cls.load(data)
 
     @classmethod

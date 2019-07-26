@@ -16,7 +16,7 @@ class Csv(File):
 
     @classmethod
     def read(cls, path: Text, delimiter: Text = None):
-        file_data = cls.read(path=path)
+        file_data = super().read(path=path)
         csv_data = cls.load(file_data, delimiter=delimiter)
         return csv_data
 

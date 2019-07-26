@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import ast
 import astor
 
-from typing import Dict
+from typing import Text
 
 from .base import File
 
@@ -19,7 +19,7 @@ class Html(File):
 
     @classmethod
     def read(cls, path: Text):
-        data = cls.read(path)
+        data = super().read(path)
         return cls.load(data)
 
     @classmethod

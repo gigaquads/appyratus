@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from typing import Text
 
 import io
 import configparser
@@ -13,7 +14,7 @@ class Ini(File):
 
     @classmethod
     def read(cls, path: Text):
-        file_data = cls.read(path=path)
+        file_data = super().read(path=path)
         ini_data = cls.load(file_data)
         return ini_data
 

@@ -18,7 +18,7 @@ class Yaml(File):
     @classmethod
     def read(cls, file_path: Text, multi=False):
         try:
-            data = cls.read(file_path)
+            data = super().read(file_path)
             return cls.load(data, multi=multi)
         except yaml.composer.ComposerError:
             # this should occur when you attempt to load in a yaml file that
@@ -35,12 +35,13 @@ class Yaml(File):
     def load(cls, data, multi: bool = False):
         load_args = {'Loader': yaml.FullLoader}
         if multi:
-            return yaml.load_all(data, **load_args)
-        else:
             if not data:
                 return []
-            docs = yaml.load(data, **load_args)
+            docs = yaml.load_all(data, **load_args)
+            # a generator comes back
             return [doc for doc in docs]
+        else:
+            return yaml.load(data, **load_args)
 
     @classmethod
     def dump(cls, data, multi: bool = False):
