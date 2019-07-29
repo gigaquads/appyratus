@@ -31,8 +31,10 @@ class Yaml(File):
         super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
-    def load(cls, data, multi: bool = False):
+    def load(cls, data=None, multi: bool = False):
         load_args = {'Loader': yaml.FullLoader}
+        if data is None:
+            return
         if multi:
             if not data:
                 return []
