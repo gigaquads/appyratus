@@ -109,7 +109,7 @@ class FlagArg(Arg):
     requires no value to be specified.  E.g., `-lame`, `-lamest`
     """
 
-    def __init__(self, name=None, default=None, usage=None):
+    def __init__(self, name=None, default=None, usage=None, **kwargs):
         """
         # Intialize the Flag Arg
 
@@ -120,9 +120,9 @@ class FlagArg(Arg):
           require a keyword value to be specified, it would be used
         """
         flags = ('-{}'.format(name), )
-        if value is None:
-            value = True
-        if value:
+        if default is None:
+            default = True
+        if default is True:
             action = 'store_true'
         else:
             action = 'store_false'
