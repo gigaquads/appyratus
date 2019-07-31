@@ -337,25 +337,23 @@ class List(Field):
 
             from appyratus.schema import Schema
 
-            if isinstance(self.nested, dict):
-                self.nested = Nested(nested)
+            if isinstance(nested, Nested):
+                self.nested = nested.schema
+            elif isinstance(nested, dict):
+                self.nested = Schema.factory('NestedSchema', nested)()
+            elif isinstance(nested, Field):
+                self.nested = deepcopy(nested)
+            elif callable(nested):
+                # expects that a Schema instance is returned
+                self.nested = nested()
+            else:
+                self.nested = Schema()
 
-            if isinstance(self.nested, Schema):
-                self.nested = deepcopy(self.nested)
-                nested_type_name = '{}Schema'.format(
-                    self.name.title().replace('_', '')
-                )
-                self.nested.name = self.name
-                self.nested.source = self.name
-                self.nested.__class__.__name__ = nested_type_name
-            elif isinstance(self.nested, Nested):
-                self.nested.name = self.name
-                self.nested.source = self.name
+            self.nested.name = self.name
+            self.nested.source = self.name
 
             if self.nested.on_create:
                 self.nested.on_create(schema_type)
-
-        self.nested = nested or Field()
 
         super().__init__(on_create=on_create, **kwargs)
 
@@ -422,14 +420,24 @@ class Nested(Field):
     ```
     """
 
-    def __init__(self, fields: dict, **kwargs):
+    def __init__(self, obj, **kwargs):
         def on_create(schema_type: Type['Schema']):
-            name = self.name.replace('_', ' ').title().replace(' ', '')
-            name = f'{name}Schema'
-            self.schema_type = schema_type.factory(name, fields)
-            self.schema = self.schema_type()
+            from appyratus.schema import Schema
+
+            if isinstance(obj, dict):
+                name = self.name.replace('_', ' ').title().replace(' ', '')
+                class_name = f'{name}Schema'
+                self.schema_type = Schema.factory(class_name, obj)
+                self.schema = self.schema_type()
+            elif isinstance(obj, Schema):
+                self.schema_type = obj
+                self.schema = self.schema_type()
+            elif callable(obj):
+                self.schema = obj()
+                self.schema_type = obj.__class__
 
         super().__init__(on_create=on_create, **kwargs)
+        self.schema_type = None
         self.schema = None
 
     def __repr__(self):
