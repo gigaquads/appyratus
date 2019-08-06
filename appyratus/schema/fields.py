@@ -1,41 +1,58 @@
+import inflect
+import random
+import uuid
 import re
 import time
 import typing
+import sys
+
 from copy import deepcopy
 from datetime import date, datetime
 from os.path import abspath, expanduser
-from typing import Type
+from typing import Type, Callable, Text
 from uuid import UUID, uuid4
 
 import pytz
-
 import bcrypt
 import dateutil.parser
-from appyratus.utils import TimeUtils
+
+from faker import Faker
+from appyratus.utils import TimeUtils, DictUtils
+
+RE_FIELD_NAME_SUFFIX = re.compile(r'^.+_([^_]+)$')
 
 
 class Field(object):
+
     class TypeAdapter(object):
+        """
+        TypeAdapter is used by anything that needs to be able to convert an
+        appyratus Field type to a corresponding field type used by some other
+        library. See the SqlalchemyDao in the `pybiz` project for an example.
+        """
+
         def __init__(
             self,
             field_type: Type['Field'],
-            on_adapt=None,
-            on_encode=None,
-            on_decode=None,
+            on_adapt: Callable = None,
+            on_encode: Callable = None,
+            on_decode: Callable = None,
         ):
             self.field_type = field_type
             self.on_adapt = on_adapt
             self.on_encode = on_encode
             self.on_decode = on_decode
 
-    @classmethod
-    def adapt(cls, on_adapt, **kwargs) -> TypeAdapter:
-        return cls.TypeAdapter(cls, on_adapt, **kwargs)
+
+    # `faker_presetes` is a mapping from common field names, like "first_name",
+    # to a dict containing the name of a Faker method an an arguments dict,
+    # like: {"first_name": {"method": "first_name", "args": {}}}
+    faker_presets = {}
 
     def __init__(
         self,
-        source: typing.Text = None,
-        name: typing.Text = None,
+        source: Text = None,
+        name: Text = None,
         required: bool = False,
         nullable: bool = True,
         default: object = None,
@@ -64,6 +81,7 @@ class Field(object):
         self.post_process = post_process
         self.meta = meta or {}
         self.meta.update(kwargs)
+        self.faker = Faker()
 
     def __repr__(self):
         if self.source != self.name:
@@ -71,6 +89,10 @@ class Field(object):
         else:
             load_to = ''
         return f'<{self.__class__.__name__}({self.source}{load_to})>'
+
+    @classmethod
+    def adapt(cls, on_adapt, **kwargs) -> TypeAdapter:
+        return cls.TypeAdapter(cls, on_adapt, **kwargs)
 
     def process(self, value):
         return (value, None)
@@ -91,6 +113,19 @@ class Field(object):
         """
         return (value, None)
 
+    def fake(self, *args, **kwargs):
+        if self.name is not None:
+            options = self.faker_presets.get(self.name)
+            if options is None:
+                match = RE_FIELD_NAME_SUFFIX.match(self.name)
+                if match:
+                    name = match.groups()[0]
+                    options = self.faker_presets.get(name)
+            if options is not None:
+                func = getattr(self.faker, options['method'])
+                return func(**options.get('args', {}))
+        return None
+
 
 class Enum(Field):
     def __init__(self, nested: Field, values, **kwargs):
@@ -109,8 +144,96 @@ class Enum(Field):
         else:
             return (nested_value, None)
 
+    def fake(self):
+        return random.choice(list(self.values()))
+
 
 class String(Field):
+
+    faker_presets = {
+        'first_name': {'method': 'first_name'},
+        'last_name': {'method': 'first_name'},
+        'full_name': {'method': 'name'},
+        'name': {'method': 'catch_phrase'},
+        'description': {'method': 'paragraph', 'args': {'nb_sentences': 10}},
+        'summary': {'method': 'paragraph', 'args': {'nb_sentences': 5}},
+        'city': {'method': 'city'},
+        'address': {'method': 'address'},
+        'phone': {'method': 'phone_number'},
+        'phone_number': {'method': 'phone_number'},
+        'mobile': {'method': 'phone_number'},
+        'zip': {'method': 'zipcode'},
+        'zip_code': {'method': 'zipcode'},
+        'postal_code': {'method': 'zipcode'},
+        'year': {'method': 'year'},
+        'user_name': {'method': 'user_name'},
+        'username': {'method': 'user_name'},
+        'nick': {'method': 'user_name'},
+        'nick_name': {'method': 'user_name'},
+        'handle': {'method': 'user_name'},
+        'screen_name': {'method': 'user_name'},
+        'state_code': {'method': 'state_abbr'},
+        'state': {'method': 'state'},
+        'country_code': {'method': 'country_code'},
+        'card_number': {'method': 'credit_card_number'},
+        'credit_card_number': {'method': 'credit_card_number'},
+        'credit_card_security_code': {'method': 'credit_card_security_code'},
+        'security_code': {'method': 'credit_card_security_code'},
+        'color': {'method': 'color_name'},
+        'currency_code': {'method': 'currency_code'},
+        'currency_name': {'method': 'currency_name'},
+        'ein': {'method': 'ein'},
+        'filename': {'method': 'file_name'},
+        'file_name': {'method': 'file_name'},
+        'fname': {'method': 'file_name'},
+        'file_path': {'method': 'file_path'},
+        'filepath': {'method': 'file_path'},
+        'fpath': {'method': 'file_path'},
+        'file_extension': {'method': 'file_extension'},
+        'image_url': {'method': 'image_url'},
+        'host': {'method': 'hostname'},
+        'hostname': {'method': 'hostname'},
+        'host_name': {'method': 'hostname'},
+        'ssn': {'method': 'ssn'},
+        'ip_addr': {'method': 'ipv4'},
+        'ip_address': {'method': 'ipv4'},
+        'ip': {'method': 'ipv4'},
+        'language_code': {'method': 'language_code'},
+        'license_plate': {'method': 'license_plate'},
+        'locale': {'method': 'locale'},
+        'mac_addr': {'method': 'mac_address'},
+        'mac_address': {'method': 'mac_address'},
+        'md5': {'method': 'md5'},
+        'mime_type': {'method': 'mime_type'},
+        'mimetype': {'method': 'mime_type'},
+        'mime': {'method': 'mime_type'},
+        'month': {'method': 'month'},
+        'isbn': {'method': 'isbn10'},
+        'slug': {'method': 'slug'},
+        'street': {'method': 'street_name'},
+        'street_name': {'method': 'street_name'},
+        'suffix': {'method': 'suffix'},
+        'timezone': {'method': 'timezone'},
+        'tz': {'method': 'timezone'},
+        'time_zone': {'method': 'timezone'},
+        'user_agent': {'method': 'user_agent'},
+        'useragent': {'method': 'user_agent'},
+        'ua': {'method': 'user_agent'},
+        'id': {'method': 'random_number', 'args': {'digits': 16}},
+        '_id': {'method': 'random_number', 'args': {'digits': 16}},
+        'text': {'method': 'text'},
+        'event': {'method': 'word'},
+        'event_name': {'method': 'word'},
+        'email': {'method': 'email'},
+        'email_addr': {'method': 'email'},
+        'email_address': {'method': 'email'},
+        'message': {'method': 'text', 'args': {'max_nb_chars': 140}},
+        'keyword': {'method': 'word'},
+        'headline': {'method': 'catch_phrase'},
+        'tag': {'method': 'word'},
+        'amount': {'method': 'random_number', 'args': {'digits': 3}},
+    }
+
     def process(self, value):
         if isinstance(value, str):
             return (value, None)
@@ -118,6 +241,13 @@ class String(Field):
             return (str(value), None)
         else:
             return (value, 'unrecognized')
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        else:
+            return self.faker.text(max_nb_chars=100)
 
 
 class Bytes(Field):
@@ -132,6 +262,13 @@ class Bytes(Field):
             return (value.encode(self.encoding), None)
         return (None, 'unrecognized')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        else:
+            return self.faker.binary(length=1024)
+
 
 class FormatString(String):
     def __init__(self, **kwargs):
@@ -141,8 +278,28 @@ class FormatString(String):
         value = fstr.format(**data)
         return (value, None)
 
+    def fake(self):
+        return super().fake()
+
 
 class Int(Field):
+
+    faker_presets = {
+        '_id': {'method': 'random_number', 'args': {'digits': 16}},
+        '_rev': {'method': 'random_number', 'args': {'digits': 5}},
+        'id': {'method': 'random_number', 'args': {'digits': 16}},
+        'age': {'method': 'random_number', 'args': {'digits': 2}},
+        'width': {'method': 'random_number', 'args': {'digits': 4}},
+        'height': {'method': 'random_number', 'args': {'digits': 4}},
+        'angle': {'method': 'random_number', 'args': {'digits': 3}},
+        'scale': {'method': 'random_number', 'args': {'digits': 3}},
+        'count': {'method': 'random_number', 'args': {'digits': 5}},
+        'year': {'method': 'year', 'args': {}},
+        'month': {'method': 'month', 'args': {}},
+        'day': {'method': 'day_of_month', 'args': {}},
+        'code': {'method': 'random_number', 'args': {'digits': 5}},
+    }
+
     def __init__(self, signed=False, **kwargs):
         super().__init__(**kwargs)
         self.signed = signed
@@ -161,25 +318,54 @@ class Int(Field):
         else:
             return (None, 'unrecognized')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return random.randint(-sys.maxsize, sys.maxsize)
+
 
 class Uint32(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return random.randint(0, 4294967295)
 
 class Uint64(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return random.randint(0, 18446744073709551615)
 
 
 class Sint32(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return random.randint(-2147483648, 2147483647)
+
 
 class Sint64(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return random.randint(-9223372036854775808, 9223372036854775807)
 
 
 class Float(Field):
@@ -198,9 +384,15 @@ class Float(Field):
         else:
             return (None, 'expected a float')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return random.random() * sys.maxsize
+
 
 class Email(String):
-    re_email = re.compile(r'^[a-z][\w\.]*@[\w\.]*\w\.\w+$', re.I)
+    re_email = re.compile(r'^[a-z][\w\-\.]*@[\w\.\-]*\w\.\w+$', re.I)
 
     def process(self, value):
         dest, error = super().process(value)
@@ -210,6 +402,12 @@ class Email(String):
             return (None, 'not a valid e-mail address')
         else:
             return (value.lower(), None)
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.email()
 
 
 class Uuid(Field):
@@ -231,6 +429,12 @@ class Uuid(Field):
         else:
             return (None, 'unrecognized')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return uuid.uuid4()
+
 
 class UuidString(String):
     re_uuid = re.compile(r'^[a-f0-9]{32}$')
@@ -251,6 +455,12 @@ class UuidString(String):
         else:
             return (None, 'unrecognized')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return uuid.uuid4().hex
+
 
 class Bool(Field):
     truthy = {'T', 't', 'True', 'true', 1, '1'}
@@ -265,6 +475,9 @@ class Bool(Field):
             return (False, None)
         else:
             return (None, 'unrecognized')
+
+    def fake(self):
+        return self.faker.boolean()
 
 
 class DateTime(Field):
@@ -285,6 +498,12 @@ class DateTime(Field):
                 return (None, 'invalid')
         else:
             return (None, 'unrecognized')
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.date_time_this_year()
 
 
 class DateTimeString(String):
@@ -314,6 +533,15 @@ class DateTimeString(String):
 
         return (dt_str, None)
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return datetime.strftime(
+            self.faker.date_time_this_year(),
+            self.format_spec
+        )
+
 
 class Timestamp(Field):
     def process(self, value):
@@ -326,8 +554,17 @@ class Timestamp(Field):
         else:
             return (None, 'unrecognized')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return TimeUtils.to_timestamp(self.faker.date_time_this_year())
+
 
 class List(Field):
+
+    _inflect = inflect.engine()
+
     def __init__(self, nested: Field = None, **kwargs):
         on_create_kwarg = kwargs.pop('on_create', None)
 
@@ -349,8 +586,9 @@ class List(Field):
             else:
                 self.nested = Schema()
 
-            self.nested.name = self.name
-            self.nested.source = self.name
+            singular_name = self._inflect.singular_noun(self.name)
+            self.nested.name = singular_name
+            self.nested.source = singular_name
 
             if self.nested.on_create:
                 self.nested.on_create(schema_type)
@@ -386,12 +624,11 @@ class List(Field):
         else:
             return (None, idx2error)
 
+    def fake(self):
+        return [self.nested.fake() for i in range(random.randint(1, 10))]
 
-class Set(Field):
-    def __init__(self, nested: Field = None, **kwargs):
-        super().__init__(**kwargs)
-        self.nested = nested or Field()
 
+class Set(List):
     def __repr__(self):
         if self.source != self.name:
             load_to = ' -> ' + self.name
@@ -405,8 +642,11 @@ class Set(Field):
         )
 
     def process(self, sequence):
-        result, error = super().process(sequence)
+        result, error = super().process(list(sequence))
         return ((set(result) if not error else result), error)
+
+    def fake(self):
+        return set(super().fake())
 
 
 class Nested(Field):
@@ -452,6 +692,12 @@ class Nested(Field):
     def process(self, value):
         return self.schema.process(value)
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.nested.fake()
+
 
 class Dict(Field):
     def process(self, value):
@@ -459,6 +705,12 @@ class Dict(Field):
             return (value, None)
         else:
             return (None, 'unrecognized')
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.pydict()
 
 
 class FilePath(String):
@@ -475,34 +727,55 @@ class FilePath(String):
         else:
             return (None, 'unrecognized')
 
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.file_path()
+
 
 class IpAddress(String):
     """
     # IPv4
     """
-    pass
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.ipv4()
 
 
 class DomainName(String):
     """
     # Domain Name
     """
-    pass
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.domain_name()
 
 
 class Url(String):
     """
     # Web URL
     """
-    pass
 
-
-class hash_str(str):
-    def __eq__(self, other: str):
-        return bcrypt.checkpw(other.encode('utf8'), self.encode('utf8'))
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        return self.faker.url()
 
 
 class BcryptString(String):
+
+    class hash_str(str):
+        def __eq__(self, other: str):
+            return bcrypt.checkpw(other.encode('utf8'), self.encode('utf8'))
+
 
     re_bcrypt_hash = re.compile(r'^\$2[ayb]\$.{56}$')
 
@@ -519,4 +792,11 @@ class BcryptString(String):
         else:
             salt = bcrypt.gensalt(self.rounds)
             raw_hash = bcrypt.hashpw(value.encode('utf8'), salt).decode('utf8')
-            return (hash_str(raw_hash), None)
+            return (self.hash_str(raw_hash), None)
+
+    def fake(self):
+        value = super().fake()
+        if value is not None:
+            return value
+        salt = bcrypt.gensalt(self.rounds)
+        return bcrypt.hashpw('password'.encode('utf8'), salt).decode('utf8')
