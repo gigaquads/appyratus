@@ -93,6 +93,33 @@
       "url": null,
       "version": null,
       "zip_safe": null
+    },
+    {
+      "author": null,
+      "author_email": null,
+      "classifiers": null,
+      "dependency_links": null,
+      "description": null,
+      "embryo": {
+        "action": "hatch",
+        "destination": "/home/jeff/src/appyratus",
+        "name": "python-project/setup",
+        "timestamp": 1565138731
+      },
+      "find_packages": null,
+      "install_requires": null,
+      "keywords": null,
+      "license": null,
+      "long_description": null,
+      "name": null,
+      "packages": null,
+      "project": null,
+      "refresh_scripts": true,
+      "scripts": null,
+      "tagline": null,
+      "url": null,
+      "version": null,
+      "zip_safe": null
     }
   ]
 }

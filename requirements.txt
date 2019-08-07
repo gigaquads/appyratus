@@ -13,3 +13,4 @@ python-rapidjson
 aiohttp
 bcrypt
 beautifulsoup4
+astor
