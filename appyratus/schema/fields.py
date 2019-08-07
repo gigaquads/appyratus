@@ -9,7 +9,7 @@ import sys
 from copy import deepcopy
 from datetime import date, datetime
 from os.path import abspath, expanduser
-from typing import Type, Callable, Text
+from typing import Type, Callable, Text, Dict
 from uuid import UUID, uuid4
 
 import pytz
@@ -22,28 +22,51 @@ from appyratus.utils import TimeUtils, DictUtils
 RE_FIELD_NAME_SUFFIX = re.compile(r'^.+_([^_]+)$')
 
 
+class FieldValueGenerator(object):
+    def __init__(self, callbacks: Dict[Text, Callable] = None, default: Callable = None):
+        self.default = default or lambda field, *args, **kwargs: None
+        self.callbacks = callbacks or {}
+
+    def generate(self, field: 'Field', *args, **kwargs):
+        if field.name is not None:
+            func = self.default
+        else:
+            func = self.callbacks.get(field.name, self.default)
+            if func is self.default:
+                match = RE_FIELD_NAME_SUFFIX.match(field.name)
+                if match:
+                    name = match.groups()[0]
+                    func = self.callbacks.get(name, self.default)
+        return func(field, *args, **kwargs)
+
+
+
+class FieldTypeAdapter(object):
+    """
+    FieldTypeAdapter is used by anything that needs to be able to convert an
+    appyratus Field type to a corresponding field type used by some other
+    library. See the SqlalchemyDao in the `pybiz` project for an example.
+    """
+
+    def __init__(
+        self,
+        field_type: Type['Field'],
+        on_adapt: Callable = None,
+        on_encode: Callable = None,
+        on_decode: Callable = None,
+    ):
+        self.field_type = field_type
+        self.on_adapt = on_adapt
+        self.on_encode = on_encode
+        self.on_decode = on_decode
+
+
 class Field(object):
 
-    class TypeAdapter(object):
-        """
-        TypeAdapter is used by anything that needs to be able to convert an
-        appyratus Field type to a corresponding field type used by some other
-        library. See the SqlalchemyDao in the `pybiz` project for an example.
-        """
+    TypeAdapter = FieldTypeAdapter
+    ValueGenerator = FieldValueGenerator
 
-        def __init__(
-            self,
-            field_type: Type['Field'],
-            on_adapt: Callable = None,
-            on_encode: Callable = None,
-            on_decode: Callable = None,
-        ):
-            self.field_type = field_type
-            self.on_adapt = on_adapt
-            self.on_encode = on_encode
-            self.on_decode = on_decode
-
-
+    generator = FieldValueGenerator()
     # `faker_presetes` is a mapping from common field names, like "first_name",
     # to a dict containing the name of a Faker method an an arguments dict,
     # like: {"first_name": {"method": "first_name", "args": {}}}
@@ -114,6 +137,7 @@ class Field(object):
         return (value, None)
 
     def fake(self, *args, **kwargs):
+        return self.generator.generate(*args, **kwargs)
         if self.name is not None:
             options = self.faker_presets.get(self.name)
             if options is None:
