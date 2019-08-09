@@ -217,6 +217,6 @@ class Schema(Field, metaclass=schema_type):
                 results[k] = v
         return results
 
-    def fake(self, fields: Set[Text] = None):
+    def generate(self, fields: Set[Text] = None):
         field_names = fields or self.fields.keys()
-        return {k: self.fields[k].fake() for k in field_names}
+        return {k: self.fields[k].generate() for k in field_names}
