@@ -9,7 +9,8 @@ RE_FIELD_NAME_SUFFIX = re.compile(r'^.+_([^_]+)$')
 
 class ValueGenerator(object):
     """
-    Used to generate field values when generating fixtures.
+    ValueGenerator is used internally to generate values for Field when
+    generating data for test fixtures and such.
     """
 
     def __init__(self, callbacks: Dict[Text, Callable] = None, default: Callable = None):
@@ -17,7 +18,24 @@ class ValueGenerator(object):
         self.callbacks = callbacks or {}
         self.inflect = inflect.engine()
 
+    def register(self, field_name: Text, callback: Callable):
+        """
+        Register a callback. The `field_name` arg is the name of the field that
+        triggers the callback.
+        """
+        self.callbacks[field_name] = callback
+
+    def unregister(self, field_name: Text) -> Callable:
+        """
+        Unregister a callback.
+        """
+        return self.callbacks.pop(field_name, None)
+
     def generate(self, field: 'Field', *args, **kwargs):
+        """
+        Apply a callback to generate a value for the given field, using its name
+        to determine the callback.
+        """
         if field.name is None:
             func = self.default
         else:

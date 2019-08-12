@@ -208,13 +208,20 @@ class Schema(Field, metaclass=schema_type):
         return results
 
     def translate_source(self, data: Dict) -> Dict:
+        """
+        Translate any keys of the input data dict into their field names as keys
+        in the return dict. Otherwise, just add the existing k, v pair to the
+        return dict as they are.
+        """
         results = {}
         for k, v in data.items():
-            field = self.source_2_field.get(k)
+            field = self.fields.get(k)
             if field:
-                results[field.name] = v
-            else:
                 results[k] = v
+            else:
+                field = self.source_2_field.get(k)
+                if field:
+                    results[field.name] = v
         return results
 
     def generate(self, fields: Set[Text] = None):

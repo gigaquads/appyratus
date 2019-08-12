@@ -12,3 +12,4 @@ skip = mark.skip
 # otherwise.  It is worth mentioning that in it's next incarnation,
 # it will be a better `params` method entirely
 params = mark.parametrize
+parametrize = mark.parametrize

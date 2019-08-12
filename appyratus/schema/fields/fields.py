@@ -48,6 +48,7 @@ class Field(object):
         meta: typing.Dict = None,
         on_create: object = None,
         post_process: object = None,
+        on_generate: Callable = None,
         **kwargs,
     ):
         """
@@ -71,6 +72,11 @@ class Field(object):
         self.meta = meta or {}
         self.meta.update(kwargs)
 
+        # if not None, this callable will shadow the base on_generate method
+        # declared on this Field class.
+        if on_generate is not None:
+            self.on_generate = on_generate
+
     def __repr__(self):
         if self.source != self.name:
             load_to = ' -> ' + self.name
@@ -84,6 +90,9 @@ class Field(object):
 
     def process(self, value):
         return (value, None)
+
+    def generate(self, *args, **kwargs):
+        return self.on_generate(*args, **kwargs)
 
     def pre_process(self, value, source: dict, context: dict = None):
         """
@@ -101,7 +110,7 @@ class Field(object):
         """
         return (value, None)
 
-    def generate(self, *args, **kwargs):
+    def on_generate(self, *args, **kwargs):
         return self.generator.generate(self, *args, **kwargs)
 
 
@@ -253,7 +262,7 @@ class Bytes(Field):
             return (value.encode(self.encoding), None)
         return (None, 'unrecognized')
 
-    def generate(self):
+    def on_generate(self):
         value = super().generate()
         if value is not None:
             return value
@@ -269,7 +278,7 @@ class FormatString(String):
         value = fstr.format(**data)
         return (value, None)
 
-    def generate(self):
+    def on_generate(self):
         return super().generate()
 
 
@@ -319,7 +328,7 @@ class Uint32(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
-    def generate(self):
+    def on_generate(self):
         return abs(super().generate())
 
 
@@ -327,7 +336,7 @@ class Uint64(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
-    def generate(self):
+    def on_generate(self):
         return abs(super().generate())
 
 
@@ -376,7 +385,7 @@ class Float(Field):
         else:
             return (None, 'expected a float')
 
-    def generate(self):
+    def on_generate(self):
         value = super().generate()
         if value is not None:
             return value
@@ -444,7 +453,7 @@ class UuidString(String):
         else:
             return (None, 'unrecognized')
 
-    def generate(self):
+    def on_generate(self):
         value = super().generate()
         if value is not None:
             return value
@@ -533,7 +542,7 @@ class DateTimeString(String):
 
         return (dt_str, None)
 
-    def generate(self):
+    def on_generate(self):
         value = super().generate()
         if value is not None:
             return value
@@ -561,7 +570,7 @@ class Timestamp(Field):
         else:
             return (None, 'unrecognized')
 
-    def generate(self):
+    def on_generate(self):
         value = super().generate()
         if value is not None:
             return value
@@ -656,7 +665,7 @@ class Set(List):
         result, error = super().process(list(sequence))
         return ((set(result) if not error else result), error)
 
-    def generate(self):
+    def on_generate(self):
         return set(super().generate())
 
 
