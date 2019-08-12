@@ -52,13 +52,14 @@ class DictUtils(object):
     """
     # Dict Utils
     """
+    RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+)?\])?$')
 
-    @staticmethod
-    def key_parts(key) -> Tuple:
+    @classmethod
+    def key_parts(cls, key) -> Tuple:
         """
         Extract relevant key parts from a key.
         """
-        xparts = re.split('^([\w-]+)(\[(\d+)?\])?$', key)
+        xparts = cls.RE_KEY_PARTS.split(key)
         if len(xparts) == 5:
             # xtype exists, an array referenced has been found in the key.
             _, xkey, xtype, xid, _ = xparts
