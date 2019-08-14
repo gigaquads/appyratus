@@ -9,8 +9,8 @@ from typing import List, Dict
 
 class AstParser(object):
     def parse_string(self, value: str) -> List[Dict]:
-        data = self._load_ast_from_source(value)
-        import ipdb; ipdb.set_trace(); print('=' * 100)
+        module_ast = self._load_ast_from_source(value)
+        return self._parse_node_Module(module_ast)
 
     def parse_package(self, pkg: str) -> List[Dict]:
         paths = self._get_python_filepaths(pkg)
@@ -21,13 +21,9 @@ class AstParser(object):
                 results.append(data)
         return results
 
-    def parse_module(
-        self, file_path, module_path: Text = None
-    ) -> Dict:
+    def parse_module(self, file_path, module_path: Text = None) -> Dict:
         if not module_path:
-            module_path = os.path.splitext(
-                os.path.basename(file_path)
-            )[0]
+            module_path = os.path.splitext(os.path.basename(file_path))[0]
         data = {
             'module': module_path,
             'file': file_path,
@@ -50,7 +46,7 @@ class AstParser(object):
         try:
             return ast.parse(source)
         except:
-            traceback.print_exc()  # log this?
+            traceback.print_exc()    # log this?
 
     def _load_ast_from_filepath(self, filepath):
         with open(filepath) as fin:
@@ -74,10 +70,7 @@ class AstParser(object):
         if isinstance(node, ast.keyword):
             return node.arg
         if isinstance(node, (ast.List, ast.Tuple)):
-            return [
-                self._extract_string_value(x)
-                for x in node.elts
-            ]
+            return [self._extract_string_value(x) for x in node.elts]
         if isinstance(node, ast.Num):
             return node.n
         if isinstance(node, ast.Invert):
@@ -89,36 +82,27 @@ class AstParser(object):
             if isinstance(node.op, ast.Invert):
                 return (
                     self._extract_string_value(node.op),
-                    self._extract_string_value(
-                        node.operand
-                    )
+                    self._extract_string_value(node.operand)
                 )
 
         raise ValueError(str(node))
 
     def _parse_node_Module(self, module_node):
         results = {
+            'ast': module_node,
             'classes': [],
             'functions': [],
             'imports': [],
         }
         for node in module_node.body:
             if isinstance(node, ast.ClassDef):
-                results['classes'].append(
-                    self._parse_node_ClassDef(node)
-                )
+                results['classes'].append(self._parse_node_ClassDef(node))
             elif isinstance(node, ast.FunctionDef):
-                results['functions'].append(
-                    self._parse_node_FunctionDef(node)
-                )
+                results['functions'].append(self._parse_node_FunctionDef(node))
             elif isinstance(node, ast.ImportFrom):
-                results['imports'].append(
-                    self._parse_node_ImportFrom(node)
-                )
+                results['imports'].append(self._parse_node_ImportFrom(node))
             elif isinstance(node, ast.Import):
-                results['imports'].extend(
-                    self._parse_node_Import(node)
-                )
+                results['imports'].extend(self._parse_node_Import(node))
 
         return results
 
@@ -126,47 +110,35 @@ class AstParser(object):
         bases = []
         for x in class_def.bases:
             if isinstance(x, ast.Name):
-                bases.append(
-                    {
-                        'type': 'name',
-                        'data': {
-                            'name': x.id
-                        }
-                    }
-                )
+                bases.append({'type': 'name', 'data': {'name': x.id}})
             elif isinstance(x, ast.Attribute):
                 bases.append(
                     {
                         'type': 'attribute',
-                        'data': self.
-                        _parse_node_Attribute(x),
+                        'data': self._parse_node_Attribute(x),
                     }
                 )
             elif isinstance(x, ast.Call):
-                bases.append(
-                    {
-                        'type': 'call',
-                        'data': self._parse_node_Call(x)
-                    }
-                )
+                bases.append({'type': 'call', 'data': self._parse_node_Call(x)})
             else:
                 raise ValueError()
 
         return {
             'ast': class_def,
+            'lineno': class_def.lineno,
             'name': class_def.name,
             'docstring': ast.get_docstring(class_def),
             'bases': bases,
-            'methods': [
-                self._parse_node_FunctionDef(x)
-                for x in class_def.body
-                if isinstance(x, ast.FunctionDef)
-            ],
-            'classes': [
-                self._parse_node_ClassDef(x)
-                for x in class_def.body
-                if isinstance(x, ast.ClassDef)
-            ]
+            'methods':
+                [
+                    self._parse_node_FunctionDef(x) for x in class_def.body
+                    if isinstance(x, ast.FunctionDef)
+                ],
+            'classes':
+                [
+                    self._parse_node_ClassDef(x) for x in class_def.body
+                    if isinstance(x, ast.ClassDef)
+                ]
         }
 
     def _parse_node_Import(self, node):
@@ -177,6 +149,7 @@ class AstParser(object):
                 items.append(
                     {
                         'type': 'import',
+                        'lineno': node.lineno,
                         'module': x.name,
                         'alias': x.asname,
                         'ast': x,
@@ -191,33 +164,31 @@ class AstParser(object):
         return {
             'ast': node,
             'type': 'from',
+            'lineno': node.lineno,
             'module': node.module,
-            'objects': [
-                {
+            'objects':
+                [{
                     'name': alias.name,
                     'alias': alias.asname,
-                } for alias in node.names
-            ],
+                } for alias in node.names],
         }
 
     def _parse_node_Call(self, node):
         return {
-            'name': node.name
-            if hasattr(node, 'name') else node.func.id,
-            'decorators': (
-                self._parse_decorator_list(
-                    node.decorator_list
-                ) if hasattr(node, 'decorator_list') else []
-            ),
+            'name': node.name if hasattr(node, 'name') else node.func.id,
+            'lineno': node.lineno,
+            'decorators':
+                (
+                    self._parse_decorator_list(node.decorator_list)
+                    if hasattr(node, 'decorator_list') else []
+                ),
             'args': self._parse_args(node.args),
             'kwargs': self._parse_kwargs(node.args),
         }
 
     def _parse_node_Attribute(self, node):
         return {
-            'object': self._extract_string_value(
-                node.value
-            ),
+            'object': self._extract_string_value(node.value),
             'attr': self._extract_string_value(node.attr)
         }
 
@@ -227,6 +198,7 @@ class AstParser(object):
         for x in decorator_list:
             item = {
                 'name': None,
+                'lineno': x.lineno,
                 'args': [],
                 'kwargs': [],
                 'ast': x,
@@ -236,33 +208,20 @@ class AstParser(object):
             if isinstance(x, ast.Attribute):
                 # like "@my_property.setter"
                 data = self._parse_node_Attribute(x)
-                item['name'] = '{}.{}'.format(
-                    data['object'], data['attr']
-                )
+                item['name'] = '{}.{}'.format(data['object'], data['attr'])
             elif isinstance(x, ast.Call):
                 # like "@my_func(arg1, arg2)"
                 if isinstance(x.func, (ast.Name, ast.Call)):
                     name = x.func.id
                 elif isinstance(x.func, ast.Attribute):
-                    data = self._parse_node_Attribute(
-                        x.func
-                    )
-                    name = '{}.{}'.format(
-                        data['object'], data['attr']
-                    )
+                    data = self._parse_node_Attribute(x.func)
+                    name = '{}.{}'.format(data['object'], data['attr'])
                 item['name'] = name
-                item['args'] = [
-                    self._extract_string_value(arg)
-                    for arg in x.args
-                ]
+                item['args'] = [self._extract_string_value(arg) for arg in x.args]
                 item['kwargs'] = [
                     {
-                        'key': self._extract_string_value(
-                            arg.arg
-                        ),
-                        'value': self._extract_string_value(
-                            arg.value
-                        )
+                        'key': self._extract_string_value(arg.arg),
+                        'value': self._extract_string_value(arg.value)
                     } for arg in x.keywords
                 ]
             else:
@@ -275,6 +234,7 @@ class AstParser(object):
         args = self._parse_args(node.args)
         results = {
             'name': node.name,
+            'lineno': node.lineno,
             'docstring': ast.get_docstring(node),
             'args': args,
             'kwargs': self._parse_kwargs(node.args, len(args)),
@@ -288,8 +248,7 @@ class AstParser(object):
             {
                 'key': arg.arg,
                 'index': idx,
-            }
-            for idx, arg in enumerate(arguments.args)
+            } for idx, arg in enumerate(arguments.args)
         ]
 
     def _parse_kwargs(self, arguments, index):
@@ -299,11 +258,8 @@ class AstParser(object):
                 'key': arg.arg,
                 'value': self._extract_string_value(val),
                 'index': index + 1 + idx,
-            }
-            for idx, (arg, val) in
-            enumerate(
-                zip(arguments.args[-kwarg_count:], arguments.kw_defaults)
-            )
+            } for idx, (arg, val) in
+            enumerate(zip(arguments.args[-kwarg_count:], arguments.kw_defaults))
         ]
 
     @staticmethod
@@ -322,10 +278,8 @@ class AstParser(object):
             for k in file_names:
                 if k.endswith('.py'):
                     file_path = os.path.join(dir_path, k)
-                    module_path = (
-                        pkg_name +
-                        file_path[len(pkg_filepath):]
-                    ).replace('/', '.')[:-3]
+                    module_path = (pkg_name +
+                                   file_path[len(pkg_filepath):]).replace('/', '.')[:-3]
                     file_paths[file_path] = module_path
 
         return file_paths
