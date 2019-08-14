@@ -43,6 +43,7 @@ class schema_type(type):
         # schema list set on the new class
         cls.fields = fields
         cls.children = []
+        cls.nullable_fields = {}
         cls.required_fields = {}
         cls.optional_fields = {}
         cls.source_2_field = {}
@@ -50,6 +51,8 @@ class schema_type(type):
         for k, field in cls.fields.items():
             cls.source_2_field[field.source] = field
             # track required and optional fields
+            if field.nullable:
+                cls.nullable_fields[k] = field
             if field.required:
                 cls.required_fields[k] = field
             else:
