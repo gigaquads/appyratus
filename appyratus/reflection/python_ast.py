@@ -190,7 +190,6 @@ class PythonModule(NamedPythonNode):
     @classmethod
     def from_string(cls, value: Text):
         ast_module = AstParser().parse_string(value)
-        import ipdb; ipdb.set_trace(); print('=' * 100)
 
 
 class PythonClass(NamedPythonNode):

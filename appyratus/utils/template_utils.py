@@ -30,7 +30,6 @@ class BaseTemplateEnvironment(object):
 
     def resolve_class_filters(self, klass):
         members = inspect.getmembers(klass, predicate=inspect.ismethod)
-        import ipdb; ipdb.set_trace(); print('=' * 100)
         return 
 
 
