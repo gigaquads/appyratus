@@ -1,7 +1,9 @@
 import argparse
 from inspect import isclass
 
+from appyratus.utils import DictUtils
 from .parser import Parser
+
 
 
 class CliProgram(Parser):
@@ -138,7 +140,7 @@ class CliProgram(Parser):
         self.build()
         action_res = self.route_action()
 
-    def parse_cli_args(self, args: list = None, merge_unknown: bool = True):
+    def parse_cli_args(self, args: list = None, merge_unknown: bool = True, unflatten_keys: bool = True):
         """
         # Parse arguments from command-line
         """
@@ -157,15 +159,24 @@ class CliProgram(Parser):
         if hasattr(cli_args, 'func'):
             self._perform = cli_args.func
 
+
+        unknown_args_dict = {}
+        for i in range(0, len(unknown_args), 2):
+            k = unknown_args[i]
+            try:
+                v = unknown_args[i + 1]
+                unknown_args_dict[k.lstrip('-')] = v
+            except Exception as err:
+                print('unmatched arg "{}"'.format(k))
+
         if merge_unknown:
             # and any unknown args pairs will get added
-            for i in range(0, len(unknown_args), 2):
-                k = unknown_args[i]
-                try:
-                    v = unknown_args[i + 1]
-                    args_dict[k.lstrip('-')] = v
-                except Exception as err:
-                    print('unmatched arg "{}"'.format(k))
+            args_dict.update(unknown_args_dict)
+
+        if unflatten_keys:
+            # this will expand any keys that are dot notated with the
+            # expectation of being a nested dictionary reference
+            args_dict = DictUtils.unflatten_keys(args_dict)
 
         arguments = type('Arguments', (object, ), args_dict)()
         return arguments, unknown_args

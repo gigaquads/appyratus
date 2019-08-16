@@ -1,21 +1,29 @@
 from __future__ import absolute_import
+from typing import Text
 
 import ujson
 
-from .base import BaseFile, File
+from .base import File
 
 
-class Json(BaseFile):
-
+class Json(File):
     @staticmethod
     def extensions():
         return {'json'}
 
     @classmethod
-    def load_file(cls, file_path):
-        data = File.read(file_path)
+    def read(cls, path: Text):
+        data = super().read(path)
+        return cls.load(data)
+
+    def write(cls, path: Text, data=None, **kwargs):
+        file_data = cls.dump(data, **kwargs)
+        super().write(path=path, data=file_data, **kwargs)
+
+    @classmethod
+    def load(cls, data):
         return ujson.loads(data) if data else None
 
     @classmethod
-    def dump(cls, content):
-        return ujson.dumps(content)
+    def dump(cls, data, indent: int = 2, sort_keys: bool = True, **kwargs):
+        return ujson.dumps(data, indent=indent, sort_keys=sort_keys)
