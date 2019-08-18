@@ -303,7 +303,7 @@ class DictUtils(object):
         return new_data
 
     @staticmethod
-    def traverse(data: Dict, method, depth: int = None) -> Dict:
+    def traverse(data: Dict, method, depth: int = None, **kwargs) -> Dict:
         """
         Traverse a dictionary while passing values into the provided callable
         in order to mutate existing data
@@ -317,18 +317,18 @@ class DictUtils(object):
         if isinstance(data, dict):
             for kd, vd in data.items():
                 if isinstance(vd, (list, dict)):
-                    dres = method(kd, vd, depth=depth)
-                    dres = DictUtils.traverse(dres, method, depth=next_depth)
+                    dres = method(kd, vd, depth=depth, **kwargs)
+                    dres = DictUtils.traverse(dres, method, depth=next_depth, **kwargs)
                 else:
-                    dres = method(kd, vd, depth=depth)
+                    dres = method(kd, vd, depth=depth, **kwargs)
                 new_data[kd] = dres
         elif isinstance(data, list):
             for kl, vl in enumerate(data):
                 if isinstance(vl, (list, dict)):
-                    lres = method(kl, vl, depth=depth)
-                    lres = DictUtils.traverse(lres, method, depth=next_depth)
+                    lres = method(kl, vl, depth=depth, **kwargs)
+                    lres = DictUtils.traverse(lres, method, depth=next_depth, **kwargs)
                 else:
-                    lres = method(kl, vl, depth=depth)
+                    lres = method(kl, vl, depth=depth, **kwargs)
                 new_data[kl] = lres
         return new_data
 

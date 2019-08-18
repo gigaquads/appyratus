@@ -15,9 +15,7 @@ class TestPythonModuleFile(BaseTests):
     def test__read(self):
         source = "print('hi')\n"
         source_path = '/tmp/wat.py'
-        source_file = PythonModule.write(
-            source_path, PythonModule.load_string(source)
-        )
+        source_file = PythonModule.write(source_path, PythonModule.read(source))
         res = self.klass.read(source_path)
         new_source = self.klass.dump(res)
         assert new_source == source

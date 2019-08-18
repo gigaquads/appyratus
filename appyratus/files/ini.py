@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 from typing import Text
-
 import io
 import configparser
+
+from appyratus.utils import DictUtils
 
 from .base import File
 
@@ -19,7 +20,7 @@ class Ini(File):
         return ini_data
 
     @classmethod
-    def write(cls, path: Text, data = None, **kwargs):
+    def write(cls, path: Text, data=None, **kwargs):
         file_data = cls.dump(data)
         super().write(path=path, data=file_data, **kwargs)
 
