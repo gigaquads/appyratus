@@ -251,6 +251,7 @@ class DictUtils(object):
         data: Dict,
         keys: Set = None,
         values: Set = None,
+        empty_values: Set = None,
         in_place=False,
     ) -> Dict:
         """
@@ -272,34 +273,36 @@ class DictUtils(object):
         elif not isinstance(values, set):
             values = set(values)
 
-        if not isinstance(data, dict):
-            raise ValueError(str(data))
+        if not empty_values:
+            empty_values = set()
+        elif not isinstance(empty_values, set):
+            empty_values = set(empty_values)
 
         if not in_place:
             new_data = deepcopy(data)
         else:
             new_data = data
 
-        for k, v in data.items():
-            if isinstance(v, list):
-                vlist = []
-                for listk in v:
-                    vres = DictUtils.remove_keys(listk, keys, values)
-                    if vres in values:
-                        del new_data[k]
-                    else:
-                        vlist.append(vres)
-                new_data[k] = vlist
-            elif isinstance(v, dict):
-                dres = DictUtils.remove_keys(new_data[k], keys, values)
-                new_data[k] = dres
-            else:
+        if isinstance(new_data, list):
+            vlist = []
+            for idx, v in enumerate(new_data):
+                vres = DictUtils.remove_keys(v, keys, values, empty_values)
+                if vres not in values:
+                    vlist.append(vres)
+            new_data = vlist
+        elif isinstance(new_data, dict):
+            vdict = {}
+            for k, v in new_data.items():
+                vres = DictUtils.remove_keys(v, keys, values, empty_values)
                 if k in keys:
-                    del new_data[k]
-                elif v in values:
-                    del new_data[k]
-                if k not in new_data:
                     continue
+                if not isinstance(vres, (list, dict)) and vres in values:
+                    continue
+                if type(v) in empty_values:
+                    continue
+                vdict[k] = vres
+            new_data = vdict
+
         return new_data
 
     @staticmethod
