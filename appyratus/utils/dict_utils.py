@@ -338,9 +338,8 @@ class DictUtils(object):
         for record in records:
             try:
                 k = record[key]
-            except:
-                import ipdb
-                ipdb.set_trace()
+            except Exception as error:
+                raise error
             if k not in index:
                 index[k] = [record]
             else:

@@ -34,8 +34,20 @@ class Ini(File):
             ini_data[k].pop('__name__', None)
         return ini_data
 
+    @staticmethod
+    def clean_value(key, value=None, list_format: Text = None, depth: int = None):
+        if not list_format:
+            list_format = 'dangling'
+        if isinstance(value, list):
+            if list_format == 'dangling':
+                value = "\n{}".format('\n'.join(value))
+            elif list_format == 'csv':
+                value = ','.join(value)
+        return value
+
     @classmethod
-    def dump(cls, data):
+    def dump(cls, data, list_format: Text = None):
+        data = DictUtils.traverse(data, cls.clean_value, list_format=list_format)
         output = io.StringIO()
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()
