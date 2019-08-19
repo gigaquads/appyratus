@@ -25,17 +25,31 @@ class Ini(File):
         super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
-    def load(cls, data):
+    def load(cls, data, list_format: Text = None):
         config = configparser.ConfigParser()
         config.read_string(data)
         ini_data = dict(config._sections)
         for k in ini_data:
             ini_data[k] = dict(config._defaults, **ini_data[k])
             ini_data[k].pop('__name__', None)
+        ini_data = DictUtils.traverse(ini_data, cls.load_value, list_format=list_format)
         return ini_data
 
     @staticmethod
-    def clean_value(key, value=None, list_format: Text = None, depth: int = None):
+    def load_value(key, value, list_format: Text = None, depth: int = None):
+        if not list_format:
+            list_format = 'dangling'
+        separator = None
+        if list_format == 'dangling':
+            separator = "\n"
+        elif list_format == 'csv':
+            separator = ","
+        if separator and separator in value:
+            value = [v for v in value.split(separator) if v]
+        return value
+
+    @staticmethod
+    def dump_value(key, value=None, list_format: Text = None, depth: int = None):
         if not list_format:
             list_format = 'dangling'
         if isinstance(value, list):
@@ -47,7 +61,7 @@ class Ini(File):
 
     @classmethod
     def dump(cls, data, list_format: Text = None):
-        data = DictUtils.traverse(data, cls.clean_value, list_format=list_format)
+        data = DictUtils.traverse(data, cls.dump_value, list_format=list_format)
         output = io.StringIO()
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()
