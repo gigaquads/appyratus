@@ -260,28 +260,30 @@ class DictUtils(object):
         This additionally supports removing keys based on a list of
         values that the key contains.
         """
-        if not keys and not values:
-            return data if in_place else deepcopy(data)
-
-        if not keys:
-            keys = set()
-        elif not isinstance(keys, set):
-            keys = set(keys)
-
-        if not values:
-            values = set()
-        elif not isinstance(values, set):
-            values = set(values)
-
-        if not empty_values:
-            empty_values = set()
-        elif not isinstance(empty_values, set):
-            empty_values = set(empty_values)
 
         if not in_place:
             new_data = deepcopy(data)
         else:
             new_data = data
+
+        if not keys and values is None and not empty_values:
+            # no operations provided, nothing to do here
+            return new_data
+
+        def make_set(data):
+            if isinstance(data, set):
+                return data
+            if data is None:
+                set_data = set()
+            else:
+                if not isinstance(data, (list, tuple)):
+                    data = [data]
+                set_data = set(data)
+            return set_data
+
+        keys = make_set(keys)
+        values = make_set(values)
+        empty_values = make_set(empty_values)
 
         if isinstance(new_data, list):
             vlist = []
@@ -298,7 +300,7 @@ class DictUtils(object):
                     continue
                 if not isinstance(vres, (list, dict)) and vres in values:
                     continue
-                if type(v) in empty_values:
+                if type(vres) in empty_values and not vres:
                     continue
                 vdict[k] = vres
             new_data = vdict
