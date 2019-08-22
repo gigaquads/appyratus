@@ -227,6 +227,47 @@ class Schema(Field, metaclass=schema_type):
                     results[field.name] = v
         return results
 
-    def generate(self, fields: Set[Text] = None):
+    def generate(
+        self,
+        fields: Set[Text] = None,
+        constraints: Dict[Text, 'Constraint'] = None
+    ) -> Dict:
         field_names = fields or self.fields.keys()
-        return {k: self.fields[k].generate() for k in field_names}
+        constraints = constraints or {}
+        return {
+            k: self.fields[k].generate(constraint=constraints.get(k))
+            for k in field_names
+        }
+
+
+class Constraint(object):
+    def __init__(self, constraint_type):
+        self.constraint_type = constraint_type
+
+    @property
+    def is_range_constraint(self):
+        return self.constraint_type == 'range'
+
+    @property
+    def is_equality_constraint(self):
+        return self.constraint_type == 'equality'
+
+
+class RangeConstraint(Constraint):
+    def __init__(
+        self,
+        lower_value=None, upper_value=None,
+        is_lower_inclusive=True, is_upper_inclusive=False
+    ):
+        super().__init__('range')
+        self.upper_value = upper_value
+        self.lower_value = lower_value
+        self.is_upper_inclusive = is_upper_inclusive
+        self.is_lower_inclusive = is_lower_inclusive
+
+
+class EqualityConstraint(Constraint):
+    def __init__(self, value, is_negative=False):
+        super().__init__('equality')
+        self.value = value
+        self.is_negative = is_negative

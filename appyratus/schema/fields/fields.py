@@ -91,8 +91,8 @@ class Field(object):
     def process(self, value):
         return (value, None)
 
-    def generate(self, *args, **kwargs):
-        return self.on_generate(*args, **kwargs)
+    def generate(self, constraint=None, *args, **kwargs):
+        return self.on_generate(constraint=constraint, *args, **kwargs)
 
     def pre_process(self, value, source: dict, context: dict = None):
         """
@@ -110,14 +110,16 @@ class Field(object):
         """
         return (value, None)
 
-    def on_generate(self, *args, **kwargs):
-        return self.generator.generate(self, *args, **kwargs)
+    def on_generate(self, constraint=None, *args, **kwargs):
+        return self.generator.generate(
+            self, constraint=constraint, *args, **kwargs
+        )
 
 
 class Enum(Field):
 
     generator = Field.Generator(
-        default=lambda field, *args, **kwargs: (
+        default=lambda f, cield, *args, **kwargs: (
             random.choice(list(field.values()))
         )
     )
@@ -143,102 +145,103 @@ class String(Field):
 
     generator = Field.Generator(
         callbacks={
-            '_id': lambda f: uuid.uuid4().hex,
-            'id': lambda f: str(f.faker.random_number(digits=16)),
-            'public_id': lambda f: uuid.uuid4().hex,
-            'first_name': lambda f: f.faker.first_name(),
-            'last_name': lambda f: f.faker.last_name(),
-            'full_name': lambda f: f.faker.name(),
-            'name': lambda f: f.faker.catch_phrase().title(),
-            'description': lambda f: f.faker.paragraph(nb_sentences=10),
-            'descr': lambda f: f.faker.paragraph(nb_sentences=10),
-            'summary': lambda f: f.faker.paragraph(nb_sentences=6),
-            'city': lambda f: f.faker.city(),
-            'address': lambda f: f.faker.address(),
-            'phone': lambda f: f.faker.phone_number(),
-            'phone_number': lambda f: f.faker.phone_number(),
-            'mobile': lambda f: f.faker.phone_number(),
-            'zip': lambda f: f.faker.zipcode(),
-            'zip_code': lambda f: f.faker.zipcode(),
-            'zipcode': lambda f: f.faker.zipcode(),
-            'postal_code': lambda f: f.faker.zipcode(),
-            'postalcode': lambda f: f.faker.zipcode(),
-            'year': lambda f: f.faker.year(),
-            'user_name': lambda f: f.faker.user_name(),
-            'username': lambda f: f.faker.user_name(),
-            'nick': lambda f: f.faker.user_name(),
-            'handle': lambda f: f.faker.user_name(),
-            'screen_name': lambda f: f.faker.user_name(),
-            'screenname': lambda f: f.faker.user_name(),
-            'state_code': lambda f: f.faker.state_abbr(),
-            'state': lambda f: f.faker.state(),
-            'country_code': lambda f: f.faker.country_code(),
-            'country': lambda f: f.faker.country(),
-            'card_number': lambda f: f.faker.credit_card_number(),
-            'credit_card_number': lambda f: f.faker.credit_card_number(),
-            'security_code': lambda f: f.faker.credit_card_security_code(),
-            'credit_card_security_code': lambda f: f.faker.credit_card_security_code(),
-            'color': lambda f: StringUtils.snake(f.faker.color_name()),
-            'currency_code': lambda f: f.faker.currency_code(),
-            'currency_name': lambda f: f.faker.currency_name(),
-            'ein': lambda f: f.faker.ein(),
-            'filename': lambda f: f.faker.ein(),
-            'file_name': lambda f: f.faker.ein(),
-            'fname': lambda f: f.faker.ein(),
-            'filepath': lambda f: f.faker.file_path(),
-            'file_path': lambda f: f.faker.file_path(),
-            'fpath': lambda f: f.faker.file_path(),
-            'file_extension': lambda f: f.faker.file_extension(),
-            'extension': lambda f: f.faker.file_extension(),
-            'ext': lambda f: f.faker.file_extension(),
-            'image_url': lambda f: f.faker.image_url(),
-            'url': lambda f: f.faker.url(),
-            'host': lambda f: f.faker.hostname(),
-            'hostname': lambda f: f.faker.hostname(),
-            'host_name': lambda f: f.faker.hostname(),
-            'port': lambda f: str(random.randrange(1001, 10000)),
-            'ssn': lambda f: f.faker.ssn(),
-            'ip_addr': lambda f: f.faker.ipv4(),
-            'ip_address': lambda f: f.faker.ipv4(),
-            'ip': lambda f: f.faker.ipv4(),
-            'ipv4': lambda f: f.faker.ipv4(),
-            'ipv6': lambda f: f.faker.ipv6(),
-            'langauge_code': lambda f: f.faker.langauge_code(),
-            'license_plate': lambda f: f.faker.license_plate(),
-            'locale': lambda f: f.faker.locale(),
-            'mac_addr': lambda f: f.faker.mac_address(),
-            'mac_address': lambda f: f.faker.mac_address(),
-            'md5': lambda f: str(f.faker.md5()),
-            'mime': lambda f: f.faker.mime_type(),
-            'mime_type': lambda f: f.faker.mime_type(),
-            'mimetype': lambda f: f.faker.mime_type(),
-            'month': lambda f: f.faker.month(),
-            'isbn': lambda f: f.faker.isbn(),
-            'slug': lambda f: f.faker.slug(),
-            'street': lambda f: f.faker.street_name(),
-            'street_name': lambda f: f.faker.street_name(),
-            'suffix': lambda f: f.faker.suffix(),
-            'timezone': lambda f: f.faker.timezone(),
-            'time_zone': lambda f: f.faker.timezone(),
-            'tz': lambda f: f.faker.timezone(),
-            'user_agent': lambda f: f.faker.user_agent(),
-            'useragent': lambda f: f.faker.user_agent(),
-            'ua': lambda f: f.faker.user_agent(),
-            'text': lambda f: f.faker.text(),
-            'event': lambda f: f.faker.word(),
-            'event_name': lambda f: f.faker.word(),
-            'email': lambda f: f.faker.email(),
-            'email_addr': lambda f: f.faker.email(),
-            'email_address': lambda f: f.faker.email(),
-            'message': lambda f: f.faker.text(max_nb_chars=140),
-            'keyword': lambda f: f.faker.word().lower(),
-            'tag': lambda f: f.faker.word().lower(),
-            'headline': lambda f: f.faker.catch_phrase().title(),
-            'amount': lambda f: str(random.randrange(0, 51)),
-            'count': lambda f: str(random.randrange(0, 51)),
-            'angle': lambda f: str(random.randrange(-360, 361)),
+            '_id': lambda f, c: uuid.uuid4().hex,
+            'id': lambda f, c: str(f.faker.random_number(digits=16)),
+            'public_id': lambda f, c: uuid.uuid4().hex,
+            'first_name': lambda f, c: f.faker.first_name(),
+            'last_name': lambda f, c: f.faker.last_name(),
+            'full_name': lambda f, c: f.faker.name(),
+            'name': lambda f, c: f.faker.catch_phrase().title(),
+            'description': lambda f, c: f.faker.paragraph(nb_sentences=10),
+            'descr': lambda f, c: f.faker.paragraph(nb_sentences=10),
+            'summary': lambda f, c: f.faker.paragraph(nb_sentences=6),
+            'city': lambda f, c: f.faker.city(),
+            'address': lambda f, c: f.faker.address(),
+            'phone': lambda f, c: f.faker.phone_number(),
+            'phone_number': lambda f, c: f.faker.phone_number(),
+            'mobile': lambda f, c: f.faker.phone_number(),
+            'zip': lambda f, c: f.faker.zipcode(),
+            'zip_code': lambda f, c: f.faker.zipcode(),
+            'zipcode': lambda f, c: f.faker.zipcode(),
+            'postal_code': lambda f, c: f.faker.zipcode(),
+            'postalcode': lambda f, c: f.faker.zipcode(),
+            'year': lambda f, c: f.faker.year(),
+            'user_name': lambda f, c: f.faker.user_name(),
+            'username': lambda f, c: f.faker.user_name(),
+            'nick': lambda f, c: f.faker.user_name(),
+            'handle': lambda f, c: f.faker.user_name(),
+            'screen_name': lambda f, c: f.faker.user_name(),
+            'screenname': lambda f, c: f.faker.user_name(),
+            'state_code': lambda f, c: f.faker.state_abbr(),
+            'state': lambda f, c: f.faker.state(),
+            'country_code': lambda f, c: f.faker.country_code(),
+            'country': lambda f, c: f.faker.country(),
+            'card_number': lambda f, c: f.faker.credit_card_number(),
+            'credit_card_number': lambda f, c: f.faker.credit_card_number(),
+            'security_code': lambda f, c: f.faker.credit_card_security_code(),
+            'credit_card_security_code': lambda f, c: f.faker.credit_card_security_code(),
+            'color': lambda f, c: StringUtils.snake(f.faker.color_name()),
+            'currency_code': lambda f, c: f.faker.currency_code(),
+            'currency_name': lambda f, c: f.faker.currency_name(),
+            'ein': lambda f, c: f.faker.ein(),
+            'filename': lambda f, c: f.faker.ein(),
+            'file_name': lambda f, c: f.faker.ein(),
+            'fname': lambda f, c: f.faker.ein(),
+            'filepath': lambda f, c: f.faker.file_path(),
+            'file_path': lambda f, c: f.faker.file_path(),
+            'fpath': lambda f, c: f.faker.file_path(),
+            'file_extension': lambda f, c: f.faker.file_extension(),
+            'extension': lambda f, c: f.faker.file_extension(),
+            'ext': lambda f, c: f.faker.file_extension(),
+            'image_url': lambda f, c: f.faker.image_url(),
+            'url': lambda f, c: f.faker.url(),
+            'host': lambda f, c: f.faker.hostname(),
+            'hostname': lambda f, c: f.faker.hostname(),
+            'host_name': lambda f, c: f.faker.hostname(),
+            'port': lambda f, c: str(random.randrange(1001, 10000)),
+            'ssn': lambda f, c: f.faker.ssn(),
+            'ip_addr': lambda f, c: f.faker.ipv4(),
+            'ip_address': lambda f, c: f.faker.ipv4(),
+            'ip': lambda f, c: f.faker.ipv4(),
+            'ipv4': lambda f, c: f.faker.ipv4(),
+            'ipv6': lambda f, c: f.faker.ipv6(),
+            'langauge_code': lambda f, c: f.faker.langauge_code(),
+            'license_plate': lambda f, c: f.faker.license_plate(),
+            'locale': lambda f, c: f.faker.locale(),
+            'mac_addr': lambda f, c: f.faker.mac_address(),
+            'mac_address': lambda f, c: f.faker.mac_address(),
+            'md5': lambda f, c: str(f.faker.md5()),
+            'mime': lambda f, c: f.faker.mime_type(),
+            'mime_type': lambda f, c: f.faker.mime_type(),
+            'mimetype': lambda f, c: f.faker.mime_type(),
+            'month': lambda f, c: f.faker.month(),
+            'isbn': lambda f, c: f.faker.isbn(),
+            'slug': lambda f, c: f.faker.slug(),
+            'street': lambda f, c: f.faker.street_name(),
+            'street_name': lambda f, c: f.faker.street_name(),
+            'suffix': lambda f, c: f.faker.suffix(),
+            'timezone': lambda f, c: f.faker.timezone(),
+            'time_zone': lambda f, c: f.faker.timezone(),
+            'tz': lambda f, c: f.faker.timezone(),
+            'user_agent': lambda f, c: f.faker.user_agent(),
+            'useragent': lambda f, c: f.faker.user_agent(),
+            'ua': lambda f, c: f.faker.user_agent(),
+            'text': lambda f, c: f.faker.text(),
+            'event': lambda f, c: f.faker.word(),
+            'event_name': lambda f, c: f.faker.word(),
+            'email': lambda f, c: f.faker.email(),
+            'email_addr': lambda f, c: f.faker.email(),
+            'email_address': lambda f, c: f.faker.email(),
+            'message': lambda f, c: f.faker.text(max_nb_chars=140),
+            'keyword': lambda f, c: f.faker.word().lower(),
+            'tag': lambda f, c: f.faker.word().lower(),
+            'headline': lambda f, c: f.faker.catch_phrase().title(),
+            'amount': lambda f, c: str(random.randrange(0, 51)),
+            'count': lambda f, c: str(random.randrange(0, 51)),
+            'angle': lambda f, c: str(random.randrange(-360, 361)),
+            'password': lambda f, c: f.faker.password(),
         },
-        default=lambda f: f.faker.text(max_nb_chars=100)
+        default=lambda f, c: f.faker.text(max_nb_chars=100)
     )
 
     def process(self, value):
@@ -249,6 +252,24 @@ class String(Field):
         else:
             return (value, 'unrecognized')
 
+    def on_generate(self, constraint=None):
+        value = super().on_generate(constraint=constraint)
+        if constraint is not None:
+            if constraint.is_equality_constraint:
+                value = constraint.value
+            else:
+                if constraint.is_range_constraint:
+                    if constraint.upper_value is not None:
+                        if value >= constraint.upper_value:
+                            value = constraint.upper_value
+                            if value:
+                                value = value[:-1]
+                    if constraint.lower_value is not None:
+                        if value <= constraint.lower_value:
+                            value = constraint.lower_value
+                            if value:
+                                value += value[-1]
+        return value 
 
 class Bytes(Field):
     def __init__(self, encoding='utf-8', *args, **kwargs):
@@ -262,8 +283,8 @@ class Bytes(Field):
             return (value.encode(self.encoding), None)
         return (None, 'unrecognized')
 
-    def on_generate(self):
-        value = super().generate()
+    def on_generate(self, constraint=None):
+        value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
         else:
@@ -278,31 +299,32 @@ class FormatString(String):
         value = fstr.format(**data)
         return (value, None)
 
-    def on_generate(self):
-        return super().generate()
+    def on_generate(self, constraint=None):
+        return super().on_generate(constraint=constraint)
 
 
 class Int(Field):
 
     generator = ValueGenerator(
         callbacks={
-            '_id': lambda f: f.faker.random_number(digits=16),
-            '_rev': lambda f: f.faker.random_number(digits=3),
-            'public_id': lambda f: f.faker.random_number(digits=16),
-            'age': lambda f: random.randint(12, 80),
-            'width': lambda f: random.randint(0, 100),
-            'height': lambda f: random.randint(0, 100),
-            'depth': lambda f: random.randint(0, 100),
-            'angle': lambda f: random.randint(-360, 360),
-            'year': lambda f: int(f.faker.year()),
-            'month': lambda f: int(f.faker.month()),
-            'day': lambda f: int(f.faker.day_of_month()),
-            'code': lambda f: random.randint(0, 20),
-            'seq': lambda f: random.randint(0, 100),
-            'no': lambda f: random.randint(0, 100),
-            'num': lambda f: random.randint(0, 100),
+            '_id': lambda f, c: f.faker.random_number(digits=16),
+            '_rev': lambda f, c: f.faker.random_number(digits=3),
+            'public_id': lambda f, c: f.faker.random_number(digits=16),
+            'age': lambda f, c: random.randint(10, 100),
+            'width': lambda f, c: random.randint(0, 100),
+            'height': lambda f, c: random.randint(0, 100),
+            'size': lambda f, c: random.randint(0, 100),
+            'depth': lambda f, c: random.randint(0, 100),
+            'angle': lambda f, c: random.randint(-360, 360),
+            'year': lambda f, c: int(f.faker.year()),
+            'month': lambda f, c: int(f.faker.month()),
+            'day': lambda f, c: int(f.faker.day_of_month()),
+            'code': lambda f, c: random.randint(0, 20),
+            'seq': lambda f, c: random.randint(0, 100),
+            'no': lambda f, c: random.randint(0, 100),
+            'num': lambda f, c: random.randint(0, 100),
         },
-        default=lambda f: random.randint(-100, 100)
+        default=lambda f, c: random.randint(-100, 100)
     )
 
     def __init__(self, signed=False, **kwargs):
@@ -323,21 +345,56 @@ class Int(Field):
         else:
             return (None, 'unrecognized')
 
+    def on_generate(self, constraint=None):
+        # TODO: Move this constraint logic into ValueGenerator
+        # and pass in as ctor callback kwarg
+        if constraint is not None:
+            if constraint.is_equality_constraint:
+                if not constraint.is_negative:
+                    value = constraint.value
+                else:
+                    value = constraint.value + random.randint(-100, 100)
+            elif constraint.is_range_constraint:
+                value = super().on_generate(constraint=constraint)
+                lower = constraint.lower_value
+                upper = constraint.upper_value
+                if lower is not None:
+                    if constraint.is_lower_inclusive and value < lower:
+                        value = lower
+                    elif (not constraint.is_lower_inclusive) and value <= lower:
+                        value = lower + 1
+                if upper is not None:
+                    if constraint.is_upper_inclusive and value > upper:
+                        value = upper
+                    elif (not constraint.is_upper_inclusive) and value >= upper:
+                        value = upper - 1
+        else:
+            value = super().on_generate(constraint=constraint)
+        return value
 
-class Uint32(Int):
+
+class Uint(Int):
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
-    def on_generate(self):
-        return abs(super().generate())
+    def on_generate(self, constraint=None):
+        if constraint is not None and constraint.is_range_constraint:
+            if constraint.lower_value is None:
+                constraint.lower_value = 0
+        return abs(super().on_generate(constraint=constraint))
 
 
-class Uint64(Int):
+class Uint32(Uint):
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
-    def on_generate(self):
-        return abs(super().generate())
+
+class Uint64(Uint):
+    def __init__(self, **kwargs):
+        super().__init__(signed=False, **kwargs)
+
+    def on_generate(self, constraint=None):
+        return abs(super().on_generate(constraint=constraint))
 
 
 class Sint32(Int):
@@ -354,22 +411,22 @@ class Float(Field):
 
     generator = ValueGenerator(
         callbacks={
-            '_id': lambda f: f.faker.random_number(digits=16),
-            'public_id': lambda f: f.faker.random_number(digits=16),
-            'age': lambda f: random.randint(12, 80),
-            'width': lambda f: random.randint(0, 100),
-            'height': lambda f: random.randint(0, 100),
-            'depth': lambda f: random.randint(0, 100),
-            'angle': lambda f: random.randint(-360, 360),
-            'year': lambda f: int(f.faker.year()),
-            'month': lambda f: int(f.faker.month()),
-            'day': lambda f: int(f.faker.day_of_month()),
-            'code': lambda f: random.randint(0, 20),
-            'seq': lambda f: random.randint(0, 100),
-            'no': lambda f: random.randint(0, 100),
-            'num': lambda f: random.randint(0, 100),
+            '_id': lambda f, c: f.faker.random_number(digits=16),
+            'public_id': lambda f, c: f.faker.random_number(digits=16),
+            'age': lambda f, c: random.randint(12, 80),
+            'width': lambda f, c: random.randint(0, 100),
+            'height': lambda f, c: random.randint(0, 100),
+            'depth': lambda f, c: random.randint(0, 100),
+            'angle': lambda f, c: random.randint(-360, 360),
+            'year': lambda f, c: int(f.faker.year()),
+            'month': lambda f, c: int(f.faker.month()),
+            'day': lambda f, c: int(f.faker.day_of_month()),
+            'code': lambda f, c: random.randint(0, 20),
+            'seq': lambda f, c: random.randint(0, 100),
+            'no': lambda f, c: random.randint(0, 100),
+            'num': lambda f, c: random.randint(0, 100),
         },
-        default=lambda f: random.randint(-100, 100)
+        default=lambda f, c: random.randint(-100, 100)
     )
 
     def process(self, value):
@@ -385,8 +442,8 @@ class Float(Field):
         else:
             return (None, 'expected a float')
 
-    def on_generate(self):
-        value = super().generate()
+    def on_generate(self, constraint=None):
+        value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
         return random.random() * sys.maxsize
@@ -395,7 +452,7 @@ class Float(Field):
 class Email(String):
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.email()
+        default=lambda f, c: f.faker.email()
     )
 
     def process(self, value):
@@ -411,7 +468,7 @@ class Email(String):
 class Uuid(Field):
 
     generator = ValueGenerator(
-        default=lambda f: uuid.uuid4()
+        default=lambda f, c: uuid.uuid4()
     )
 
     def process(self, value):
@@ -434,7 +491,7 @@ class Uuid(Field):
 class UuidString(String):
 
     generator = ValueGenerator(
-        default=lambda f: uuid.uuid4().hex
+        default=lambda f, c: uuid.uuid4().hex
     )
 
     def process(self, value):
@@ -453,8 +510,8 @@ class UuidString(String):
         else:
             return (None, 'unrecognized')
 
-    def on_generate(self):
-        value = super().generate()
+    def on_generate(self, constraint=None):
+        value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
         return uuid.uuid4().hex
@@ -466,7 +523,7 @@ class Bool(Field):
     falsey = {'F', 'f', 'False', 'false', 0, '0'}
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.boolean()
+        default=lambda f, c: f.faker.boolean()
     )
 
     def process(self, value):
@@ -483,7 +540,7 @@ class Bool(Field):
 class DateTime(Field):
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.date_time_this_year(tzinfo=pytz.utc)
+        default=lambda f, c: f.faker.date_time_this_year(tzinfo=pytz.utc)
     )
 
     def process(self, value):
@@ -508,7 +565,7 @@ class DateTime(Field):
 class DateTimeString(String):
 
     generator = ValueGenerator(
-        default=lambda f: (
+        default=lambda f, c: (
             datetime.strftime(
                 f.faker.date_time_this_year(tzinfo=pytz.utc), f.format_spec
             ) if f.format_spec
@@ -542,8 +599,8 @@ class DateTimeString(String):
 
         return (dt_str, None)
 
-    def on_generate(self):
-        value = super().generate()
+    def on_generate(self, constraint=None):
+        value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
         return datetime.strftime(
@@ -555,7 +612,7 @@ class DateTimeString(String):
 class Timestamp(Field):
 
     generator = ValueGenerator(
-        default=lambda f: TimeUtils.to_timestamp(
+        default=lambda f, c: TimeUtils.to_timestamp(
             f.faker.date_time_this_year(tzinfo=pytz.utc)
         )
     )
@@ -570,8 +627,8 @@ class Timestamp(Field):
         else:
             return (None, 'unrecognized')
 
-    def on_generate(self):
-        value = super().generate()
+    def on_generate(self, constraint=None):
+        value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
         return TimeUtils.to_timestamp(self.faker.date_time_this_year())
@@ -580,7 +637,7 @@ class Timestamp(Field):
 class List(Field):
 
     generator = ValueGenerator(
-        default=lambda f: [
+        default=lambda f, c: [
             f.nested.generate() for i in range(random.randint(1, 10))
         ]
     )
@@ -665,8 +722,8 @@ class Set(List):
         result, error = super().process(list(sequence))
         return ((set(result) if not error else result), error)
 
-    def on_generate(self):
-        return set(super().generate())
+    def on_generate(self, constraint=None):
+        return set(super().on_generate(constraint=constraint))
 
 
 class Nested(Field):
@@ -681,7 +738,7 @@ class Nested(Field):
     """
 
     generator = ValueGenerator(
-        default=lambda f: f.nested.generate()
+        default=lambda f, c: f.nested.generate()
     )
 
     def __init__(self, obj, **kwargs):
@@ -720,7 +777,7 @@ class Nested(Field):
 class Dict(Field):
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.pydict()
+        default=lambda f, c: f.faker.pydict()
     )
 
     def process(self, value):
@@ -738,7 +795,7 @@ class FilePath(String):
     """
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.file_path()
+        default=lambda f, c: f.faker.file_path()
     )
 
     def process(self, value):
@@ -755,7 +812,7 @@ class IpAddress(String):
     """
 
     generator = ValueGenerator(
-        default=lambda f: (
+        default=lambda f, c: (
             f.faker.ipv4() if random.randint(0, 1) else f.faker.ipv6()
         )
     )
@@ -767,7 +824,7 @@ class DomainName(String):
     """
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.domain_name()
+        default=lambda f, c: f.faker.domain_name()
     )
 
 
@@ -777,7 +834,7 @@ class Url(String):
     """
 
     generator = ValueGenerator(
-        default=lambda f: f.faker.url()
+        default=lambda f, c: f.faker.url()
     )
 
 
@@ -791,7 +848,7 @@ class BcryptString(String):
 
     encoding = 'utf8'
     generator = ValueGenerator(
-        default=lambda f: (  # hash for password: "password"
+        default=lambda f, c: (  # hash for password: "password"
             '$2b$05$OkUuDW0uEXLLbYWZBKtLCO4amuuY7AjBOfUSe6I3dizBHXxVnppA2'
         )
     )
