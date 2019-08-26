@@ -3,7 +3,7 @@ from .schema import (
     Schema,
     Constraint,
     RangeConstraint,
-    EqualityConstraint,
+    ConstantValueConstraint,
 )
 from .exc import ValidationError
 from . import fields

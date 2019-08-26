@@ -266,7 +266,7 @@ class RangeConstraint(Constraint):
         self.is_lower_inclusive = is_lower_inclusive
 
 
-class EqualityConstraint(Constraint):
+class ConstantValueConstraint(Constraint):
     def __init__(self, value, is_negative=False):
         super().__init__('equality')
         self.value = value

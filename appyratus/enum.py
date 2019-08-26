@@ -39,23 +39,28 @@ class Enum(tuple):
         self._value_map = value_map or {}
         self._value_map.update(value_map_kwargs)
         self._value_map = {
-            k.lower(): v for k, v in self._value_map.items()
+            self._normalize_key(k): v for k, v in self._value_map.items()
         }
 
     def __getattr__(self, key: str):
         if key.startswith('__'):
             raise AttributeError(key)
-        return self._value_map[key.lower()]
+        return self._value_map[self._normalize_key(key)]
 
     def __getitem__(self, key: str):
-        return self._value_map[key.lower()]
+        return self._value_map[self._normalize_key(key)]
 
     def __contains__(self, key: str):
-        return key in self._value_map.values()
+        return self._normalize_key(key) in self._value_map.values()
+
+    @staticmethod
+    def _normalize_key(key):
+        return key.replace('-', '_').lower()
 
     @property
     def name(self):
         return self._name
+
 
 
 class EnumValueMeta(ABCMeta):
@@ -68,6 +73,7 @@ class EnumValueMeta(ABCMeta):
         setattr(cls, '_impl', cls.impl())
         setattr(cls, '_allowed_values', set())
         setattr(cls, '_value2name', {})
+        setattr(cls, '_name2value', {})
 
         values = cls.values()
 
@@ -77,15 +83,19 @@ class EnumValueMeta(ABCMeta):
             values = {k: k for k in values}
 
         for k, v in values.items():
+            k = cls.get_normalized_key(k)
             if isinstance(v, cls._impl):
                 cls._allowed_values.add(v)
+                cls._name2value[k] = v
                 cls._value2name[v] = k
-                setattr(cls, k.replace('-' ,'_'), v)
+                setattr(cls, k, v)
 
         cls._is_cls_init = True
 
 
 class EnumValue(object, metaclass=EnumValueMeta):
+
+    RE_NON_WORD = re.compile(r'\W+')
 
     @staticmethod
     @abstractmethod
@@ -99,11 +109,33 @@ class EnumValue(object, metaclass=EnumValueMeta):
 
     @classmethod
     def to_name(cls, value):
-        return cls._value2name[cls(value)]
+        return cls._value2name.get(cls(value))
+
+    @classmethod
+    def get_normalized_key(cls, key):
+        return cls.RE_NON_WORD.sub('_', key.lower())
 
     def __init__(self, value, *args, **kwargs):
         if self._is_cls_init and value not in self._allowed_values:
             raise NoSuchEnumValueError(self, value)
+
+    def __eq__(self, other):
+        return self == cls(other)
+
+    def __neq__(self, other):
+        return self == cls(other)
+
+    def __le__(self, other):
+        return self < cls(other)
+
+    def __leq__(self, other):
+        return self <= cls(other)
+
+    def __geq__(self, other):
+        return self >= cls(other)
+        
+    def __ge__(self, other):
+        return self > cls(other)
 
     @property
     def name(self):
