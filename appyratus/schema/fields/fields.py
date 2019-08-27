@@ -143,9 +143,9 @@ class String(Field):
 
     generator = Field.Generator(
         callbacks={
-            '_id': lambda f: uuid.uuid4().hex,
+            '_id': lambda f: UuidString.next_id(),
             'id': lambda f: str(f.faker.random_number(digits=16)),
-            'public_id': lambda f: uuid.uuid4().hex,
+            'public_id': lambda f: UuidString.next_id(),
             'first_name': lambda f: f.faker.first_name(),
             'last_name': lambda f: f.faker.last_name(),
             'full_name': lambda f: f.faker.name(),
@@ -410,9 +410,11 @@ class Email(String):
 
 class Uuid(Field):
 
-    generator = ValueGenerator(
-        default=lambda f: uuid.uuid4()
-    )
+    generator = ValueGenerator(default=lambda f: Uuid.next_id())
+
+    @classmethod
+    def next_id(cls):
+        return uuid.uuid4()
 
     def process(self, value):
         if isinstance(value, UUID):
@@ -433,9 +435,11 @@ class Uuid(Field):
 
 class UuidString(String):
 
-    generator = ValueGenerator(
-        default=lambda f: uuid.uuid4().hex
-    )
+    generator = ValueGenerator(default=lambda f: UuidString.next_id())
+
+    @classmethod
+    def next_id(cls):
+        return Uuid.next_id().hex
 
     def process(self, value):
         if isinstance(value, UUID):
@@ -457,7 +461,7 @@ class UuidString(String):
         value = super().generate()
         if value is not None:
             return value
-        return uuid.uuid4().hex
+        return Uuid.next_id().hex
 
 
 class Bool(Field):
@@ -786,7 +790,7 @@ class BcryptString(String):
     class hash_str(str):
         def __eq__(self, other: str):
             return bcrypt.checkpw(
-                other.encode(encoding), self.encode(encoding)
+                other.encode(BcryptString.encoding), self.encode(BcryptString.encoding)
             )
 
     encoding = 'utf8'
