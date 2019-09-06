@@ -23,7 +23,7 @@ from .value_generator import ValueGenerator
 from .field_adapter import FieldAdapter
 
 RE_BCRYPT_HASH = re.compile(r'^\$2[ayb]\$.{56}$')
-RE_FLOAT = re.compile(r'^\d*(\.\d*)?$')
+RE_FLOAT = re.compile(r'^-?\d*(\.\d*)?$')
 RE_EMAIL = re.compile(r'^[a-z][\w\-\.]*@[\w\.\-]*\w\.\w+$', re.I)
 RE_UUID = re.compile(r'^[a-f0-9]{32}$')
 
@@ -385,11 +385,11 @@ class Float(Field):
             return (float(value), None)
         elif isinstance(value, str):
             if not RE_FLOAT.match(value):
-                return (None, 'expected a float')
+                return (None, INVALID_VALUE)
             else:
                 return (float(value), None)
         else:
-            return (None, 'expected a float')
+            return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self):
         value = super().generate()

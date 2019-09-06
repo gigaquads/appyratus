@@ -9,7 +9,6 @@ from appyratus.schema.fields import fields
 # Uint64
 # Sint32
 # Sint64
-# Float
 # Email
 # Uuid
 # UuidString
@@ -82,6 +81,38 @@ class TestIntField(BaseTests):
             ('klingon', {}, None, fields.INVALID_VALUE),
     # None is an unrecognized integer
             (None, {}, None, fields.UNRECOGNIZED_VALUE),
+        ]
+    )
+    def test_process(self, value, kwargs, result, error):
+        res, err = self.klass(**kwargs).process(value)
+        assert res == result
+        assert err == error
+
+
+@mark.unit
+class TestFloatField(BaseTests):
+
+    @property
+    def klass(self):
+        return fields.Float
+
+    @mark.params(
+        'value, kwargs, result, error',
+        [
+    # Valid floats
+            (0, {}, 0.0, None),
+            (-1, {}, -1.0, None),
+            (13.37, {}, 13.37, None),
+            ('1', {}, 1.0, None),
+            ('-13.37', {}, -13.37, None),
+    # Invalid float
+            ('klingon', {}, None, fields.INVALID_VALUE),
+            ('kling.on', {}, None, fields.INVALID_VALUE),
+    # Unrecognized floats
+            (None, {}, None, fields.UNRECOGNIZED_VALUE),
+            ([], {}, None, fields.UNRECOGNIZED_VALUE),
+            (set(), {}, None, fields.UNRECOGNIZED_VALUE),
+            (dict(), {}, None, fields.UNRECOGNIZED_VALUE),
         ]
     )
     def test_process(self, value, kwargs, result, error):
