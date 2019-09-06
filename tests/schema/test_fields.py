@@ -21,12 +21,26 @@ class TestStringField(BaseTests):
 
 
 @mark.unit
+class TestListField(BaseTests):
+    @property
+    def klass(self):
+        return fields.List
+
+    def test_list_of_string(self):
+        class MySchema(Schema):
+            rules = self.klass(fields.String())
+
+        res = MySchema().process({'rules': ['do good', 'be good']})
+        print(res)
+
+
+@mark.unit
 class TestNestedField(BaseTests):
     @property
     def klass(self):
         return fields.Nested
 
-    def test__flatten(self):
+    def test_list_of_nested(self):
         class MySchema(Schema):
             ferengi = fields.Nested({
                 'lobes': fields.String(),
