@@ -470,18 +470,22 @@ class UuidString(String):
 
 class Bool(Field):
 
-    truthy = {'T', 't', 'True', 'true', 1, '1'}
-    falsey = {'F', 'f', 'False', 'false', 0, '0'}
+    truthy = {True, 'T', 't', 'TRUE', 'True', 'true', 1, '1'}
+    falsey = {False, 'F', 'f', 'FALSE', 'False', 'false', 0, '0'}
 
     generator = ValueGenerator(default=lambda f: f.faker.boolean())
 
     def process(self, value):
         if isinstance(value, bool):
             return (value, None)
-        elif value in self.truthy:
-            return (True, None)
-        elif value in self.falsey:
-            return (False, None)
+        elif isinstance(value, (int, str)):
+            strvalue = str(value).lower()
+            if strvalue in self.truthy:
+                return (True, None)
+            elif strvalue in self.falsey:
+                return (False, None)
+            else:
+                return (None, INVALID_VALUE)
         else:
             return (None, UNRECOGNIZED_VALUE)
 

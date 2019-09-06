@@ -13,7 +13,6 @@ from appyratus.schema.fields import fields
 # Email
 # Uuid
 # UuidString
-# Bool
 # DateTime
 # DateTimeString
 # Timestamp
@@ -83,6 +82,53 @@ class TestIntField(BaseTests):
             ('klingon', {}, None, fields.INVALID_VALUE),
     # None is an unrecognized integer
             (None, {}, None, fields.UNRECOGNIZED_VALUE),
+        ]
+    )
+    def test_process(self, value, kwargs, result, error):
+        res, err = self.klass(**kwargs).process(value)
+        assert res == result
+        assert err == error
+
+
+@mark.unit
+class TestBoolField(BaseTests):
+
+    @property
+    def klass(self):
+        return fields.Bool
+
+    @mark.params(
+        'value, kwargs, result, error',
+        [
+    # Truthy
+            ('T', {}, True, None),
+            ('t', {}, True, None),
+            ('TRUE', {}, True, None),
+            ('True', {}, True, None),
+            ('true', {}, True, None),
+            ('TrUe', {}, True, None),
+            ('1', {}, True, None),
+            (1, {}, True, None),
+            (True, {}, True, None),
+    # Falsey
+            ('F', {}, False, None),
+            ('f', {}, False, None),
+            ('FALSE', {}, False, None),
+            ('False', {}, False, None),
+            ('false', {}, False, None),
+            ('FaLsE', {}, False, None),
+            ('0', {}, False, None),
+            (0, {}, False, None),
+            (False, {}, False, None),
+    # Partial True/False are invalid
+            ('Tru', {}, None, fields.INVALID_VALUE),
+            ('Fals', {}, None, fields.INVALID_VALUE),
+    # Integers beyond 0/1 are invalid
+            (1337, {}, None, fields.INVALID_VALUE),
+    # Unrecognized types
+            (None, {}, None, fields.UNRECOGNIZED_VALUE),
+            ([], {}, None, fields.UNRECOGNIZED_VALUE),
+            ({}, {}, None, fields.UNRECOGNIZED_VALUE),
         ]
     )
     def test_process(self, value, kwargs, result, error):
