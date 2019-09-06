@@ -24,6 +24,58 @@ from appyratus.schema.fields import fields
 
 
 @mark.unit
+class TestEnumField(BaseTests):
+
+    @property
+    def klass(self):
+        return fields.Enum
+
+    @mark.params(
+        'value, kwargs, result, error',
+        [
+    # Value exists in enum
+            (
+                'klingon', {
+                    'nested': fields.String(),
+                    'values': {'klingon'}
+                }, 'klingon', None
+            ),
+    # None value is a valid value by Field default
+            (None, {
+                'nested': fields.String(),
+                'values': {None}
+            }, None, None),
+    # Value is invalid when enum is not nullable
+            (
+                None, {
+                    'nested': fields.String(),
+                    'nullable': False,
+                    'values': {None}
+                }, None, fields.UNRECOGNIZED_VALUE
+            ),
+    # Enum respects nested field type and will error on invalid values
+            (
+                [], {
+                    'nested': fields.String(),
+                    'values': {None}
+                }, None, fields.UNRECOGNIZED_VALUE
+            ),
+    # Value is invalid does not exist in enum
+            (
+                'ferengi', {
+                    'nested': fields.String(),
+                    'values': {'klingon'}
+                }, None, fields.UNRECOGNIZED_VALUE
+            )
+        ]
+    )
+    def test_process(self, value, kwargs, result, error):
+        res, err = self.klass(**kwargs).process(value)
+        assert res == result
+        assert err == error
+
+
+@mark.unit
 class TestStringField(BaseTests):
 
     @property
