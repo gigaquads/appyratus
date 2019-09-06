@@ -601,6 +601,9 @@ class List(Field):
             from appyratus.schema import Schema
 
             if isinstance(nested, Nested):
+                # XXX nested.on_create has not been called yet, so it has not
+                # been setup with nested.schema, and subsequently the name
+                # cannot be set.. nested is NoneType and nested.schema is None
                 self.nested = nested.schema
             elif isinstance(nested, dict):
                 self.nested = Schema.factory('NestedSchema', nested)()
@@ -620,6 +623,7 @@ class List(Field):
                 self.nested.on_create(schema_type)
 
         super().__init__(on_create=on_create, **kwargs)
+        self.nested = None
 
     def __repr__(self):
         if self.source != self.name:
