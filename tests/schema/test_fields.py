@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from appyratus.test import mark, BaseTests
 from appyratus.schema import Schema
 from appyratus.schema.fields import fields
@@ -10,8 +12,6 @@ from appyratus.schema.fields import fields
 # Sint32
 # Sint64
 # Email
-# Uuid
-# UuidString
 # DateTime
 # DateTimeString
 # Timestamp
@@ -85,13 +85,18 @@ class TestStringField(BaseTests):
     @mark.params(
         'value, kwargs, result, error',
         [
-    # 'klingon' is a valid string
+    # Valid strings
+    ## 'klingon' is a valid string
             ('klingon', {}, 'klingon', None),
-    # empty string is a valid string
+    ## empty string is a valid string
             ('', {}, '', None),
-    # 1337 integer will be cast as a string
+    ## 1337 integer will be cast as a string
             (1337, {}, '1337', None),
-    # None is an unrecognized string
+            ([], {}, '[]', None),
+            (set(), {}, 'set()', None),
+            ({}, {}, '{}', None),
+    # Unrecognized
+    ## None is an unrecognized string
             (None, {}, None, fields.UNRECOGNIZED_VALUE),
         ]
     )
@@ -157,14 +162,122 @@ class TestFloatField(BaseTests):
             (13.37, {}, 13.37, None),
             ('1', {}, 1.0, None),
             ('-13.37', {}, -13.37, None),
-    # Invalid float
+    # Invalid floats
             ('klingon', {}, None, fields.INVALID_VALUE),
             ('kling.on', {}, None, fields.INVALID_VALUE),
     # Unrecognized floats
             (None, {}, None, fields.UNRECOGNIZED_VALUE),
             ([], {}, None, fields.UNRECOGNIZED_VALUE),
             (set(), {}, None, fields.UNRECOGNIZED_VALUE),
-            (dict(), {}, None, fields.UNRECOGNIZED_VALUE),
+            ({}, {}, None, fields.UNRECOGNIZED_VALUE),
+        ]
+    )
+    def test_process(self, value, kwargs, result, error):
+        res, err = self.klass(**kwargs).process(value)
+        assert res == result
+        assert err == error
+
+
+@mark.unit
+class TestUuidField(BaseTests):
+    """
+    """
+
+    @property
+    def klass(self):
+        return fields.Uuid
+
+    @mark.params(
+        'value, kwargs, result, error',
+        [
+    # Valid UUIDs
+    ## A dash separated uuid string is valid
+            (
+                'deadbeef-dead-beef-dead-beef-deadbeef', {},
+                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
+            ),
+    ## A non-separated uuid string is valid
+            (
+                'deadbeefdeadbeefdeadbeefdeadbeef', {},
+                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
+            ),
+    ## A uuid string of numbers is valid
+            (
+                '12345678901234567890123456789012', {},
+                UUID('12345678901234567890123456789012'), None
+            ),
+    ## A uuid object is valid
+            (
+                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), {},
+                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
+            ),
+    ## An integer is a valid uuid
+            (
+                295990755083049101712519384020072382191, {},
+                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
+            ),
+    # Invalid UUIDs
+    ## Characters outside the UUID range A-F are invalid
+            ('deadtarg-dead-targ-dead-targ-deadtarg', {}, None, fields.INVALID_VALUE),
+    # Unrecognized UUIDs
+            (None, {}, None, fields.UNRECOGNIZED_VALUE),
+            ([], {}, None, fields.UNRECOGNIZED_VALUE),
+            (set(), {}, None, fields.UNRECOGNIZED_VALUE),
+            ({}, {}, None, fields.UNRECOGNIZED_VALUE),
+        ]
+    )
+    def test_process(self, value, kwargs, result, error):
+        res, err = self.klass(**kwargs).process(value)
+        assert res == result
+        assert err == error
+
+
+@mark.unit
+class TestUuidStringField(BaseTests):
+    """
+    """
+
+    @property
+    def klass(self):
+        return fields.UuidString
+
+    @mark.params(
+        'value, kwargs, result, error',
+        [
+    # Valid UUIDs
+    ## A dash separated uuid string is valid
+            (
+                'deadbeef-dead-beef-dead-beef-deadbeef', {},
+                'deadbeefdeadbeefdeadbeefdeadbeef', None
+            ),
+    ## A non-separated uuid string is valid
+            (
+                'deadbeefdeadbeefdeadbeefdeadbeef', {},
+                'deadbeefdeadbeefdeadbeefdeadbeef', None
+            ),
+    ## A uuid string of numbers is valid
+            (
+                '12345678901234567890123456789012', {},
+                '12345678901234567890123456789012', None
+            ),
+    ## A uuid object is valid
+            (
+                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), {},
+                'deadbeefdeadbeefdeadbeefdeadbeef', None
+            ),
+    ## An integer is a valid uuid
+            (
+                295990755083049101712519384020072382191, {},
+                'deadbeefdeadbeefdeadbeefdeadbeef', None
+            ),
+    # Invalid UUIDs
+    ## Characters outside the UUID range A-F are invalid
+            ('deadtarg-dead-targ-dead-targ-deadtarg', {}, None, fields.INVALID_VALUE),
+    # Unrecognized UUIDs
+            (None, {}, None, fields.UNRECOGNIZED_VALUE),
+            ([], {}, None, fields.UNRECOGNIZED_VALUE),
+            (set(), {}, None, fields.UNRECOGNIZED_VALUE),
+            ({}, {}, None, fields.UNRECOGNIZED_VALUE),
         ]
     )
     def test_process(self, value, kwargs, result, error):
