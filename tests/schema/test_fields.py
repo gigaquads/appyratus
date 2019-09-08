@@ -3,6 +3,7 @@ from uuid import UUID
 from appyratus.test import mark, BaseTests
 from appyratus.schema import Schema
 from appyratus.schema.fields import fields
+from appyratus.utils import TimeUtils
 
 # TODO
 # Bytes
@@ -274,6 +275,55 @@ class TestUuidStringField(BaseTests):
     ## Characters outside the UUID range A-F are invalid
             ('deadtarg-dead-targ-dead-targ-deadtarg', {}, None, fields.INVALID_VALUE),
     # Unrecognized UUIDs
+            (None, {}, None, fields.UNRECOGNIZED_VALUE),
+            ([], {}, None, fields.UNRECOGNIZED_VALUE),
+            (set(), {}, None, fields.UNRECOGNIZED_VALUE),
+            ({}, {}, None, fields.UNRECOGNIZED_VALUE),
+        ]
+    )
+    def test_process(self, value, kwargs, result, error):
+        res, err = self.klass(**kwargs).process(value)
+        assert res == result
+        assert err == error
+
+
+VALUES = {
+    'datetime_object': TimeUtils.from_timestamp(1567918140),
+    'datetime_timestamp': 1567918140,
+    'date_object': TimeUtils.from_timestamp(1567900800).date(),
+    'date_timestamp': 1567900800,
+    'datetime_object_min_time': TimeUtils.from_timestamp(1567900800),
+}
+
+
+@mark.unit
+class TestDateTimeField(BaseTests):
+    """
+    """
+
+    @property
+    def klass(self):
+        return fields.DateTime
+
+    @mark.params(
+        'value, kwargs, result, error',
+        [
+    # Valid datetimes
+    ## A datetime object
+            (
+                TimeUtils.from_timestamp(1567918140), {},
+                TimeUtils.from_timestamp(1567918140), None
+            ),
+    ## A unix timestamp will be cast as a datetime
+            (1567918140, {}, TimeUtils.from_timestamp(1567918140), None),
+    ## Date objects will have the minimum time applied
+            (
+                TimeUtils.from_timestamp(1567900800).date(), {},
+                TimeUtils.from_timestamp(1567900800), None
+            ),
+    # Invalid datetimes
+    #(VALUES['datetime_timestamp'], {}, None, fields.INVALID_VALUE),
+    # Unrecognized datetimes
             (None, {}, None, fields.UNRECOGNIZED_VALUE),
             ([], {}, None, fields.UNRECOGNIZED_VALUE),
             (set(), {}, None, fields.UNRECOGNIZED_VALUE),
