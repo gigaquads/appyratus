@@ -146,7 +146,7 @@ class String(Field):
     generator = Field.Generator(
         callbacks={
             '_id': lambda f, c: uuid.uuid4().hex,
-            'id': lambda f, c: str(f.faker.random_number(digits=16)),
+            'id': lambda f, c: uuid.uuid4().hex,
             'public_id': lambda f, c: uuid.uuid4().hex,
             'first_name': lambda f, c: f.faker.first_name(),
             'last_name': lambda f, c: f.faker.last_name(),
@@ -256,7 +256,13 @@ class String(Field):
         value = super().on_generate(constraint=constraint)
         if constraint is not None:
             if constraint.is_equality_constraint:
-                value = constraint.value
+                if not constraint.is_negative:
+                    value = constraint.value
+                else:
+                    new_value = constraint.value[::-1]
+                    if new_value == value:
+                        new_value += 'x'
+                    value = new_value
             else:
                 if constraint.is_range_constraint:
                     if constraint.upper_value is not None:
@@ -269,7 +275,7 @@ class String(Field):
                             value = constraint.lower_value
                             if value:
                                 value += value[-1]
-        return value 
+        return value
 
 class Bytes(Field):
     def __init__(self, encoding='utf-8', *args, **kwargs):
