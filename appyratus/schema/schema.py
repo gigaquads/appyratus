@@ -227,6 +227,38 @@ class Schema(Field, metaclass=schema_type):
                     results[field.name] = v
         return results
 
+    @classmethod
+    def replace_field(cls, new_field: Field, overwrite=True):
+        name = new_field.name
+        cls.fields[name] = new_field
+        old_field = cls.fields.get(name)
+
+        if old_field is not None:
+            if not overwrite:
+                raise ValueError(
+                    f'field {name} already exists. use overwrite=True if you '
+                    f'intend to replace the existing field.'
+                )
+            del cls.source_2_field[name]
+            if old_field.nullable:
+                del cls.nullable_fields[name]
+            if old_field.required:
+                del cls.required_fields[name]
+            else:
+                del cls.optional_fields[name]
+            if isinstance(old_field, Schema):
+                cls.children.remove(old_field)
+
+        cls.source_2_field[new_field.source] = new_field
+        if isinstance(new_field, Schema):
+            cls.children.add(new_field)
+        if new_field.nullable:
+            cls.nullable_fields[name] = new_field
+        if new_field.required:
+            cls.required_fields[name] = new_field
+        else:
+            cls.optional_fields[name] = new_field
+
     def generate(
         self,
         fields: Set[Text] = None,
