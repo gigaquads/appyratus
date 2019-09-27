@@ -35,3 +35,34 @@ class PythonModule(File):
     @classmethod
     def dump(cls, data):
         return astor.to_source(data)
+
+
+class FileObject(object):
+    @classmethod
+    def file_type(cls):
+        raise NotImplementedError('implement in subclass')
+
+    def __init__(self, path: Text = None, data = None, **kwargs):
+        self._path = path
+        self._data = data
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def data(self):
+        return self._data
+
+    def read(self):
+        self._data = self.file_type.read(self.path)
+        return self._data
+
+    def write(self):
+        self.file_type.write(self.path, self.data)
+
+
+
+class PythonModuleFileObject(object):
+    def file_type(cls):
+        return PythonModule

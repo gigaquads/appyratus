@@ -5,6 +5,7 @@ import os
 from typing import Set, Text
 
 
+
 class BaseFile(object):
     @classmethod
     def exists(cls, path: str):
