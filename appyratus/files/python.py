@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import ast
 import astor
+import re
 
 from typing import Text
 
@@ -15,6 +16,10 @@ class PythonModule(File):
     @classmethod
     def format_file_name(cls, basename):
         return f'{basename}.py'
+
+    @classmethod
+    def get_comment_tag(cls):
+        return 'RUBBER-PANTS'
 
     @classmethod
     def read(cls, path: Text):
@@ -35,6 +40,32 @@ class PythonModule(File):
     @classmethod
     def dump(cls, data):
         return astor.to_source(data)
+
+    @classmethod
+    def hashed_comments_to_quoted(cls, data):
+        list_data = data.split("\n")
+        for idx, line in enumerate(list_data):
+            match_comment = r'^([^#][.\s]*)?(\#.*)$'
+            match_replace = r'\1""" {}\2 """'.format(cls.get_comment_tag())
+            match = re.match(match_comment, line)
+            if not match:
+                continue
+            clean_line = re.sub(match_comment, match_replace, line)
+            list_data[idx] = clean_line
+        return "\n".join(list_data)
+    
+    @classmethod
+    def quoted_comments_to_hashed(cls, data):
+        list_data = data.split("\n")
+        for idx, line in enumerate(list_data):
+            match_comment = r'(.*)\"\"\" {}(.*) \"\"\"'.format(cls.get_comment_tag())
+            match_replace = r'\1\2'
+            match = re.match(match_comment, line)
+            if not match:
+                continue
+            clean_line = re.sub(match_comment, match_replace, line)
+            list_data[idx] = clean_line
+        return "\n".join(list_data)
 
 
 class FileObject(object):
