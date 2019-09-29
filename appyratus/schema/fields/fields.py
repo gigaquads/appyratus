@@ -650,6 +650,12 @@ class List(Field):
     def process(self, sequence):
         dest_sequence = []
         idx2error = {}
+        if not sequence:
+            if self.nullable:
+                return (None, None)
+            else:
+                return (None, INVALID_VALUE)
+
         if isinstance(sequence, set):
             sequence = sorted(sequence)
         for idx, value in enumerate(sequence):
@@ -681,7 +687,7 @@ class Set(List):
 
     def process(self, sequence):
         result, error = super().process(list(sequence))
-        return ((set(result) if not error else result), error)
+        return ((set(result) if not error and result else result), error)
 
     def on_generate(self):
         return set(super().generate())

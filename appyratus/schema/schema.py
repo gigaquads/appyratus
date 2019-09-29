@@ -81,9 +81,7 @@ class Schema(Field, metaclass=schema_type):
 
     def __init__(self, allow_additional=False, **kwargs):
         super().__init__(**kwargs)
-        self.tuple_factory = namedtuple(
-            'results', field_names=['data', 'errors']
-        )
+        self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
         self.allow_additional = allow_additional
 
     def __getitem__(self, field_name: Text) -> 'Field':
@@ -115,13 +113,14 @@ class Schema(Field, metaclass=schema_type):
         for field in self.fields.values():
             # is key simply present in source?
             field_key = field.source or field.name
-            exists_key = field_key in source
+            exists_key = source is not None and field_key in source
 
             # do we ultimately call field.process?
             skip_field = not exists_key
 
             # get source value, None is handled below
-            source_val = source.get(field.source)
+
+            source_val = source.get(field.source) if isinstance(source, dict)  else None
 
             if pre_process:
                 # pre-process some shit
@@ -189,14 +188,9 @@ class Schema(Field, metaclass=schema_type):
         # call all post-process callbacks
         for field in post_process_fields:
             dest_val = dest.pop(field.name)
-            field_val, field_err = field.post_process(
-                dest_val, dest, context=context
-            )
+            field_val, field_err = field.post_process(dest_val, dest, context=context)
             # now recheck nullity of the post-processed field value
-            if (
-                (dest_val is None) and
-                (not field.nullable and not ignore_nullable)
-            ):
+            if ((dest_val is None) and (not field.nullable and not ignore_nullable)):
                 errors[field.name] = 'null'
             elif not field_err:
                 dest[field.name] = field_val
