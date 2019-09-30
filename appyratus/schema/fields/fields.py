@@ -496,16 +496,24 @@ class DateTime(Field):
         default=lambda f: f.faker.date_time_this_year(tzinfo=pytz.utc)
     )
 
+    def __init__(self, timezone=None, **kwargs):
+        super().__init__(**kwargs)
+        if timezone is None:
+            timezone = pytz.utc
+        self.timezone = timezone
+
     def process(self, value):
         if isinstance(value, datetime):
-            return (value.replace(tzinfo=pytz.utc), None)
+            return (value.replace(tzinfo=self.timezone), None)
         elif isinstance(value, (int, float)):
             try:
                 return (TimeUtils.from_timestamp(value), None)
             except ValueError:
                 return (None, INVALID_VALUE)
         elif isinstance(value, date):
-            return (datetime.combine(value, datetime.min.time()), None)
+            new_value = datetime.combine(value, datetime.min.time())
+            new_value = new_value.replace(tzinfo=self.timezone)
+            return (new_value, None)
         elif isinstance(value, str):
             try:
                 return (dateutil.parser.parse(value), None)
@@ -519,16 +527,18 @@ class DateTimeString(String):
 
     generator = ValueGenerator(
         default=lambda f: (
-            datetime.strftime(
-                f.faker.date_time_this_year(tzinfo=pytz.utc), f.format_spec
-            ) if f.format_spec
-            else f.faker.date_time_this_year(tzinfo=pytz.utc).isoformat()
+            datetime.
+            strftime(f.faker.date_time_this_year(tzinfo=pytz.utc), f.format_spec)
+            if f.format_spec else f.faker.date_time_this_year(tzinfo=pytz.utc).isoformat()
         )
     )
 
-    def __init__(self, format_spec=None, **kwargs):
+    def __init__(self, format_spec=None, timezone=None, **kwargs):
         super().__init__(**kwargs)
         self.format_spec = format_spec
+        if timezone is None:
+            timezone = pytz.utc
+        self.timezone = timezone
 
     def process(self, value):
         if isinstance(value, str):
@@ -539,7 +549,7 @@ class DateTimeString(String):
         elif isinstance(value, (int, float)):
             dt = TimeUtils.from_timestamp(value)
         elif isinstance(value, datetime):
-            dt = value.replace(tzinfo=pytz.utc)
+            dt = value.replace(tzinfo=self.timezone)
         elif isinstance(value, date):
             dt = datetime.combine(value, datetime.min.time())
         else:
@@ -562,9 +572,8 @@ class DateTimeString(String):
 class Timestamp(Field):
 
     generator = ValueGenerator(
-        default=lambda f: TimeUtils.to_timestamp(
-            f.faker.date_time_this_year(tzinfo=pytz.utc)
-        )
+        default=lambda f: TimeUtils.
+        to_timestamp(f.faker.date_time_this_year(tzinfo=pytz.utc))
     )
 
     def process(self, value):
@@ -641,6 +650,12 @@ class List(Field):
     def process(self, sequence):
         dest_sequence = []
         idx2error = {}
+        if not sequence:
+            if self.nullable:
+                return (None, None)
+            else:
+                return (None, INVALID_VALUE)
+
         if isinstance(sequence, set):
             sequence = sorted(sequence)
         for idx, value in enumerate(sequence):
@@ -672,7 +687,7 @@ class Set(List):
 
     def process(self, sequence):
         result, error = super().process(list(sequence))
-        return ((set(result) if not error else result), error)
+        return ((set(result) if not error and result else result), error)
 
     def on_generate(self):
         return set(super().generate())
