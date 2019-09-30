@@ -9,6 +9,7 @@ from .base import File
 
 
 class PythonModule(File):
+
     @staticmethod
     def extensions():
         return {'py'}
@@ -22,24 +23,34 @@ class PythonModule(File):
         return 'RUBBER-PANTS'
 
     @classmethod
-    def read(cls, path: Text):
+    def read(cls, path: Text, preserve_comments: bool = True):
         data = super().read(path)
-        return cls.load(data)
+        return cls.load(data, preserve_comments=preserve_comments)
 
     @classmethod
-    def write(cls, path: Text, data=None, **kwargs):
-        file_data = cls.dump(data) if data else ''
+    def write(cls, path: Text, data=None, restore_comments: bool = True, **kwargs):
+        file_data = cls.dump(data, restore_comments=restore_comments) if data else ''
         super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
-    def load(cls, data):
+    def load(cls, data, preserve_comments: bool = True):
         if not data:
             return
-        return ast.parse(data)
+        if preserve_comments:
+            clean_data = cls.hashed_comments_to_quoted(data)
+        else:
+            clean_data = data
+        ast_data = ast.parse(clean_data)
+        return ast_data
 
     @classmethod
-    def dump(cls, data):
-        return astor.to_source(data)
+    def dump(cls, data, restore_comments: bool = True):
+        source_data = astor.to_source(data)
+        if restore_comments:
+            clean_data = cls.quoted_comments_to_hashed(source_data)
+        else:
+            clean_data = source_data
+        return clean_data
 
     @classmethod
     def hashed_comments_to_quoted(cls, data):
@@ -53,7 +64,7 @@ class PythonModule(File):
             clean_line = re.sub(match_comment, match_replace, line)
             list_data[idx] = clean_line
         return "\n".join(list_data)
-    
+
     @classmethod
     def quoted_comments_to_hashed(cls, data):
         list_data = data.split("\n")
@@ -69,11 +80,12 @@ class PythonModule(File):
 
 
 class FileObject(object):
+
     @classmethod
     def file_type(cls):
         raise NotImplementedError('implement in subclass')
 
-    def __init__(self, path: Text = None, data = None, **kwargs):
+    def __init__(self, path: Text = None, data=None, **kwargs):
         self._path = path
         self._data = data
 
@@ -93,7 +105,7 @@ class FileObject(object):
         self.file_type.write(self.path, self.data)
 
 
+class PythonModuleFileObject(FileObject):
 
-class PythonModuleFileObject(object):
     def file_type(cls):
         return PythonModule
