@@ -31,7 +31,7 @@ class ValueGenerator(object):
         """
         return self.callbacks.pop(field_name, None)
 
-    def generate(self, field: 'Field', *args, **kwargs):
+    def generate(self, field: 'Field', constraint=None, *args, **kwargs):
         """
         Apply a callback to generate a value for the given field, using its name
         to determine the callback.
@@ -49,4 +49,4 @@ class ValueGenerator(object):
                     name = match.groups()[0]
                     func = self.callbacks.get(name, self.default)
 
-        return func(field, *args, **kwargs)
+        return func(field, constraint, *args, **kwargs)
