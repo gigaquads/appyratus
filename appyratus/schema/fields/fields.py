@@ -642,7 +642,7 @@ class List(Field):
             load_to = ''
         return '{}({}{}, {})'.format(
             self.__class__.__name__,
-            self.source,
+            getattr(self, 'source') or 'NoSource',
             load_to,
             self.nested.__class__.__name__,
         )
