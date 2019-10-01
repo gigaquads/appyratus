@@ -56,7 +56,18 @@ class PythonModule(File):
     def hashed_comments_to_quoted(cls, data):
         list_data = data.split("\n")
         for idx, line in enumerate(list_data):
+			"""
+			(\#.*)
+			Get all comments
+
+			(\#.*)(?!([.\s\w]*\"\"\"))
+			Does not match comment at top of class due to no negative lookbehind
+
+			\"{3}\s*(\#.*)\s*\"{3}
+			WIP doesn't work right greedy
+			"""
             match_comment = r'^([^#][.\s]*)?(\#.*)$'
+            match_comment = r'(\#.*)(?!([.\s\w]*\"\"\"))'
             match_replace = r'\1""" {}\2 """'.format(cls.get_comment_tag())
             match = re.match(match_comment, line)
             if not match:
