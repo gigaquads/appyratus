@@ -64,7 +64,8 @@ class PythonModule(File):
             Does not match comment at top of class due to no negative lookbehind
 
             (\#.*)|(\#.*)(?!([.\s\w]*\"\"\"))
-            By alternating both, we get success
+            By alternating both, we get better success
+            however it cannot separate `""" a """ # b` properly
 			"""
             match_comment = r'^([^#][.\s]*)?(\#.*)$'
             match_comment = r'(\#.*)(?!([.\s\w]*\"\"\"))'
