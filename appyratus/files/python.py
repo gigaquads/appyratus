@@ -63,9 +63,9 @@ class PythonModule(File):
             (\#.*)(?!([.\s\w]*\"\"\"))
             Does not match comment at top of class due to no negative lookbehind
 
-            \"{3}\s*(\#.*)\s*\"{3}
-            WIP doesn't work right greedy
-            """
+            (\#.*)|(\#.*)(?!([.\s\w]*\"\"\"))
+            By alternating both, we get success
+			"""
             match_comment = r'^([^#][.\s]*)?(\#.*)$'
             match_comment = r'(\#.*)(?!([.\s\w]*\"\"\"))'
             match_replace = r'\1""" {}\2 """'.format(cls.get_comment_tag())
