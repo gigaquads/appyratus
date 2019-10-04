@@ -65,7 +65,7 @@ class PythonModule(File):
 
             (\#.*)|(\#.*)(?!([.\s\w]*\"\"\"))
             By alternating both, we get better success
-            however it cannot separate `""" a """ # b` properly
+            however it cannot separate triple quoted string followed by a hashed comment
 			"""
             match_comment = r'^([^#][.\s]*)?(\#.*)$'
             match_comment = r'(\#.*)(?!([.\s\w]*\"\"\"))'
