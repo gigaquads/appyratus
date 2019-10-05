@@ -2,14 +2,22 @@ from __future__ import absolute_import
 from typing import Dict, Text
 
 import yaml
+from appyratus.enum import Enum
 
 from .base import File
 
+EXTENSIONS = Enum.of_strings('yml', 'yaml')
+
 
 class Yaml(File):
+
     @staticmethod
     def extensions():
-        return {'yml', 'yaml'}
+        return {v for v in EXTENSIONS}
+
+    @staticmethod
+    def default_extension():
+        return EXTENSIONS.YML
 
     @classmethod
     def format_file_name(cls, basename):

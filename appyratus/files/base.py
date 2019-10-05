@@ -8,12 +8,40 @@ from typing import Set, Text
 
 class BaseFile(object):
     @classmethod
-    def exists(cls, path: str):
+    def exists(cls, path: Text):
         return os.path.exists(path)
 
     @staticmethod
     def extensions() -> Set[Text]:
         raise NotImplementedError('override in subclass')
+    
+    @staticmethod
+    def default_extension():
+        """
+        # Default Extension
+        The default extension to be used when handling File types
+        
+        By default this will use the first extension in the sorted list of
+        extensions bearing your File type provided it
+        """
+        extensions = self.extensions()
+        if not extensions:
+            return None
+        return sorted(list(self.extensions()))[0]
+
+    @staticmethod
+    def has_extension(extension: Text):
+        """
+        # Has Extension
+        If your File type has the appropriate extension registered in it.
+
+        As there is normalizing of extension happening, it will return the
+        normalized extension if one has been found, otherwise None
+        """
+        if not extension:
+            return None
+        extension = extension.lower()
+        return extension in self.extensions()
 
     def read(cls, path: str):
         """
