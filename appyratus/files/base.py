@@ -5,8 +5,8 @@ import os
 from typing import Set, Text
 
 
-
 class BaseFile(object):
+
     @classmethod
     def exists(cls, path: Text):
         return os.path.exists(path)
@@ -14,7 +14,7 @@ class BaseFile(object):
     @staticmethod
     def extensions() -> Set[Text]:
         raise NotImplementedError('override in subclass')
-    
+
     @staticmethod
     def default_extension():
         """
@@ -119,3 +119,29 @@ class File(BaseFile):
     @classmethod
     def dir_path(cls, path):
         return os.path.dirname(os.path.realpath(path))
+
+
+class FileObject(object):
+
+    @classmethod
+    def file_type(cls):
+        raise NotImplementedError('implement in subclass')
+
+    def __init__(self, path: Text = None, data=None, **kwargs):
+        self._path = path
+        self._data = data
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def data(self):
+        return self._data
+
+    def read(self):
+        self._data = self.file_type.read(self.path)
+        return self._data
+
+    def write(self):
+        self.file_type.write(self.path, self.data)

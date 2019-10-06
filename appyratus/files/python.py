@@ -1,11 +1,15 @@
 from __future__ import absolute_import
+
 import ast
-import astor
 import re
+from typing import (
+    Text,
+    Tuple,
+)
 
-from typing import Text
+import astor
 
-from .base import File
+from .base import File, FileObject
 
 
 class PythonModule(File):
@@ -34,10 +38,21 @@ class PythonModule(File):
 
     @classmethod
     def load(cls, data, preserve_comments: bool = True):
+        """
+        # Load
+        Load python file contents into AST objects
+
+        # Args
+        - `data`, file contents
+        - `preserve_comments` (`bool`, `True`) load a python module and
+          preserve hashed comments, e.g., (`# COMMENT`),  that would otherwise
+          be removed by the AST parsing process.  If this is set to `False` then
+          you will lose these comments when writing the AST objects back to disk.
+        """
         if not data:
             return
         if preserve_comments:
-            clean_data = cls.hashed_comments_to_quoted(data)
+            clean_data = cls.hashed_comments_to_strings(data)
         else:
             clean_data = data
         ast_data = ast.parse(clean_data)
@@ -47,74 +62,78 @@ class PythonModule(File):
     def dump(cls, data, restore_comments: bool = True):
         source_data = astor.to_source(data)
         if restore_comments:
-            clean_data = cls.quoted_comments_to_hashed(source_data)
+            clean_data = cls.string_comments_to_hashed(source_data)
         else:
             clean_data = source_data
         return clean_data
 
     @classmethod
-    def hashed_comments_to_quoted(cls, data):
-        list_data = data.split("\n")
-        for idx, line in enumerate(list_data):
+    def hashed_comments_to_strings(cls, data):
+        """
+        # Hashed Comments To Strings
+        Using the provided string data, convert all matching hashed comments.
+
+        In example:
+          from `# MY COMMENT`, 
+          into `\"\"\" MY TAG#MY COMMENT \"\"\"`
+        """
+
+        # detect string literals
+        str_literal_regex = r'(\"\"\"[\W\w]*?\"\"\")'
+        str_literal_spans = [
+            k.span() for k in re.finditer(str_literal_regex, data, re.MULTILINE)
+        ]
+
+        def between(value: Text, value_range: Tuple):
+            return value_range[0] <= value <= value_range[1]
+
+        def exclude_comments_in_string_literals(match):
             """
-            (\#.*)
-            Get all comments
+            If a comment is within range of any detected string literals, then
+            do not perform processing as it is not
 
-            (\#.*)(?!([.\s\w]*\"\"\"))
-            Does not match comment at top of class due to no negative lookbehind
+            # Args
+            - `match`, the match object provided by `re`
+            """
+            match_span = match.span()
+            in_match = any(
+                [all([between(m, sp) for m in match_span]) for sp in str_literal_spans]
+            )
+            if in_match:
+                # hash in match is located in string literal spans, do nothing
+                return match.group(1)
+            else:
+                # hash is likely a comment, so add the tag to and enclose in quotes
+                return '""" {tag}{match} """'.format(
+                    tag=cls.get_comment_tag(),
+                    match=match.group(1),
+                )
 
-            (\#.*)|(\#.*)(?!([.\s\w]*\"\"\"))
-            By alternating both, we get better success
-            however it cannot separate triple quoted string followed by a hashed comment
-			"""
-            match_comment = r'^([^#][.\s]*)?(\#.*)$'
-            match_comment = r'(\#.*)(?!([.\s\w]*\"\"\"))'
-            match_replace = r'\1""" {}\2 """'.format(cls.get_comment_tag())
-            match = re.match(match_comment, line)
-            if not match:
-                continue
-            clean_line = re.sub(match_comment, match_replace, line)
-            list_data[idx] = clean_line
-        return "\n".join(list_data)
-
-    @classmethod
-    def quoted_comments_to_hashed(cls, data):
-        list_data = data.split("\n")
-        for idx, line in enumerate(list_data):
-            match_comment = r'(.*)\"\"\" {}(.*) \"\"\"'.format(cls.get_comment_tag())
-            match_replace = r'\1\2'
-            match = re.match(match_comment, line)
-            if not match:
-                continue
-            clean_line = re.sub(match_comment, match_replace, line)
-            list_data[idx] = clean_line
-        return "\n".join(list_data)
-
-
-class FileObject(object):
+        match_basic = [
+        # get all comments, this is sufficient enough when we perform
+            r'(\#.*)',
+        # custom method to exclude conversion of comments like in string literals
+            exclude_comments_in_string_literals,
+        ]
+        sub_res = re.sub(*match_basic, data)
+        return sub_res
 
     @classmethod
-    def file_type(cls):
-        raise NotImplementedError('implement in subclass')
+    def string_comments_to_hashed(cls, data):
+        """
+        Convert any string literals with tag identifier back to their hashed
+        format, primarily for writing back to file.
 
-    def __init__(self, path: Text = None, data=None, **kwargs):
-        self._path = path
-        self._data = data
-
-    @property
-    def path(self):
-        return self._path
-
-    @property
-    def data(self):
-        return self._data
-
-    def read(self):
-        self._data = self.file_type.read(self.path)
-        return self._data
-
-    def write(self):
-        self.file_type.write(self.path, self.data)
+        In example:
+          from `# MY COMMENT`, 
+          into `\"\"\" MY TAG#MY COMMENT \"\"\"`
+        """
+        match_basic = [
+            r'\"\"\" {tag}(.*) \"\"\"'.format(tag=cls.get_comment_tag()),
+            r'\1',
+        ]
+        sub_res = re.sub(*match_basic, data)
+        return sub_res
 
 
 class PythonModuleFileObject(FileObject):
