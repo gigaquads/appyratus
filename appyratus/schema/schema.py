@@ -1,13 +1,23 @@
-import venusian
-
-from typing import Type, Dict, Text, Set
-from copy import deepcopy
 from collections import namedtuple
+from copy import deepcopy
+from typing import (
+    Dict,
+    List,
+    Set,
+    Text,
+    Type,
+)
+
+import venusian
 
 from appyratus.memoize import memoized_property
 
-from .fields import Field, Nested, List
 from .exc import ValidationError
+from .fields import (
+    Field,
+    List,
+    Nested,
+)
 
 
 class schema_type(type):
@@ -39,9 +49,16 @@ class schema_type(type):
                     # default source key to declared name
                     v.source = v.name
 
+
+
+        # inherit any fields provided by bases of schema type before applying
+        # fields defined from this class
+        cls.fields = {}
+        cls.inherit_fields(bases)
+        cls.fields.update(fields)
+
         # save aggregated fields dict and child
         # schema list set on the new class
-        cls.fields = fields
         cls.children = []
         cls.nullable_fields = {}
         cls.required_fields = {}
@@ -64,6 +81,15 @@ class schema_type(type):
             child = get_schema_from_field(field)
             if child is not None:
                 cls.children.append(child)
+
+    def inherit_fields(cls, bases: List):
+        """
+        # Inherit Fields
+        Inherit fields from a base class
+        """
+        for base in bases:
+            if isinstance(base, cls.__class__):
+                cls.fields.update(deepcopy(base.fields))
 
 
 class Schema(Field, metaclass=schema_type):
