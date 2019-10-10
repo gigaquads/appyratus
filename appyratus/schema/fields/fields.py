@@ -1,26 +1,45 @@
-import inflect
+import operator
 import random
-import uuid
 import re
+import sys
 import time
 import typing
-import sys
-
+import uuid
 from copy import deepcopy
-from datetime import date, datetime
-from os.path import abspath, expanduser
-from typing import Type, Callable, Text, Dict
-from uuid import UUID, uuid4
+from datetime import (
+    date,
+    datetime,
+)
+from functools import reduce
+from os.path import (
+    abspath,
+    expanduser,
+)
+from typing import (
+    Callable,
+    Dict,
+    Text,
+    Type,
+)
+from uuid import (
+    UUID,
+    uuid4,
+)
 
-import pytz
 import bcrypt
 import dateutil.parser
-
+import inflect
+import pytz
 from faker import Faker
-from appyratus.utils import TimeUtils, DictUtils, StringUtils
 
-from .value_generator import ValueGenerator
+from appyratus.utils import (
+    DictUtils,
+    StringUtils,
+    TimeUtils,
+)
+
 from .field_adapter import FieldAdapter
+from .value_generator import ValueGenerator
 
 RE_BCRYPT_HASH = re.compile(r'^\$2[ayb]\$.{56}$')
 RE_FLOAT = re.compile(r'^-?\d*(\.\d*)?$')
@@ -49,6 +68,7 @@ class Field(object):
         default: object = None,
         meta: typing.Dict = None,
         on_create: object = None,
+        pre_process: object = None,
         post_process: object = None,
         on_generate: Callable = None,
         **kwargs,
@@ -70,6 +90,7 @@ class Field(object):
         self.nullable = nullable
         self.default = default
         self.on_create = on_create
+        self.pre_process = pre_process
         self.post_process = post_process
         self.meta = meta or {}
         self.meta.update(kwargs)
@@ -907,3 +928,45 @@ class BcryptString(String):
         raw_hash = raw_hash_enc.decode(self.encoding)
 
         return (self.hash_str(raw_hash), None)
+
+
+class ItemGetter(Field):
+    """
+    # Item Getter
+    Get items from a nested data structure
+
+    In example, All of the Voyager's systems are down and B'Elana needs to
+    access the `ships` data node.  She only has her trusty PADD and   She would specify:
+
+    ```py
+    data = {'ships': {'voyager': {'status': 'Bad Ass'}}}
+    class 
+    primary_status = ItemGetter(fields.String(), source="ships.voyager.status")
+    ```
+
+    and bearing the , then `primary_status` would return "Bad Ass" rightfully
+
+    """
+
+    def __init__(self, obj, source: Text, separator: Text = None, **kwargs):
+        """
+        # Args
+        - `obj` the object expected to be found at the provided source
+        - `source`, the path to the key you want to tap into
+        - `separator', the separator used to identify segments of the source path
+        - `**kwargs`, to be passed to super
+        """
+        if not separator:
+            separator = '.'
+        path = source.split(separator)
+        source = path[0]
+        super().__init__(pre_process=self.do_format, source=source, **kwargs)
+        self.path = path[1:]
+
+    def do_format(self, fstr, data, context=None):
+        """
+        # Do Format
+        The heavy lifting callable of the Item Getter, passed into pre-process 
+        """
+        mydata = reduce(operator.getitem, self.path, data)
+        return (mydata, None)

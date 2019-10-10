@@ -136,6 +136,15 @@ class Schema(Field, metaclass=schema_type):
 
         post_process_fields = []
 
+        def generate_default(field):
+            # generate default val from either
+            # the supplied constant or callable.
+            if callable(field.default):
+                source_val = field.default()
+            else:
+                source_val = deepcopy(field.default)
+            return source_val
+
         for field in self.fields.values():
             # is key simply present in source?
             field_key = field.source or field.name
@@ -145,21 +154,16 @@ class Schema(Field, metaclass=schema_type):
             skip_field = not exists_key
 
             # get source value, None is handled below
+            source_val = source.get(field.source) if isinstance(source, dict) else None
 
-            source_val = source.get(field.source) if isinstance(source, dict)  else None
-
+            # pre-process some fields, first by the schema if provided, then by
+            # the field itself if provided
             if pre_process:
-                # pre-process some shit
                 source_val = pre_process(field, source_val, context=context)
-
-            def generate_default(field):
-                # generate default val from either
-                # the supplied constant or callable.
-                if callable(field.default):
-                    source_val = field.default()
-                else:
-                    source_val = deepcopy(field.default)
-                return source_val
+            if field.pre_process:
+                source_val, source_err = field.pre_process(field, source_val, context=context)
+                if source_err:
+                    errors[field.name] = source_err
 
             if not exists_key:
                 # source key not present but required
