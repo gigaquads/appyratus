@@ -500,8 +500,7 @@ class TestListField(BaseTests):
                 }]
             }
         )
-
-        print(res)
+        assert res.data['rules'][0] != {}
 
 
 @mark.unit
