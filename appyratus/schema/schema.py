@@ -21,6 +21,7 @@ from .fields import (
 
 
 class schema_type(type):
+
     def __init__(cls, name, bases, dict_):
         type.__init__(cls, name, bases, dict_)
         fields = {}    # aggregator for all fields declared on the class
@@ -49,8 +50,6 @@ class schema_type(type):
                     # default source key to declared name
                     v.source = v.name
 
-
-
         # inherit any fields provided by bases of schema type before applying
         # fields defined from this class
         cls.fields = {}
@@ -76,8 +75,8 @@ class schema_type(type):
                 cls.optional_fields[k] = field
             # call any non-null on_create methods
             if field.on_create is not None:
-                field.on_create(cls)
-            # accumulate any schema delcared in the field
+                field.on_create()
+            # accumulate any schema declared in the field
             child = get_schema_from_field(field)
             if child is not None:
                 cls.children.append(child)
@@ -88,7 +87,7 @@ class schema_type(type):
         Inherit fields from a base class
         """
         for base in bases:
-            if isinstance(base, cls.__class__):
+            if getattr(base, '_is_schema_class', False):
                 cls.fields.update(deepcopy(base.fields))
 
 
@@ -96,6 +95,7 @@ class Schema(Field, metaclass=schema_type):
 
     fields = None
     children = None
+    _is_schema_class = True
 
     @classmethod
     def factory(cls, name: str, fields: dict) -> Type['Schema']:
@@ -161,7 +161,9 @@ class Schema(Field, metaclass=schema_type):
             if pre_process:
                 source_val = pre_process(field, source_val, context=context)
             if field.pre_process:
-                source_val, source_err = field.pre_process(field, source_val, context=context)
+                source_val, source_err = field.pre_process(
+                    field, source_val, context=context
+                )
                 if source_err:
                     errors[field.name] = source_err
 
@@ -297,6 +299,7 @@ class Schema(Field, metaclass=schema_type):
 
 
 class Constraint(object):
+
     def __init__(self, constraint_type):
         self.constraint_type = constraint_type
 
@@ -310,10 +313,13 @@ class Constraint(object):
 
 
 class RangeConstraint(Constraint):
+
     def __init__(
         self,
-        lower_value=None, upper_value=None,
-        is_lower_inclusive=True, is_upper_inclusive=False
+        lower_value=None,
+        upper_value=None,
+        is_lower_inclusive=True,
+        is_upper_inclusive=False
     ):
         super().__init__('range')
         self.upper_value = upper_value
@@ -323,6 +329,7 @@ class RangeConstraint(Constraint):
 
 
 class ConstantValueConstraint(Constraint):
+
     def __init__(self, value, is_negative=False):
         super().__init__('equality')
         self.value = value

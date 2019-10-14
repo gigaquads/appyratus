@@ -300,6 +300,7 @@ class String(Field):
                                 value += value[-1]
         return value
 
+
 class Bytes(Field):
 
     def __init__(self, encoding='utf-8', *args, **kwargs):
@@ -405,6 +406,7 @@ class Int(Field):
 
 
 class Uint(Int):
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
@@ -416,11 +418,13 @@ class Uint(Int):
 
 
 class Uint32(Uint):
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
 
 class Uint64(Uint):
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
@@ -686,46 +690,36 @@ class Timestamp(Field):
 class List(Field):
 
     generator = ValueGenerator(
-        default=lambda f, c: [
-            f.nested.generate() for i in range(random.randint(1, 10))
-        ]
+        default=lambda f, c: [f.nested.generate() for i in range(random.randint(1, 10))]
     )
 
     _inflect = inflect.engine()
 
     def __init__(self, nested: Field = None, **kwargs):
-        on_create_kwarg = kwargs.pop('on_create', None)
+        on_create_custom = kwargs.pop('on_create', None)
 
-        def on_create(schema_type: Type['Schema']):
-            if on_create_kwarg:
-                on_create_kwarg(schema_type)
-
-            from appyratus.schema import Schema
-
-            if isinstance(nested, Nested):
-                # XXX nested.on_create has not been called yet, so it has not
-                # been setup with nested.schema, and subsequently the name
-                # cannot be set.. nested is NoneType and nested.schema is None
-                self.nested = nested.schema
-            elif isinstance(nested, dict):
-                self.nested = Schema.factory('NestedSchema', nested)()
-            elif isinstance(nested, Field):
-                self.nested = deepcopy(nested)
-            elif callable(nested):
-                # expects that a Schema instance is returned
-                self.nested = nested()
-            else:
-                self.nested = Schema()
-
+        def on_create():
             singular_name = self._inflect.singular_noun(self.name)
             self.nested.name = singular_name
             self.nested.source = singular_name
-
-            if self.nested.on_create:
-                self.nested.on_create(schema_type)
+            if on_create_custom:
+                on_create_custom()
 
         super().__init__(on_create=on_create, **kwargs)
         self.nested = None
+        from appyratus.schema import Schema
+
+        if isinstance(nested, Nested):
+            self.nested = nested.schema
+        elif isinstance(nested, dict):
+            self.nested = Schema.factory('NestedSchema', nested)()
+        elif isinstance(nested, Field):
+            self.nested = deepcopy(nested)
+        elif callable(nested):
+            # expects that a Schema instance is returned
+            self.nested = nested()
+        else:
+            self.nested = Schema()
 
     def __repr__(self):
         if self.source != self.name:
@@ -796,30 +790,28 @@ class Nested(Field):
     ```
     """
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.nested.generate()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.nested.generate())
 
     def __init__(self, obj, **kwargs):
-
-        def on_create(schema_type: Type['Schema']):
-            from appyratus.schema import Schema
-
-            if isinstance(obj, dict):
-                name = self.name.replace('_', ' ').title().replace(' ', '')
-                class_name = f'{name}Schema'
-                self.schema_type = Schema.factory(class_name, obj)
-                self.schema = self.schema_type()
-            elif isinstance(obj, Schema):
-                self.schema_type = obj
-                self.schema = self.schema_type()
-            elif callable(obj):
-                self.schema = obj()
-                self.schema_type = obj.__class__
-
-        super().__init__(on_create=on_create, **kwargs)
+        from appyratus.schema import Schema
+        super().__init__(**kwargs)
         self.schema_type = None
         self.schema = None
+        if isinstance(obj, dict):
+            if self.name is not None:
+                name = self.name.replace('_', ' ').title().replace(' ', '')
+                class_name = f'{name}Schema'
+            else:
+                class_name = 'Schema'
+            self.schema_type = Schema.factory(class_name, obj)
+            self.schema = self.schema_type()
+
+        elif isinstance(obj, Schema):
+            self.schema_type = obj
+            self.schema = self.schema_type()
+        elif callable(obj):
+            self.schema = obj()
+            self.schema_type = obj.__class__
 
     def __repr__(self):
         if self.source != self.name:
