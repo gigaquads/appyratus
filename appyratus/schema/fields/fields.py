@@ -960,5 +960,7 @@ class ItemGetter(Field):
         # Do Format
         The heavy lifting callable of the Item Getter, passed into pre-process 
         """
+        if not data:
+            return (data, None)
         mydata = reduce(operator.getitem, self.path, data)
         return (mydata, None)
