@@ -12,7 +12,7 @@ class BaseError(Exception):
     error_code = 'error'
     error_message = 'An error has occurred'
     error_data = {}
-    error_solution = None
+    error_help = None
 
     @memoized_property
     def encoder(self):

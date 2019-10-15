@@ -63,6 +63,8 @@ class AsyncHttpClient(object):
             """
             Deserialize response text containing JSON
             """
+            if not self.text:
+                return None
             return ujson.loads(self.text)
 
         @property
@@ -81,7 +83,7 @@ class AsyncHttpClient(object):
             if not self.is_ok:
                 raise AsyncHttpClientError(
                     message="HTTP status code '{}'".format(self.status_code),
-                    data=self.json
+                    data={'error': self.json}
                 )
 
         @property
