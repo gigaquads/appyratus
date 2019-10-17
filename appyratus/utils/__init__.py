@@ -1,3 +1,4 @@
+from .color_utils import ColorUtils
 from .dict_utils import DictUtils, DictObject
 from .template_utils import TemplateEnvironment
 from .string_utils import StringUtils
