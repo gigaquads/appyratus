@@ -1,8 +1,12 @@
 from __future__ import absolute_import
 
 import os
+from typing import (
+    Set,
+    Text,
+)
 
-from typing import Set, Text
+from appyratus.utils import FileUtils
 
 
 class BaseFile(object):
@@ -116,15 +120,11 @@ class File(BaseFile):
     def dump(cls, data: Text):
         return data
 
-    @classmethod
-    def dir_path(cls, path):
-        return os.path.dirname(os.path.realpath(path))
-
 
 class FileObject(object):
 
     @classmethod
-    def file_type(cls):
+    def get_file_type(cls):
         raise NotImplementedError('implement in subclass')
 
     def __init__(self, path: Text = None, data=None, **kwargs):
@@ -140,8 +140,24 @@ class FileObject(object):
         return self._data
 
     def read(self):
-        self._data = self.file_type.read(self.path)
+        self._data = self.get_file_type().read(self.path)
         return self._data
 
     def write(self):
-        self.file_type.write(self.path, self.data)
+        self.get_file_type.write(self.path, self.data)
+
+    @property
+    def name(self):
+        return FileUtils.get_name(self.path)
+
+    @property
+    def filename(self):
+        return FileUtils.get_filename(self.path)
+
+    @property
+    def extension(self):
+        return FileUtils.get_extension(self.path)
+
+    @property
+    def dir_path(self):
+       return FileUtils.get_dir_path(self.path)

@@ -4,7 +4,7 @@ from typing import Dict, Text
 import yaml
 from appyratus.enum import Enum
 
-from .base import File
+from .base import File, FileObject
 
 EXTENSIONS = Enum.of_strings('yml', 'yaml')
 
@@ -64,3 +64,10 @@ class Yaml(File):
         else:
             data = yaml.dump(data, **dump_args)
         return data
+
+
+class YamlFileObject(FileObject):
+
+    @classmethod
+    def get_file_type(cls):
+        return Yaml
