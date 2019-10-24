@@ -10,12 +10,12 @@ class FieldAdapter(object):
 
     def __init__(
         self,
-        field_type: Type['Field'],
+        field_class: Type['Field'],
         on_adapt: Callable = None,
         on_encode: Callable = None,
         on_decode: Callable = None,
     ):
-        self.field_type = field_type
+        self.field_class = field_class
         self.on_adapt = on_adapt
         self.on_encode = on_encode
         self.on_decode = on_decode
