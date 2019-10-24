@@ -6,14 +6,14 @@ from typing import (
     Text,
 )
 
-from appyratus.utils import FileUtils
+from appyratus.utils import PathUtils
 
 
 class BaseFile(object):
 
     @classmethod
     def exists(cls, path: Text):
-        return os.path.exists(path)
+        return PathUtils.exists(path)
 
     @staticmethod
     def extensions() -> Set[Text]:
@@ -75,10 +75,6 @@ class BaseFile(object):
 class File(BaseFile):
 
     UTF_ENCODINGS = {'utf-8', 'utf-16'}
-
-    @classmethod
-    def exists(cls, path: str):
-        return os.path.exists(path)
 
     @classmethod
     def read(cls, path: str):
@@ -148,16 +144,16 @@ class FileObject(object):
 
     @property
     def name(self):
-        return FileUtils.get_name(self.path)
+        return PathUtils.get_name(self.path)
 
     @property
     def filename(self):
-        return FileUtils.get_filename(self.path)
+        return PathUtils.get_filename(self.path)
 
     @property
     def extension(self):
-        return FileUtils.get_extension(self.path)
+        return PathUtils.get_extension(self.path)
 
     @property
     def dir_path(self):
-       return FileUtils.get_dir_path(self.path)
+       return PathUtils.get_dir_path(self.path)
