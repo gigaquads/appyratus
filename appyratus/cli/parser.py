@@ -30,7 +30,7 @@ class Parser(object):
         if subparsers:
             self._subparsers.extend(subparsers)
         # perform
-        if perform:
+        if perform is not None:
             self._perform = perform
         elif hasattr(self, 'perform') and callable(self.perform):
             self._perform = self.perform

@@ -1,16 +1,27 @@
-import venusian
-
-from typing import Type, Dict, Text, Set
-from copy import deepcopy
 from collections import namedtuple
+from copy import deepcopy
+from typing import (
+    Dict,
+    List,
+    Set,
+    Text,
+    Type,
+)
+
+import venusian
 
 from appyratus.memoize import memoized_property
 
-from .fields import Field, Nested, List
 from .exc import ValidationError
+from .fields import (
+    Field,
+    List,
+    Nested,
+)
 
 
 class schema_type(type):
+
     def __init__(cls, name, bases, dict_):
         type.__init__(cls, name, bases, dict_)
         fields = {}    # aggregator for all fields declared on the class
@@ -39,9 +50,14 @@ class schema_type(type):
                     # default source key to declared name
                     v.source = v.name
 
+        # inherit any fields provided by bases of schema type before applying
+        # fields defined from this class
+        cls.fields = {}
+        cls.inherit_fields(bases)
+        cls.fields.update(fields)
+
         # save aggregated fields dict and child
         # schema list set on the new class
-        cls.fields = fields
         cls.children = []
         cls.nullable_fields = {}
         cls.required_fields = {}
@@ -59,17 +75,27 @@ class schema_type(type):
                 cls.optional_fields[k] = field
             # call any non-null on_create methods
             if field.on_create is not None:
-                field.on_create(cls)
-            # accumulate any schema delcared in the field
+                field.on_create()
+            # accumulate any schema declared in the field
             child = get_schema_from_field(field)
             if child is not None:
                 cls.children.append(child)
+
+    def inherit_fields(cls, bases: List):
+        """
+        # Inherit Fields
+        Inherit fields from a base class
+        """
+        for base in bases:
+            if getattr(base, '_is_schema_class', False):
+                cls.fields.update(deepcopy(base.fields))
 
 
 class Schema(Field, metaclass=schema_type):
 
     fields = None
     children = None
+    _is_schema_class = True
 
     @classmethod
     def factory(cls, name: str, fields: dict) -> Type['Schema']:
@@ -81,9 +107,7 @@ class Schema(Field, metaclass=schema_type):
 
     def __init__(self, allow_additional=False, **kwargs):
         super().__init__(**kwargs)
-        self.tuple_factory = namedtuple(
-            'results', field_names=['data', 'errors']
-        )
+        self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
         self.allow_additional = allow_additional
 
     def __getitem__(self, field_name: Text) -> 'Field':
@@ -112,29 +136,36 @@ class Schema(Field, metaclass=schema_type):
 
         post_process_fields = []
 
+        def generate_default(field):
+            # generate default val from either
+            # the supplied constant or callable.
+            if callable(field.default):
+                source_val = field.default()
+            else:
+                source_val = deepcopy(field.default)
+            return source_val
+
         for field in self.fields.values():
             # is key simply present in source?
             field_key = field.source or field.name
-            exists_key = field_key in source
+            exists_key = source is not None and field_key in source
 
             # do we ultimately call field.process?
             skip_field = not exists_key
 
             # get source value, None is handled below
-            source_val = source.get(field.source)
+            source_val = source.get(field.source) if isinstance(source, dict) else None
 
+            # pre-process some fields, first by the schema if provided, then by
+            # the field itself if provided
             if pre_process:
-                # pre-process some shit
                 source_val = pre_process(field, source_val, context=context)
-
-            def generate_default(field):
-                # generate default val from either
-                # the supplied constant or callable.
-                if callable(field.default):
-                    source_val = field.default()
-                else:
-                    source_val = deepcopy(field.default)
-                return source_val
+            if field.pre_process:
+                source_val, source_err = field.pre_process(
+                    field, source_val, context=context
+                )
+                if source_err:
+                    errors[field.name] = source_err
 
             if not exists_key:
                 # source key not present but required
@@ -189,14 +220,9 @@ class Schema(Field, metaclass=schema_type):
         # call all post-process callbacks
         for field in post_process_fields:
             dest_val = dest.pop(field.name)
-            field_val, field_err = field.post_process(
-                dest_val, dest, context=context
-            )
+            field_val, field_err = field.post_process(dest_val, dest, context=context)
             # now recheck nullity of the post-processed field value
-            if (
-                (dest_val is None) and
-                (not field.nullable and not ignore_nullable)
-            ):
+            if ((dest_val is None) and (not field.nullable and not ignore_nullable)):
                 errors[field.name] = 'null'
             elif not field_err:
                 dest[field.name] = field_val
@@ -273,6 +299,7 @@ class Schema(Field, metaclass=schema_type):
 
 
 class Constraint(object):
+
     def __init__(self, constraint_type):
         self.constraint_type = constraint_type
 
@@ -286,10 +313,13 @@ class Constraint(object):
 
 
 class RangeConstraint(Constraint):
+
     def __init__(
         self,
-        lower_value=None, upper_value=None,
-        is_lower_inclusive=True, is_upper_inclusive=False
+        lower_value=None,
+        upper_value=None,
+        is_lower_inclusive=True,
+        is_upper_inclusive=False
     ):
         super().__init__('range')
         self.upper_value = upper_value
@@ -299,6 +329,7 @@ class RangeConstraint(Constraint):
 
 
 class ConstantValueConstraint(Constraint):
+
     def __init__(self, value, is_negative=False):
         super().__init__('equality')
         self.value = value

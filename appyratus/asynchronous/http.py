@@ -1,17 +1,25 @@
+import asyncio
+from typing import (
+    Dict,
+    List,
+)
+
 import aiohttp
 import async_timeout
-import asyncio
 import ujson
 import uvloop
-
-from typing import List
 from aiohttp import BasicAuth
 
-from appyratus.memoize import memoized_property
 from appyratus.json import JsonEncoder
-
+from appyratus.memoize import memoized_property
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
+from appyratus.exc import BaseError
+
+
+class AsyncHttpClientError(BaseError):
+    pass
 
 
 class AsyncHttpClient(object):
@@ -26,10 +34,11 @@ class AsyncHttpClient(object):
             self,
             method: str,
             path: str,
-            params: dict = None,
-            data: dict = None,
-            headers: dict = None,
+            params: Dict = None,
+            data: Dict = None,
+            headers: Dict = None,
             json=None,
+            allow_redirects: bool = True
         ):
             self.method = method
             self.path = path
@@ -37,6 +46,7 @@ class AsyncHttpClient(object):
             self.data = data
             self.headers = headers
             self.json = json
+            self.allow_redirects = allow_redirects
 
     class Response(object):
         """
@@ -53,6 +63,8 @@ class AsyncHttpClient(object):
             """
             Deserialize response text containing JSON
             """
+            if not self.text:
+                return None
             return ujson.loads(self.text)
 
         @property
@@ -69,8 +81,9 @@ class AsyncHttpClient(object):
             Ensure the result "is ok" and if not then raise an exception.
             """
             if not self.is_ok:
-                raise Exception(
-                    "HTTP status code '{}'".format(self.status_code)
+                raise AsyncHttpClientError(
+                    message="HTTP status code '{}'".format(self.status_code),
+                    data={'error': self.json}
                 )
 
         @property
@@ -97,7 +110,6 @@ class AsyncHttpClient(object):
         self._base_url = '{}://{}'.format(scheme, self.host)
         if self._port:
             self._base_url += ':{}'.format(self._port)
-        #self._loop = asyncio.get_event_loop()
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
@@ -119,7 +131,9 @@ class AsyncHttpClient(object):
 
     async def _prepare_request(self, request: Request, loop=None):
         loop = loop or self._loop
-        async with aiohttp.ClientSession(loop=loop) as session:
+        async with aiohttp.ClientSession(
+            loop=loop, json_serialize=self.encoder.encode
+        ) as session:
             return await self._do_request(session, request)
 
     async def _do_request(
@@ -139,6 +153,7 @@ class AsyncHttpClient(object):
         #    kwargs['data'] = self.encoder.encode(request.data)
         if request.json is not None:
             kwargs['json'] = request.json
+        kwargs['allow_redirects'] = request.allow_redirects
         # send the request
         with async_timeout.timeout(self.timeout):
             try:

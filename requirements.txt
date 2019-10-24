@@ -15,3 +15,5 @@ bcrypt
 inflect
 beautifulsoup4
 astor
+webcolors
+colormath

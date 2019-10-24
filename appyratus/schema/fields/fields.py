@@ -1,32 +1,53 @@
-import inflect
+import operator
 import random
-import uuid
 import re
+import sys
 import time
 import typing
-import sys
-
+import uuid
 from copy import deepcopy
-from datetime import date, datetime
-from os.path import abspath, expanduser
-from typing import Type, Callable, Text, Dict
-from uuid import UUID, uuid4
+from datetime import (
+    date,
+    datetime,
+)
+from functools import reduce
+from os.path import (
+    abspath,
+    expanduser,
+)
+from typing import (
+    Callable,
+    Dict,
+    Text,
+    Type,
+)
+from uuid import (
+    UUID,
+    uuid4,
+)
 
-import pytz
 import bcrypt
 import dateutil.parser
-
+import inflect
+import pytz
 from faker import Faker
-from appyratus.utils import TimeUtils, DictUtils, StringUtils
 
-from .value_generator import ValueGenerator
+from appyratus.utils import (
+    DictUtils,
+    StringUtils,
+    TimeUtils,
+)
+
 from .field_adapter import FieldAdapter
-
+from .value_generator import ValueGenerator
 
 RE_BCRYPT_HASH = re.compile(r'^\$2[ayb]\$.{56}$')
-RE_FLOAT = re.compile(r'^\d*(\.\d*)?$')
+RE_FLOAT = re.compile(r'^-?\d*(\.\d*)?$')
 RE_EMAIL = re.compile(r'^[a-z][\w\-\.]*@[\w\.\-]*\w\.\w+$', re.I)
 RE_UUID = re.compile(r'^[a-f0-9]{32}$')
+
+UNRECOGNIZED_VALUE = 'unrecognized'
+INVALID_VALUE = 'invalid'
 
 
 class Field(object):
@@ -47,6 +68,7 @@ class Field(object):
         default: object = None,
         meta: typing.Dict = None,
         on_create: object = None,
+        pre_process: object = None,
         post_process: object = None,
         on_generate: Callable = None,
         **kwargs,
@@ -68,6 +90,7 @@ class Field(object):
         self.nullable = nullable
         self.default = default
         self.on_create = on_create
+        self.pre_process = pre_process
         self.post_process = post_process
         self.meta = meta or {}
         self.meta.update(kwargs)
@@ -136,7 +159,7 @@ class Enum(Field):
         if error:
             return (None, error)
         elif nested_value not in self.values:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
         else:
             return (nested_value, None)
 
@@ -145,9 +168,9 @@ class String(Field):
 
     generator = Field.Generator(
         callbacks={
-            '_id': lambda f, c: uuid.uuid4().hex,
-            'id': lambda f, c: uuid.uuid4().hex,
-            'public_id': lambda f, c: uuid.uuid4().hex,
+            '_id': lambda f: UuidString.next_id(),
+            'id': lambda f: str(f.faker.random_number(digits=16)),
+            'public_id': lambda f, c: UuidString.next_id(),
             'first_name': lambda f, c: f.faker.first_name(),
             'last_name': lambda f, c: f.faker.last_name(),
             'full_name': lambda f, c: f.faker.name(),
@@ -250,7 +273,7 @@ class String(Field):
         elif value is not None:
             return (str(value), None)
         else:
-            return (value, 'unrecognized')
+            return (value, UNRECOGNIZED_VALUE)
 
     def on_generate(self, constraint=None):
         value = super().on_generate(constraint=constraint)
@@ -277,7 +300,9 @@ class String(Field):
                                 value += value[-1]
         return value
 
+
 class Bytes(Field):
+
     def __init__(self, encoding='utf-8', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.encoding = encoding
@@ -287,7 +312,7 @@ class Bytes(Field):
             return (value, None)
         if isinstance(value, str):
             return (value.encode(self.encoding), None)
-        return (None, 'unrecognized')
+        return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self, constraint=None):
         value = super().on_generate(constraint=constraint)
@@ -298,6 +323,7 @@ class Bytes(Field):
 
 
 class FormatString(String):
+
     def __init__(self, **kwargs):
         super().__init__(post_process=self.do_format, **kwargs)
 
@@ -340,16 +366,16 @@ class Int(Field):
     def process(self, value):
         if isinstance(value, str):
             if not value.isdigit():
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
             else:
                 value = int(value)
         if isinstance(value, int):
             if self.signed and value < 0:
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
             else:
                 return (value, None)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self, constraint=None):
         # TODO: Move this constraint logic into ValueGenerator
@@ -380,6 +406,7 @@ class Int(Field):
 
 
 class Uint(Int):
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
@@ -391,11 +418,13 @@ class Uint(Int):
 
 
 class Uint32(Uint):
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
 
 class Uint64(Uint):
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
@@ -404,11 +433,13 @@ class Uint64(Uint):
 
 
 class Sint32(Int):
+
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
 
 
 class Sint64(Int):
+
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
 
@@ -442,11 +473,11 @@ class Float(Field):
             return (float(value), None)
         elif isinstance(value, str):
             if not RE_FLOAT.match(value):
-                return (None, 'expected a float')
+                return (None, INVALID_VALUE)
             else:
                 return (float(value), None)
         else:
-            return (None, 'expected a float')
+            return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self, constraint=None):
         value = super().on_generate(constraint=constraint)
@@ -473,9 +504,11 @@ class Email(String):
 
 class Uuid(Field):
 
-    generator = ValueGenerator(
-        default=lambda f, c: uuid.uuid4()
-    )
+    generator = ValueGenerator(default=lambda f: Uuid.next_id())
+
+    @classmethod
+    def next_id(cls):
+        return uuid.uuid4()
 
     def process(self, value):
         if isinstance(value, UUID):
@@ -483,7 +516,7 @@ class Uuid(Field):
         elif isinstance(value, str):
             value = value.replace('-', '').lower()
             if not RE_UUID.match(value):
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
             else:
                 return (UUID(value), None)
         elif isinstance(value, int):
@@ -491,14 +524,16 @@ class Uuid(Field):
             uuid_hex = ('0' * (32 - len(hex_str))) + hex_str
             return (UUID(uuid_hex), None)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
 
 class UuidString(String):
 
-    generator = ValueGenerator(
-        default=lambda f, c: uuid.uuid4().hex
-    )
+    generator = ValueGenerator(default=lambda f: UuidString.next_id())
+
+    @classmethod
+    def next_id(cls):
+        return Uuid.next_id().hex
 
     def process(self, value):
         if isinstance(value, UUID):
@@ -508,25 +543,25 @@ class UuidString(String):
             if RE_UUID.match(value):
                 return (value, None)
             else:
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
         elif isinstance(value, int):
             hex_str = hex(value)[2:]
             uuid_hex = ('0' * (32 - len(hex_str))) + hex_str
             return (uuid_hex, None)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self, constraint=None):
         value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
-        return uuid.uuid4().hex
+        return Uuid.next_id().hex
 
 
 class Bool(Field):
 
-    truthy = {'T', 't', 'True', 'true', 1, '1'}
-    falsey = {'F', 'f', 'False', 'false', 0, '0'}
+    truthy = {True, 'T', 't', 'TRUE', 'True', 'true', 1, '1'}
+    falsey = {False, 'F', 'f', 'FALSE', 'False', 'false', 0, '0'}
 
     generator = ValueGenerator(
         default=lambda f, c: f.faker.boolean()
@@ -535,12 +570,16 @@ class Bool(Field):
     def process(self, value):
         if isinstance(value, bool):
             return (value, None)
-        elif value in self.truthy:
-            return (True, None)
-        elif value in self.falsey:
-            return (False, None)
+        elif isinstance(value, (int, str)):
+            strvalue = str(value).lower()
+            if strvalue in self.truthy:
+                return (True, None)
+            elif strvalue in self.falsey:
+                return (False, None)
+            else:
+                return (None, INVALID_VALUE)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
 
 class DateTime(Field):
@@ -549,23 +588,31 @@ class DateTime(Field):
         default=lambda f, c: f.faker.date_time_this_year(tzinfo=pytz.utc)
     )
 
+    def __init__(self, timezone=None, **kwargs):
+        super().__init__(**kwargs)
+        if timezone is None:
+            timezone = pytz.utc
+        self.timezone = timezone
+
     def process(self, value):
         if isinstance(value, datetime):
-            return (value.replace(tzinfo=pytz.utc), None)
+            return (value.replace(tzinfo=self.timezone), None)
         elif isinstance(value, (int, float)):
             try:
                 return (TimeUtils.from_timestamp(value), None)
             except ValueError:
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
         elif isinstance(value, date):
-            return (datetime.combine(value, datetime.min.time()), None)
+            new_value = datetime.combine(value, datetime.min.time())
+            new_value = new_value.replace(tzinfo=self.timezone)
+            return (new_value, None)
         elif isinstance(value, str):
             try:
                 return (dateutil.parser.parse(value), None)
             except:
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
 
 class DateTimeString(String):
@@ -579,24 +626,27 @@ class DateTimeString(String):
         )
     )
 
-    def __init__(self, format_spec=None, **kwargs):
+    def __init__(self, format_spec=None, timezone=None, **kwargs):
         super().__init__(**kwargs)
         self.format_spec = format_spec
+        if timezone is None:
+            timezone = pytz.utc
+        self.timezone = timezone
 
     def process(self, value):
         if isinstance(value, str):
             try:
                 dt = dateutil.parser.parse(value)
             except:
-                return (None, 'invalid')
+                return (None, INVALID_VALUE)
         elif isinstance(value, (int, float)):
             dt = TimeUtils.from_timestamp(value)
         elif isinstance(value, datetime):
-            dt = value.replace(tzinfo=pytz.utc)
+            dt = value.replace(tzinfo=self.timezone)
         elif isinstance(value, date):
             dt = datetime.combine(value, datetime.min.time())
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
         if self.format_spec:
             dt_str = datetime.strftime(dt, self.format_spec)
@@ -609,10 +659,7 @@ class DateTimeString(String):
         value = super().on_generate(constraint=constraint)
         if value is not None:
             return value
-        return datetime.strftime(
-            self.faker.date_time_this_year(),
-            self.format_spec
-        )
+        return datetime.strftime(self.faker.date_time_this_year(), self.format_spec)
 
 
 class Timestamp(Field):
@@ -631,7 +678,7 @@ class Timestamp(Field):
         elif isinstance(value, date):
             return (time.mktime(value.timetuple()), None)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self, constraint=None):
         value = super().on_generate(constraint=constraint)
@@ -643,42 +690,36 @@ class Timestamp(Field):
 class List(Field):
 
     generator = ValueGenerator(
-        default=lambda f, c: [
-            f.nested.generate() for i in range(random.randint(1, 10))
-        ]
+        default=lambda f, c: [f.nested.generate() for i in range(random.randint(1, 10))]
     )
 
     _inflect = inflect.engine()
 
     def __init__(self, nested: Field = None, **kwargs):
-        on_create_kwarg = kwargs.pop('on_create', None)
+        on_create_custom = kwargs.pop('on_create', None)
 
-        def on_create(schema_type: Type['Schema']):
-            if on_create_kwarg:
-                on_create_kwarg(schema_type)
-
-            from appyratus.schema import Schema
-
-            if isinstance(nested, Nested):
-                self.nested = nested.schema
-            elif isinstance(nested, dict):
-                self.nested = Schema.factory('NestedSchema', nested)()
-            elif isinstance(nested, Field):
-                self.nested = deepcopy(nested)
-            elif callable(nested):
-                # expects that a Schema instance is returned
-                self.nested = nested()
-            else:
-                self.nested = Schema()
-
+        def on_create():
             singular_name = self._inflect.singular_noun(self.name)
             self.nested.name = singular_name
             self.nested.source = singular_name
-
-            if self.nested.on_create:
-                self.nested.on_create(schema_type)
+            if on_create_custom:
+                on_create_custom()
 
         super().__init__(on_create=on_create, **kwargs)
+        self.nested = None
+        from appyratus.schema import Schema
+
+        if isinstance(nested, Nested):
+            self.nested = nested.schema
+        elif isinstance(nested, dict):
+            self.nested = Schema.factory('NestedSchema', nested)()
+        elif isinstance(nested, Field):
+            self.nested = deepcopy(nested)
+        elif callable(nested):
+            # expects that a Schema instance is returned
+            self.nested = nested()
+        else:
+            self.nested = Schema()
 
     def __repr__(self):
         if self.source != self.name:
@@ -687,7 +728,7 @@ class List(Field):
             load_to = ''
         return '{}({}{}, {})'.format(
             self.__class__.__name__,
-            self.source,
+            getattr(self, 'source') or 'NoSource',
             load_to,
             self.nested.__class__.__name__,
         )
@@ -695,6 +736,12 @@ class List(Field):
     def process(self, sequence):
         dest_sequence = []
         idx2error = {}
+        if not sequence:
+            if self.nullable:
+                return (None, None)
+            else:
+                return (None, INVALID_VALUE)
+
         if isinstance(sequence, set):
             sequence = sorted(sequence)
         for idx, value in enumerate(sequence):
@@ -726,7 +773,7 @@ class Set(List):
 
     def process(self, sequence):
         result, error = super().process(list(sequence))
-        return ((set(result) if not error else result), error)
+        return ((set(result) if not error and result else result), error)
 
     def on_generate(self, constraint=None):
         return set(super().on_generate(constraint=constraint))
@@ -743,38 +790,35 @@ class Nested(Field):
     ```
     """
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.nested.generate()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.nested.generate())
 
     def __init__(self, obj, **kwargs):
-        def on_create(schema_type: Type['Schema']):
-            from appyratus.schema import Schema
-
-            if isinstance(obj, dict):
-                name = self.name.replace('_', ' ').title().replace(' ', '')
-                class_name = f'{name}Schema'
-                self.schema_type = Schema.factory(class_name, obj)
-                self.schema = self.schema_type()
-            elif isinstance(obj, Schema):
-                self.schema_type = obj
-                self.schema = self.schema_type()
-            elif callable(obj):
-                self.schema = obj()
-                self.schema_type = obj.__class__
-
-        super().__init__(on_create=on_create, **kwargs)
+        from appyratus.schema import Schema
+        super().__init__(**kwargs)
         self.schema_type = None
         self.schema = None
+        if isinstance(obj, dict):
+            if self.name is not None:
+                name = self.name.replace('_', ' ').title().replace(' ', '')
+                class_name = f'{name}Schema'
+            else:
+                class_name = 'Schema'
+            self.schema_type = Schema.factory(class_name, obj)
+            self.schema = self.schema_type()
+
+        elif isinstance(obj, Schema):
+            self.schema_type = obj
+            self.schema = self.schema_type()
+        elif callable(obj):
+            self.schema = obj()
+            self.schema_type = obj.__class__
 
     def __repr__(self):
         if self.source != self.name:
             load_to = ' -> ' + self.name
         else:
             load_to = ''
-        return '{}({}{})'.format(
-            self.schema.__class__.__name__, self.source, load_to
-        )
+        return '{}({}{})'.format(self.schema.__class__.__name__, self.source, load_to)
 
     def process(self, value):
         return self.schema.process(value)
@@ -790,7 +834,7 @@ class Dict(Field):
         if isinstance(value, dict):
             return (value, None)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
 
 class FilePath(String):
@@ -809,7 +853,7 @@ class FilePath(String):
             value = abspath(expanduser(value))
             return (value, None)
         else:
-            return (None, 'unrecognized')
+            return (None, UNRECOGNIZED_VALUE)
 
 
 class IpAddress(String):
@@ -847,9 +891,10 @@ class Url(String):
 class BcryptString(String):
 
     class hash_str(str):
+
         def __eq__(self, other: str):
             return bcrypt.checkpw(
-                other.encode(encoding), self.encode(encoding)
+                other.encode(BcryptString.encoding), self.encode(BcryptString.encoding)
             )
 
     encoding = 'utf8'
@@ -875,3 +920,47 @@ class BcryptString(String):
         raw_hash = raw_hash_enc.decode(self.encoding)
 
         return (self.hash_str(raw_hash), None)
+
+
+class ItemGetter(Field):
+    """
+    # Item Getter
+    Get items from a nested data structure
+
+    In example, All of the Voyager's systems are down and B'Elana needs to
+    access the `ships` data node.  She only has her trusty PADD and   She would specify:
+
+    ```py
+    data = {'ships': {'voyager': {'status': 'Bad Ass'}}}
+    class 
+    primary_status = ItemGetter(fields.String(), source="ships.voyager.status")
+    ```
+
+    and bearing the , then `primary_status` would return "Bad Ass" rightfully
+
+    """
+
+    def __init__(self, obj, source: Text, separator: Text = None, **kwargs):
+        """
+        # Args
+        - `obj` the object expected to be found at the provided source
+        - `source`, the path to the key you want to tap into
+        - `separator', the separator used to identify segments of the source path
+        - `**kwargs`, to be passed to super
+        """
+        if not separator:
+            separator = '.'
+        path = source.split(separator)
+        source = path[0]
+        super().__init__(pre_process=self.do_format, source=source, **kwargs)
+        self.path = path[1:]
+
+    def do_format(self, fstr, data, context=None):
+        """
+        # Do Format
+        The heavy lifting callable of the Item Getter, passed into pre-process 
+        """
+        if not data:
+            return (data, None)
+        mydata = reduce(operator.getitem, self.path, data)
+        return (mydata, None)

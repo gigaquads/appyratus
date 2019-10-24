@@ -9,6 +9,7 @@ from .base import File
 
 
 class Ini(File):
+
     @staticmethod
     def extensions():
         return {'ini'}
@@ -62,6 +63,7 @@ class Ini(File):
     @classmethod
     def dump(cls, data, list_format: Text = None):
         data = DictUtils.traverse(data, cls.dump_value, list_format=list_format)
+        data = DictUtils.remove_keys(data, empty_values={type(None)})
         output = io.StringIO()
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()

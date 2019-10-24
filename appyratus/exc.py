@@ -9,6 +9,10 @@ class BaseError(Exception):
     """
     # Base Error
     """
+    error_code = 'error'
+    error_message = 'An error has occurred'
+    error_data = {}
+    error_help = None
 
     @memoized_property
     def encoder(self):
@@ -18,18 +22,19 @@ class BaseError(Exception):
         """
         return JsonEncoder()
 
-    def __init__(
-        self, code: str = None, message: str = None, data: dict = None
-    ):
+    def __init__(self, code: str = None, message: str = None, data: dict = None):
         """ 
         # Args
         `code`, shorthand code to additionally identify with this error
         `message`, detailed information regarding the error
         `data`, Additional structured data to provide with the error
         """
-        self.error_code = code or 'error'
-        self.error_message = message or 'An error has occurred'
-        self.error_data = data or {}
+        if code:
+            self.error_code = code
+        if message:
+            self.error_message = message
+        if data:
+            self.error_data = data
 
     def _set_error_data(self, code=None, message=None, data=None):
         """ 
@@ -60,15 +65,20 @@ class BaseError(Exception):
         """
         # String representation of the error
         """
-        return "{message} ({code})".format(
-            code=self.error_code, message=self.error_message
+
+        error_message = self.error_message.format(**self.error_data)
+        error_help = ', ' + self.error_help if self.error_help else ''
+        return "{message} [{code}]{help}".format(
+            code=self.error_code, message=error_message, help=error_help
         )
 
     def __str__(self):
         return self.to_str()
 
     def to_str(self):
-        """ String representation of the error """
+        """ 
+        String representation of the error 
+        """
         return self._error_str()
 
     def to_dict(self):

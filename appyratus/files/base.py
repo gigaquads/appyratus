@@ -1,18 +1,51 @@
 from __future__ import absolute_import
 
 import os
+from typing import (
+    Set,
+    Text,
+)
 
-from typing import Set, Text
+from appyratus.utils import FileUtils
 
 
 class BaseFile(object):
+
     @classmethod
-    def exists(cls, path: str):
+    def exists(cls, path: Text):
         return os.path.exists(path)
 
     @staticmethod
     def extensions() -> Set[Text]:
         raise NotImplementedError('override in subclass')
+
+    @staticmethod
+    def default_extension():
+        """
+        # Default Extension
+        The default extension to be used when handling File types
+        
+        By default this will use the first extension in the sorted list of
+        extensions bearing your File type provided it
+        """
+        extensions = self.extensions()
+        if not extensions:
+            return None
+        return sorted(list(self.extensions()))[0]
+
+    @staticmethod
+    def has_extension(extension: Text):
+        """
+        # Has Extension
+        If your File type has the appropriate extension registered in it.
+
+        As there is normalizing of extension happening, it will return the
+        normalized extension if one has been found, otherwise None
+        """
+        if not extension:
+            return None
+        extension = extension.lower()
+        return extension in self.extensions()
 
     def read(cls, path: str):
         """
@@ -87,6 +120,44 @@ class File(BaseFile):
     def dump(cls, data: Text):
         return data
 
+
+class FileObject(object):
+
     @classmethod
-    def dir_path(cls, path):
-        return os.path.dirname(os.path.realpath(path))
+    def get_file_type(cls):
+        raise NotImplementedError('implement in subclass')
+
+    def __init__(self, path: Text = None, data=None, **kwargs):
+        self._path = path
+        self._data = data
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def data(self):
+        return self._data
+
+    def read(self):
+        self._data = self.get_file_type().read(self.path)
+        return self._data
+
+    def write(self):
+        self.get_file_type.write(self.path, self.data)
+
+    @property
+    def name(self):
+        return FileUtils.get_name(self.path)
+
+    @property
+    def filename(self):
+        return FileUtils.get_filename(self.path)
+
+    @property
+    def extension(self):
+        return FileUtils.get_extension(self.path)
+
+    @property
+    def dir_path(self):
+       return FileUtils.get_dir_path(self.path)
