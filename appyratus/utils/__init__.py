@@ -1,6 +1,6 @@
 from .color_utils import ColorUtils
 from .dict_utils import DictUtils, DictObject
-from .file_utils import PathUtils
+from .path_utils import PathUtils
 from .template_utils import TemplateEnvironment
 from .string_utils import StringUtils
 from .time_utils import TimeUtils
