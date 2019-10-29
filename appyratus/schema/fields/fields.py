@@ -168,8 +168,8 @@ class String(Field):
 
     generator = Field.Generator(
         callbacks={
-            '_id': lambda f: UuidString.next_id(),
-            'id': lambda f: str(f.faker.random_number(digits=16)),
+            '_id': lambda f, c: UuidString.next_id(),
+            'id': lambda f, c: str(f.faker.random_number(digits=16)),
             'public_id': lambda f, c: UuidString.next_id(),
             'first_name': lambda f, c: f.faker.first_name(),
             'last_name': lambda f, c: f.faker.last_name(),
@@ -355,6 +355,8 @@ class Int(Field):
             'seq': lambda f, c: random.randint(0, 100),
             'no': lambda f, c: random.randint(0, 100),
             'num': lambda f, c: random.randint(0, 100),
+            'count': lambda f, c: random.randint(0, 100),
+            'sequence': lambda f, c: random.randint(0, 1000),
         },
         default=lambda f, c: random.randint(-100, 100)
     )
@@ -504,7 +506,7 @@ class Email(String):
 
 class Uuid(Field):
 
-    generator = ValueGenerator(default=lambda f: Uuid.next_id())
+    generator = ValueGenerator(default=lambda f, c: Uuid.next_id())
 
     @classmethod
     def next_id(cls):
@@ -529,7 +531,7 @@ class Uuid(Field):
 
 class UuidString(String):
 
-    generator = ValueGenerator(default=lambda f: UuidString.next_id())
+    generator = ValueGenerator(default=lambda f, c: UuidString.next_id())
 
     @classmethod
     def next_id(cls):
