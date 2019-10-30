@@ -271,14 +271,15 @@ class DictUtils(object):
             return new_data
 
         def make_set(data):
-            if isinstance(data, set):
-                return data
+            set_data = None
             if data is None:
                 set_data = set()
-            else:
-                if not isinstance(data, (list, tuple)):
-                    data = [data]
+            elif isinstance(data, set):
+                set_data = data
+            elif isinstance(data, (list, tuple)):
                 set_data = set(data)
+            else:
+                set_data = set([data])
             return set_data
 
         keys = make_set(keys)
@@ -308,7 +309,9 @@ class DictUtils(object):
         return new_data
 
     @staticmethod
-    def traverse(data: Dict, method, depth: int = None, **kwargs) -> Dict:
+    def traverse(
+        data: Dict, method, depth: int = None, acc: Dict = None, **kwargs
+    ) -> Dict:
         """
         Traverse a dictionary while passing values into the provided callable
         in order to mutate existing data
