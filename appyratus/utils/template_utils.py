@@ -1,8 +1,14 @@
-from typing import Text, Dict, List
 import inspect
-import jinja2
 import json
 import re
+from copy import deepcopy
+from typing import (
+    Dict,
+    List,
+    Text,
+)
+
+import jinja2
 import ujson
 
 from .string_utils import StringUtils
@@ -11,6 +17,10 @@ from .string_utils import StringUtils
 #  Use inspect.getmembers(env, predicate=inspect.ismethod)
 #   -> (method_name, method)
 # XXX how to know _which_ method is meant to be a filter?
+
+
+class TemplateUtils(object):
+    pass
 
 
 class BaseTemplateEnvironment(object):
@@ -59,14 +69,19 @@ class Template(object):
     The template object
     """
 
-    def __init__(self, template_obj=None):
+    def __init__(self, template_obj=None, context: Dict = None):
         self._template_obj = template_obj
+        self._context = context if context is not None else {}
 
-    def render(self):
+    def render(self, context: Dict = None):
         """
         # Render
         """
-        pass
+        if context is None:
+            context = {}
+        base_context = deepcopy(self._context)
+        base_context.update(context)
+        return self._template_obj.render(base_context)
 
 
 class JinjaTemplateEnvironment(BaseTemplateEnvironment):
@@ -86,7 +101,6 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         as ujson or the StringUtils util, to add additional convenience to
         the templating engine.  They could also be optional.
         """
-        import ipdb; ipdb.set_trace(); print('=' * 100)
         super().__init__(search_path=search_path, templates=templates)
         from appyratus.json import JsonEncoder
         self.env = self.build()
@@ -106,6 +120,7 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                             sort_keys=True
                         )
                     ),
+                'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx)
             }
         )
         if filters:
@@ -137,13 +152,15 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         """
         Providing a string, return a template
         """
-        return self.env.from_string(value)
+        jtpl = self.env.from_string(value)
+        return Template(jtpl)
 
     def from_filename(self, filename: Text):
         """
         Providing a template filename, return a template
         """
-        return self.env.get_template(filename)
+        jtpl = self.env.get_template(filename)
+        return Template(jtpl)
 
 
 class TemplateEnvironment(JinjaTemplateEnvironment):
