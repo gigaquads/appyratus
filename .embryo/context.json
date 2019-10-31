@@ -120,6 +120,18 @@
       "url": null,
       "version": null,
       "zip_safe": null
+    },
+    {
+      "config": null,
+      "embryo": {
+        "action": "hatch",
+        "destination": "/home/jeff/code/appyratus",
+        "name": "python-project/setup",
+        "timestamp": 1572541157
+      },
+      "metadata": {},
+      "options": {},
+      "project": null
     }
   ]
 }

@@ -17,3 +17,4 @@ beautifulsoup4
 astor
 webcolors
 colormath
+yapf
