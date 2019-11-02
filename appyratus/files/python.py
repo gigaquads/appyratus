@@ -3,13 +3,17 @@ from __future__ import absolute_import
 import ast
 import re
 from typing import (
+    Dict,
     Text,
     Tuple,
 )
 
 import astor
 
-from .base import File, FileObject
+from .base import (
+    File,
+    FileObject,
+)
 
 
 class PythonModule(File):
@@ -52,23 +56,25 @@ class PythonModule(File):
         if not data:
             return
         if preserve_comments:
-            clean_data = cls.hashed_comments_to_strings(data)
+            clean_data = cls._hashed_comments_to_strings(data)
         else:
-            clean_data = data
+            clean_data = cls._format_code(data)
         ast_data = ast.parse(clean_data)
         return ast_data
 
     @classmethod
-    def dump(cls, data, restore_comments: bool = True):
+    def dump(cls, data, restore_comments: bool = True, format_code: bool = True, style_config: Dict = None):
         source_data = astor.to_source(data)
         if restore_comments:
-            clean_data = cls.string_comments_to_hashed(source_data)
+            clean_data = cls._string_comments_to_hashed(source_data)
         else:
             clean_data = source_data
+        if  format_code:
+            clean_data = FormatCode(clean_data, style_config=style_config)       
         return clean_data
 
     @classmethod
-    def hashed_comments_to_strings(cls, data):
+    def _hashed_comments_to_strings(cls, data):
         """
         # Hashed Comments To Strings
         Using the provided string data, convert all matching hashed comments.
@@ -87,39 +93,40 @@ class PythonModule(File):
         def between(value: Text, value_range: Tuple):
             return value_range[0] <= value <= value_range[1]
 
-        def exclude_comments_in_string_literals(match):
-            """
-            If a comment is within range of any detected string literals, then
-            do not perform processing as it is not
-
-            # Args
-            - `match`, the match object provided by `re`
-            """
-            match_span = match.span()
-            in_match = any(
-                [all([between(m, sp) for m in match_span]) for sp in str_literal_spans]
-            )
-            if in_match:
-                # hash in match is located in string literal spans, do nothing
-                return match.group(1)
-            else:
-                # hash is likely a comment, so add the tag to and enclose in quotes
-                return '""" {tag}{match} """'.format(
-                    tag=cls.get_comment_tag(),
-                    match=match.group(1),
-                )
 
         match_basic = [
         # get all comments, this is sufficient enough when we perform
             r'(\#.*)',
         # custom method to exclude conversion of comments like in string literals
-            exclude_comments_in_string_literals,
+            cls._exclude_comments_in_string_literals,
         ]
         sub_res = re.sub(*match_basic, data)
         return sub_res
 
+    def _exclude_comments_in_string_literals(match):
+        """
+        If a comment is within range of any detected string literals, then
+        do not perform processing as it is not
+
+        # Args
+        - `match`, the match object provided by `re`
+        """
+        match_span = match.span()
+        in_match = any(
+            [all([between(m, sp) for m in match_span]) for sp in str_literal_spans]
+        )
+        if in_match:
+            # hash in match is located in string literal spans, do nothing
+            return match.group(1)
+        else:
+            # hash is likely a comment, so add the tag to and enclose in quotes
+            return '""" {tag}{match} """'.format(
+                tag=cls.get_comment_tag(),
+                match=match.group(1),
+            )
+
     @classmethod
-    def string_comments_to_hashed(cls, data):
+    def _string_comments_to_hashed(cls, data):
         """
         Convert any string literals with tag identifier back to their hashed
         format, primarily for writing back to file.
@@ -134,6 +141,12 @@ class PythonModule(File):
         ]
         sub_res = re.sub(*match_basic, data)
         return sub_res
+
+    def format_code(cls, data):
+        """
+        # Format Code
+        """
+
 
 
 class PythonModuleFileObject(FileObject):
