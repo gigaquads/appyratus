@@ -341,6 +341,7 @@ class Int(Field):
         callbacks={
             '_id': lambda f, c: f.faker.random_number(digits=16),
             '_rev': lambda f, c: f.faker.random_number(digits=3),
+            'id': lambda f, c: f.faker.random_number(digits=16),
             'public_id': lambda f, c: f.faker.random_number(digits=16),
             'age': lambda f, c: random.randint(10, 100),
             'width': lambda f, c: random.randint(0, 100),
@@ -357,6 +358,8 @@ class Int(Field):
             'num': lambda f, c: random.randint(0, 100),
             'count': lambda f, c: random.randint(0, 100),
             'sequence': lambda f, c: random.randint(0, 1000),
+            'index': lambda f, c: random.randint(0, 1000),
+            'idx': lambda f, c: random.randint(0, 1000),
         },
         default=lambda f, c: random.randint(-100, 100)
     )
@@ -452,6 +455,8 @@ class Float(Field):
         callbacks={
             '_id': lambda f, c: f.faker.random_number(digits=16),
             'public_id': lambda f, c: f.faker.random_number(digits=16),
+            'size': lambda f, c: 100 * random.random(),
+            'price': lambda f, c: 100 * random.random(),
             'age': lambda f, c: random.randint(12, 80),
             'width': lambda f, c: random.randint(0, 100),
             'height': lambda f, c: random.randint(0, 100),
