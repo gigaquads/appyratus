@@ -15,7 +15,7 @@ class File(BaseFile):
     UTF_ENCODINGS = {'utf-8', 'utf-16'}
 
     @classmethod
-    def read(cls, path: str):
+    def read(cls, path: str, **kwargs):
         if not cls.exists(path):
             return
 
@@ -41,7 +41,7 @@ class File(BaseFile):
         return data
 
     @classmethod
-    def write(cls, path: str, data=None, encode=True):
+    def write(cls, path: str, data=None, encode=True, **kwargs):
         with open(path, 'wb') as write_bytes:
             file_data = data.encode() if encode else data
             write_bytes.write(file_data)
@@ -81,12 +81,12 @@ class FileObject(object):
         self.get_file_type.write(self.path, self.data)
 
     @property
-    def name(self):
-        return PathUtils.get_name(self.path)
+    def file_name(self):
+        return PathUtils.get_file_name(self.path)
 
     @property
-    def filename(self):
-        return PathUtils.get_filename(self.path)
+    def name(self):
+        return PathUtils.get_name(self.path)
 
     @property
     def extension(self):
@@ -95,3 +95,7 @@ class FileObject(object):
     @property
     def dir_path(self):
         return PathUtils.get_dir_path(self.path)
+
+    @property
+    def dir_name(self):
+        return PathUtils.get_dir_name(self.path)

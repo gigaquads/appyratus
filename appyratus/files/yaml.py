@@ -4,7 +4,7 @@ from typing import Dict, Text
 import yaml
 from appyratus.enum import Enum
 
-from .base import File, FileObject
+from .file import File, FileObject
 
 EXTENSIONS = Enum.of_strings('yml', 'yaml')
 

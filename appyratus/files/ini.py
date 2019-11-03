@@ -5,7 +5,7 @@ import configparser
 
 from appyratus.utils import DictUtils
 
-from .base import File
+from .file import File
 
 
 class Ini(File):

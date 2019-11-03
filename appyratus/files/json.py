@@ -3,7 +3,7 @@ from typing import Text
 
 import ujson
 
-from .base import File
+from .file import File
 
 
 class Json(File):

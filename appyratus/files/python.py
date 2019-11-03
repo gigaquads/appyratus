@@ -9,11 +9,14 @@ from typing import (
 )
 
 import astor
+from yapf.yapflib.yapf_api import FormatCode
 
-from .base import (
+from .file import (
     File,
     FileObject,
 )
+
+PYTHON_COMMENT_TAG = 'RUBBER-PANTS'
 
 
 class PythonModule(File):
@@ -28,16 +31,16 @@ class PythonModule(File):
 
     @classmethod
     def get_comment_tag(cls):
-        return 'RUBBER-PANTS'
+        return PYTHON_COMMENT_TAG
 
     @classmethod
-    def read(cls, path: Text, preserve_comments: bool = True):
-        data = super().read(path)
-        return cls.load(data, preserve_comments=preserve_comments)
+    def read(cls, path: Text, **kwargs):
+        data = super().read(path, **kwargs)
+        return cls.load(data, **kwargs)
 
     @classmethod
-    def write(cls, path: Text, data=None, restore_comments: bool = True, **kwargs):
-        file_data = cls.dump(data, restore_comments=restore_comments) if data else ''
+    def write(cls, path: Text, data=None, **kwargs):
+        file_data = cls.dump(data, **kwargs) if data else ''
         super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
@@ -63,14 +66,30 @@ class PythonModule(File):
         return ast_data
 
     @classmethod
-    def dump(cls, data, restore_comments: bool = True, format_code: bool = True, style_config: Dict = None):
+    def dump(
+        cls,
+        data,
+        restore_comments: bool = True,
+        format_code: bool = True,
+        style_config: Dict = None,
+        **kwargs
+    ):
+        """
+        # Dump
+
+        # Args
+        - `data`, AST source objects
+        - `restore_comments`, revert comments injected back to their original state from when `load` was performed and comments were translated
+        - `format_code`, format the python code according to yapf conventions
+        - `style_config`, additional style configuration to apply to yapf formatting
+        """
         source_data = astor.to_source(data)
         if restore_comments:
             clean_data = cls._string_comments_to_hashed(source_data)
         else:
             clean_data = source_data
-        if  format_code:
-            clean_data = FormatCode(clean_data, style_config=style_config)       
+        if format_code:
+            clean_data = cls.format_code(data, style_config=style_config)
         return clean_data
 
     @classmethod
@@ -92,7 +111,6 @@ class PythonModule(File):
 
         def between(value: Text, value_range: Tuple):
             return value_range[0] <= value <= value_range[1]
-
 
         match_basic = [
         # get all comments, this is sufficient enough when we perform
@@ -142,11 +160,15 @@ class PythonModule(File):
         sub_res = re.sub(*match_basic, data)
         return sub_res
 
-    def format_code(cls, data):
+    def format_code(cls, data, style_config: Dict = None):
         """
         # Format Code
+        Format python code using yapf style conventions
         """
-
+        if not style_config:
+            style_config = {}
+        res = FormatCode(data, style_config=style_config)
+        return res[0]
 
 
 class PythonModuleFileObject(FileObject):

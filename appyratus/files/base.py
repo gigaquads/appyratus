@@ -46,25 +46,25 @@ class BaseFile(object):
         extension = extension.lower()
         return extension in self.extensions()
 
-    def read(cls, path: str):
+    def read(cls, path: str, **kwargs):
         """
         Read the contents of a file from it's destination
         """
         raise NotImplementedError('override in subclass')
 
-    def write(cls, path: str, data, encode: bool = True):
+    def write(cls, path: str, data, encode: bool = True, **kwargs):
         """
         Write the contents to a file's destination
         """
         raise NotImplementedError('override in subclass')
 
-    def load(cls, data):
+    def load(cls, data, **kwargs):
         """
         Load contents into a Python data structure
         """
         raise NotImplementedError('override in subclass')
 
-    def dump(cls, data):
+    def dump(cls, data, **kwargs):
         """
         Dump the contents of a python data structure to the expected format
         """

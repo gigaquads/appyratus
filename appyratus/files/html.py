@@ -5,7 +5,7 @@ import astor
 
 from typing import Text
 
-from .base import File
+from .file import File
 
 
 class Html(File):
