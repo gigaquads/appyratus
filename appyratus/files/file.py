@@ -15,7 +15,7 @@ class File(BaseFile):
     UTF_ENCODINGS = {'utf-8', 'utf-16'}
 
     @classmethod
-    def read(cls, path: str, **kwargs):
+    def read(cls, path: Text, **kwargs):
         if not cls.exists(path):
             return
 
@@ -41,7 +41,7 @@ class File(BaseFile):
         return data
 
     @classmethod
-    def write(cls, path: str, data=None, encode=True, **kwargs):
+    def write(cls, path: Text, data=None, encode=True, **kwargs):
         with open(path, 'wb') as write_bytes:
             file_data = data.encode() if encode else data
             write_bytes.write(file_data)

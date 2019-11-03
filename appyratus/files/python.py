@@ -83,13 +83,16 @@ class PythonModule(File):
         - `format_code`, format the python code according to yapf conventions
         - `style_config`, additional style configuration to apply to yapf formatting
         """
-        source_data = astor.to_source(data)
+        if isinstance(data, str):
+            source_data = data
+        else:
+            source_data = astor.to_source(data)
         if restore_comments:
             clean_data = cls._string_comments_to_hashed(source_data)
         else:
             clean_data = source_data
         if format_code:
-            clean_data = cls.format_code(data, style_config=style_config)
+            clean_data = cls.format_code(clean_data, style_config=style_config)
         return clean_data
 
     @classmethod
@@ -112,36 +115,36 @@ class PythonModule(File):
         def between(value: Text, value_range: Tuple):
             return value_range[0] <= value <= value_range[1]
 
+        def exclude_comments_in_string_literals(match):
+            """
+            If a comment is within range of any detected string literals, then
+            do not perform processing as it is not
+
+            # Args
+            - `match`, the match object provided by `re`
+            """
+            match_span = match.span()
+            in_match = any(
+                [all([between(m, sp) for m in match_span]) for sp in str_literal_spans]
+            )
+            if in_match:
+                # hash in match is located in string literal spans, do nothing
+                return match.group(1)
+            else:
+                # hash is likely a comment, so add the tag to and enclose in quotes
+                return '""" {tag}{match} """'.format(
+                    tag=cls.get_comment_tag(),
+                    match=match.group(1),
+                )
+
         match_basic = [
         # get all comments, this is sufficient enough when we perform
             r'(\#.*)',
         # custom method to exclude conversion of comments like in string literals
-            cls._exclude_comments_in_string_literals,
+            exclude_comments_in_string_literals,
         ]
         sub_res = re.sub(*match_basic, data)
         return sub_res
-
-    def _exclude_comments_in_string_literals(match):
-        """
-        If a comment is within range of any detected string literals, then
-        do not perform processing as it is not
-
-        # Args
-        - `match`, the match object provided by `re`
-        """
-        match_span = match.span()
-        in_match = any(
-            [all([between(m, sp) for m in match_span]) for sp in str_literal_spans]
-        )
-        if in_match:
-            # hash in match is located in string literal spans, do nothing
-            return match.group(1)
-        else:
-            # hash is likely a comment, so add the tag to and enclose in quotes
-            return '""" {tag}{match} """'.format(
-                tag=cls.get_comment_tag(),
-                match=match.group(1),
-            )
 
     @classmethod
     def _string_comments_to_hashed(cls, data):
@@ -160,6 +163,7 @@ class PythonModule(File):
         sub_res = re.sub(*match_basic, data)
         return sub_res
 
+    @classmethod
     def format_code(cls, data, style_config: Dict = None):
         """
         # Format Code
