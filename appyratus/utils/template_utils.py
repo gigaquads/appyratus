@@ -9,7 +9,7 @@ from typing import (
 )
 
 import jinja2
-import ujson
+
 
 from .string_utils import StringUtils
 
@@ -98,13 +98,13 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         rendering a template.
 
         Internal filters are elements of appyratus that are applied here, such
-        as ujson or the StringUtils util, to add additional convenience to
+        as json or the StringUtils util, to add additional convenience to
         the templating engine.  They could also be optional.
         """
         super().__init__(search_path=search_path, templates=templates)
-        from appyratus.json import JsonEncoder
+        # XXX imported here as it causes circular depedency 
+        from appyratus.files import Json
         self.env = self.build()
-        self.json_encoder = JsonEncoder()
         self.add_filters(
             {
                 'snake': StringUtils.snake,
@@ -112,14 +112,7 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 'title': StringUtils.title,
                 'camel': StringUtils.camel,
                 'dot': StringUtils.dot,
-                'json':
-                    lambda obj: (
-                        json.dumps(
-                            ujson.loads(self.json_encoder.encode(obj)),
-                            indent=2,
-                            sort_keys=True
-                        )
-                    ),
+                'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
                 'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx)
             }
         )

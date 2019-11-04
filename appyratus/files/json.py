@@ -1,16 +1,18 @@
 from __future__ import absolute_import
+
 from typing import Text
 
-import ujson
+from appyratus.json import JsonEncoder
 
 from .file import File
 
 
 class Json(File):
     """
-    # Json File
-    Backed by ultrajson https://github.com/esnme/ultrajson
+    # Json File Type
     """
+
+    _encoder = JsonEncoder.get_instance()
 
     @staticmethod
     def extensions():
@@ -28,20 +30,12 @@ class Json(File):
 
     @classmethod
     def load(cls, data):
-        return ujson.loads(data) if data else None
+        return cls._encoder.decode(data) if data else None
 
     @classmethod
-    def dump(
-        cls,
-        data,
-        indent: int = 2,
-        sort_keys: bool = True,
-        escape_forward_slashes: bool = False,
-        **kwargs
-    ):
-        return ujson.dumps(
+    def dump(cls, data, indent: int = 2, sort_keys: bool = True, **kwargs):
+        return cls._encoder.encode(
             data,
             indent=indent,
             sort_keys=sort_keys,
-            escape_forward_slashes=escape_forward_slashes
         )
