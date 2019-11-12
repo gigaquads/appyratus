@@ -1,45 +1,65 @@
-from os.path import splitext, basename, dirname, realpath, exists
+from os.path import (
+    basename,
+    dirname,
+    exists,
+    realpath,
+    splitext,
+)
+from typing import Text
 
 
 class PathUtils(object):
 
     @classmethod
-    def get_file_name(cls, path):
+    def get_file_name(cls, path: Text) -> Text:
         """
         # Get File Name
         """
         return basename(path)
 
     @classmethod
-    def get_name(cls, path):
+    def get_name(cls, path: Text) -> Text:
         """
         # Get Name
         """
         return splitext(cls.get_file_name(path))[0]
 
     @classmethod
-    def get_extension(cls, path):
+    def get_extension(cls, path: Text) -> Text:
         """
         # Get Extension
         """
-        return splitext(path)[-1].split('.')[1]
+        try:
+            file_name = cls.get_file_name(path)
+            name, ext = splitext(file_name)
+            if file_name == file_name and ext == '':
+                # file name like .gitignore and .vimrc
+                ext = ''
+            else:
+                # normal extension like style.yapf and necronomicon.pdf
+                ext = ext.split('.')[-1]
+            return ext
+        except Exception as exc:
+            import ipdb
+            ipdb.set_trace()
+            print('=' * 100)
 
     @classmethod
-    def get_dir_name(cls, path):
+    def get_dir_name(cls, path: Text) -> Text:
         """
         # Get Dir Name
         """
         return basename(cls.get_dir_path(path))
 
     @classmethod
-    def get_dir_path(cls, path):
+    def get_dir_path(cls, path: Text) -> Text:
         """
         # Get Dir Path
         """
         return dirname(realpath(path))
 
     @classmethod
-    def replace_extension(cls, path, extension=None):
+    def replace_extension(cls, path: Text, extension: Text = None) -> Text:
         """
         # Replace Extension
         """
@@ -49,7 +69,7 @@ class PathUtils(object):
         return f'{name}.{extension}'
 
     @classmethod
-    def exists(cls, path):
+    def exists(cls, path: Text) -> Text:
         """
         # Exists
         """

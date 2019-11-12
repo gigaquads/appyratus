@@ -183,12 +183,15 @@ class DictUtils(object):
         return new_data
 
     @staticmethod
-    def merge(data: Dict, other: Dict) -> Dict:
+    def merge(data: Dict, other: Dict, in_place=False) -> Dict:
         """
         # Merge
         Merge contents of other dictionary into data dictionary.
         """
-        new_data = deepcopy(data)
+        if in_place:
+            new_data = data
+        else:
+            new_data = deepcopy(data)
         if not other:
             return new_data
         for other_k, other_v in other.items():
