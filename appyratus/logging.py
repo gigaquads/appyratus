@@ -8,10 +8,10 @@ from logging import Formatter, StreamHandler, INFO
 from typing import Text, Dict
 
 from appyratus.utils import TimeUtils
-from appyratus.json import JsonEncoder
 
 
 class LoggerInterface(object):
+
     def __init__(self, name, level=None, handlers=None):
         self._name = name
         self._level = level or INFO
@@ -63,9 +63,9 @@ class LoggerInterface(object):
 
 
 class ConsoleLoggerInterface(LoggerInterface):
+
     def __init__(self, name, level=None, style=None):
         super().__init__(name, level=level)
-        self._json = JsonEncoder()
         self._style = style or 'json'
 
     def process_message(self, level: Text, message: Text, data: Dict) -> Text:
@@ -73,7 +73,7 @@ class ConsoleLoggerInterface(LoggerInterface):
         level = level.upper()[0]
 
         if data:
-            data = self._json.decode(self._json.encode(data))
+            data = Json.load(Json.dump(data))
             if self._style == 'json':
                 dumped_data = self._to_json(data)
             elif self._style == 'yaml':

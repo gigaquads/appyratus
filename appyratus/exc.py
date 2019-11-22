@@ -1,8 +1,8 @@
 import os
 import traceback
 
+from appyratus.files import Json
 from appyratus.memoize import memoized_property
-from appyratus.json import JsonEncoder
 
 
 class BaseError(Exception):
@@ -13,14 +13,6 @@ class BaseError(Exception):
     error_message = 'An error has occurred'
     error_data = {}
     error_help = None
-
-    @memoized_property
-    def encoder(self):
-        """
-        # Encoder
-        Using the JSON Encoder
-        """
-        return JsonEncoder()
 
     def __init__(self, code: str = None, message: str = None, data: dict = None):
         """ 
@@ -97,4 +89,4 @@ class BaseError(Exception):
 
         This was customized as the Falcon Base errors return JSON pretty printed
         """
-        return self.encoder.encode(self.to_dict())
+        return Json.dump(self.to_dict())

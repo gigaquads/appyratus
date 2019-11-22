@@ -6,16 +6,15 @@ from typing import (
 
 import aiohttp
 import async_timeout
-import ujson
 import uvloop
 from aiohttp import BasicAuth
 
-from appyratus.json import JsonEncoder
+from appyratus.exc import BaseError
+from appyratus.files import Json
 from appyratus.memoize import memoized_property
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from appyratus.exc import BaseError
 
 
 class AsyncHttpClientError(BaseError):
@@ -23,7 +22,6 @@ class AsyncHttpClientError(BaseError):
 
 
 class AsyncHttpClient(object):
-    encoder = JsonEncoder()
 
     class Request(object):
         """
@@ -65,7 +63,7 @@ class AsyncHttpClient(object):
             """
             if not self.text:
                 return None
-            return ujson.loads(self.text)
+            return Json.load(self.text)
 
         @property
         def is_ok(self):
@@ -132,7 +130,7 @@ class AsyncHttpClient(object):
     async def _prepare_request(self, request: Request, loop=None):
         loop = loop or self._loop
         async with aiohttp.ClientSession(
-            loop=loop, json_serialize=self.encoder.encode
+            loop=loop, json_serialize=Json.dump
         ) as session:
             return await self._do_request(session, request)
 
@@ -150,7 +148,7 @@ class AsyncHttpClient(object):
         #if self._auth is not None:
         #    kwargs['headers']['authorization'] = self._auth.encode()
         #if request.data is not None:
-        #    kwargs['data'] = self.encoder.encode(request.data)
+        #    kwargs['data'] = Json.dump(request.data)
         if request.json is not None:
             kwargs['json'] = request.json
         kwargs['allow_redirects'] = request.allow_redirects
