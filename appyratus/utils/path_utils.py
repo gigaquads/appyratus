@@ -14,7 +14,16 @@ class PathUtils(object):
 
     @staticmethod
     def get_extension(path):
-        return splitext(path)[-1].split('.')[1]
+        # splitext returns a tuple like `('file',
+        # '.zip')`, or `('file.tar', '.gz')` if it
+        # contains multiple packaged extensions
+        ext_parts = splitext(path)
+        ext = ext_parts[-1]
+        if ext:
+            # splitext also puts the dot on an extension
+            # so we will trim that if anything is there
+            ext = ext.split('.')[1]
+        return ext
 
     @staticmethod
     def get_dir_path(path):
