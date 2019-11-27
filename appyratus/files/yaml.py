@@ -59,6 +59,9 @@ class Yaml(File):
             'explicit_start': True,
             'explicit_end': True
         }
+        # TODO here as a last defense we should check here lamely if it is
+        # already a yaml construct (with explicit --- prefix), otherwise a
+        # string of yaml will dump as a list of characters in that string
         if multi:
             data = yaml.dump_all(data, **dump_args)
         else:
