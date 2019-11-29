@@ -1,11 +1,16 @@
+from os import walk
 from os.path import (
     basename,
     dirname,
     exists,
+    join,
     realpath,
     splitext,
 )
-from typing import Text
+from typing import (
+    List,
+    Text,
+)
 
 
 class PathUtils(object):
@@ -79,3 +84,32 @@ class PathUtils(object):
         # Exists
         """
         return exists(path)
+
+    @classmethod
+    def join(cls, path: Text, *paths) -> Text:
+        """
+        # Join
+        """
+        return join(path, *paths)
+
+    @classmethod
+    def get_nodes(cls, path: Text, depth: int = 1) -> List[tuple]:
+        """
+        # Get Nodes
+        Get directory and file nodes for a specified path
+        """
+        cur_depth = 0
+        ndirs = []
+        nfiles = []
+        for root, dirs, files in walk(path):
+            if files:
+                for f in files:
+                    nfiles.append(cls.join(root, f))
+            if dirs:
+                for d in dirs:
+                    ndirs.append(cls.join(root, d))
+            cur_depth += 1
+            if depth is not None and cur_depth >= depth:
+                # limit recursion
+                break
+        return (ndirs, nfiles)

@@ -10,6 +10,13 @@ EXTENSIONS = Enum.of_strings('yml', 'yaml')
 
 
 class Yaml(File):
+    """
+    # Yaml
+    Yaml file type
+
+    # References
+    https://pyyaml.org/wiki/PyYAMLDocumentation
+    """
 
     @staticmethod
     def extensions():
