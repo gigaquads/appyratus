@@ -19,6 +19,7 @@ from collections import namedtuple
 
 
 @mark.unit
+@mark.skip(reason='needs work')
 class TestAstParser(BaseTests):
     @property
     def klass(self):

@@ -1,0 +1,6 @@
+---
+name: Yaml Basic
+description: Basic dictionary data
+data:
+  id: 1337
+...

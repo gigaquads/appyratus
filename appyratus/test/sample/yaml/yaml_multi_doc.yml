@@ -1,0 +1,8 @@
+---
+name: Multi Doc
+description: Multiple documents in a single file
+...
+---
+name: Another doc
+description: This is a second document in the same file
+...
