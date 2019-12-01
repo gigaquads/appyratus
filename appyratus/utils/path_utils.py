@@ -93,23 +93,30 @@ class PathUtils(object):
         return join(path, *paths)
 
     @classmethod
-    def get_nodes(cls, path: Text, depth: int = 1) -> List[tuple]:
+    def get_nodes(cls, path: Text, depth: int = 0, file_ext=None) -> List[tuple]:
         """
         # Get Nodes
         Get directory and file nodes for a specified path
+        By default the depth is `0` and will not traverse
+        the sub paths in your path.
         """
         cur_depth = 0
         ndirs = []
         nfiles = []
         for root, dirs, files in walk(path):
-            if files:
-                for f in files:
-                    nfiles.append(cls.join(root, f))
-            if dirs:
-                for d in dirs:
-                    ndirs.append(cls.join(root, d))
+            # file processing, here we support optionally
+            # filtering paths by file extension
+            for fpath in files:
+                add_file = True
+                if file_ext is not None:
+                    add_file = cls.get_extension(fpath) == file_ext
+                if add_file:
+                    nfiles.append(cls.join(root, fpath))
+            # directory processing
+            for d in dirs:
+                ndirs.append(cls.join(root, d))
             cur_depth += 1
-            if depth is not None and cur_depth >= depth:
+            if depth is not None and cur_depth > depth:
                 # limit recursion
                 break
         return (ndirs, nfiles)
