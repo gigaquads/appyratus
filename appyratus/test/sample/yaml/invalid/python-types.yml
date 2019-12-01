@@ -1,0 +1,79 @@
+--- !!python/object/apply:collections.defaultdict
+args:
+- !!python/name:__main__.%3Clambda%3E ''
+dictitems:
+  corners: !!python/tuple
+  - !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - &id001 !!python/name:numpy.ndarray ''
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 4
+    - &id002 !!python/object/apply:numpy.dtype
+      args:
+      - i8
+      - 0
+      - 1
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - false
+    - !!binary |
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wAAAAAAAAA=
+  - !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 4
+    - *id002
+    - false
+    - !!binary |
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wAAAAAAAAA=
+  - !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 4
+    - *id002
+    - false
+    - !!binary |
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wAAAAAAAAA=
+  - !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 4
+    - *id002
+    - false
+    - !!binary |
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wAAAAAAAAA=
+...

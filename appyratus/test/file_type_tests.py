@@ -1,3 +1,4 @@
+import pytest
 import inspect
 from typing import (
     List,
@@ -27,7 +28,8 @@ class FileTypeTests(BaseTests):
         in order for this parameterization to take effect on it.  Additionally,
         if the module has multiple test classes prepared, then it will look for
         the `get_samples` method to ensure that the argument has been applied
-        to a class that should support it.
+        to a class that should support it.  And if there are no samples
+        available, then the test will be skipped.
 
         It should be defined as:
         ```
@@ -36,36 +38,45 @@ class FileTypeTests(BaseTests):
         ```
         """
         spec = inspect.getargspec(metafunc.function)
-        sample_path_arg = 'sample_path'
-        if sample_path_arg in spec.args and hasattr(metafunc.cls, 'get_samples'):
+
+        def apply_arg(sample_type, sample_path_arg):
             idlist = []
             argnames = []
             argvalues = []
-            for sample in metafunc.cls.get_samples():
+            for sample in metafunc.cls.get_samples(sample_type):
                 idlist.append(PathUtils.get_name(sample))
                 items = [sample]
                 argnames = [sample_path_arg]
                 argvalues.append(items)
             metafunc.parametrize(argnames, argvalues, ids=idlist, scope="class")
 
+        if hasattr(metafunc.cls, 'get_samples'):
+            sample_types = ['valid', 'invalid']
+            for sample_type in sample_types:
+                sample_path_arg = f'{sample_type}_sample_path'
+                if sample_path_arg in spec.args:
+                    apply_arg(sample_type, sample_path_arg)
+
     @classmethod
-    def get_samples_path(cls):
+    def get_samples_path(cls, sample_type: Text = None):
         """
         # Get Samples Path
         Get the path containing all samples for a particular file type
         """
+
         return PathUtils.join(
             PathUtils.get_dir_path(__file__), 'sample',
-            StringUtils.dash(cls.get_klass().__name__)
+            StringUtils.dash(cls.get_klass().__name__),
+            sample_type if sample_type is not None else 'valid'
         )
 
     @classmethod
-    def get_samples(cls) -> List[Text]:
+    def get_samples(cls, sample_type: Text = None) -> List[Text]:
         """
         # Get Samples
         Get all available samples from filesystem from the configured sample path
         """
-        _, files = PathUtils.get_nodes(cls.get_samples_path())
+        _, files = PathUtils.get_nodes(cls.get_samples_path(sample_type))
         return files
 
     def read_sample_data(cls, path: Text, raw: bool = False) -> Text:
@@ -77,9 +88,9 @@ class FileTypeTests(BaseTests):
         source_data = source_class.read(path)
         return source_data
 
-    def test_samples_are_valid(self, sample_path):
+    def test_sample_is_valid(self, valid_sample_path):
         """
-        # Test Samples are valid
+        # Test Sample Is Valid
         Run a series of file type sample sets through several file type methods
         and ensure that they can be processed.
 
@@ -90,7 +101,7 @@ class FileTypeTests(BaseTests):
         - `write` file type data to FS
         """
         # read the source data
-        source_data = self.read_sample_data(sample_path)
+        source_data = self.read_sample_data(valid_sample_path)
         # now write the data back to disk
         # XXX better way to use a temp file?
         dest_path = f'/tmp/test_{self.klass.__name__}'
@@ -107,3 +118,12 @@ class FileTypeTests(BaseTests):
         Comparison of two data sets to determine if they are the same
         """
         return source_data == dest_data
+
+    def test_sample_is_invalid(self, invalid_sample_path):
+        """
+        # Test Sample Is Invalid
+        As much as a sample can be valid, it can also be invalid, like a syntax
+        error or passing in the wrong file type
+        """
+        with pytest.raises(Exception) as wat:
+            self.klass.read(invalid_sample_path)
