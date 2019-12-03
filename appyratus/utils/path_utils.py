@@ -93,12 +93,27 @@ class PathUtils(object):
         return join(path, *paths)
 
     @classmethod
-    def get_nodes(cls, path: Text, depth: int = 0, file_ext=None) -> List[tuple]:
+    def get_nodes(cls, path: Text, depth: int = 0, file_ext=None,
+                  predicate=None) -> List[tuple]:
         """
         # Get Nodes
         Get directory and file nodes for a specified path
         By default the depth is `0` and will not traverse
         the sub paths in your path.
+
+        # Args
+        - `path`, The path to get the nodes from
+        - `depth`, How far down the path do you want to traverse
+        - `file_ext`, optional and when provided allows you to selectively
+          filter files with extensions that match the one provided.  see
+          `get_extension` for how the extension is fetched
+        - `predicate`, callable, Additional filtering capabilities beyond what
+          this method can provide. Callable must accept a path as an argument.
+          return boolean true to indicate that the file should be collected,
+          otherwise false to ignore it
+
+        # Return
+        A tuple of 
         """
         cur_depth = 0
         ndirs = []
@@ -108,6 +123,8 @@ class PathUtils(object):
             # filtering paths by file extension
             for fpath in files:
                 add_file = True
+                if predicate is not None and callable(predicate):
+                    add_file = predicate(fpath)
                 if file_ext is not None:
                     add_file = cls.get_extension(fpath) == file_ext
                 if add_file:
