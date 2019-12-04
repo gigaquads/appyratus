@@ -14,49 +14,65 @@ class TestPathUtils(BaseTests):
     def klass(self):
         return PathUtils
 
-    @mark.params('path, file_name', [
-        ('', ''),
-    ])
+    @mark.params(
+        'path, file_name', [
+            ('/too/l33t', 'l33t'),
+            ('/too/l33t.3p0', 'l33t.3p0'),
+            ('/path/to/.l33t', '.l33t'),
+            ('/l33t.tar.gz', 'l33t.tar.gz'),
+        ]
+    )
     def test_get_file_name(self, path: Text, file_name: Text):
-        pass
+        assert file_name == self.klass.get_file_name(path)
 
-    @mark.params('path, name', [
-        ('/path/to/l33t', 'l33t'),
-        ('/path/to/l33t.3p0', 'l33t'),
-        ('/path/to/.l33t', '.l33t'),
-        ('', ''),
-        ('', ''),
-        ('', ''),
-    ])
+    @mark.params(
+        'path, name', [
+            ('/path/to/l33t', 'l33t'),
+            ('/path/to/l33t.3p0', 'l33t'),
+            ('/path/to/.l33t', '.l33t'),
+            ('/l33t.tar.gz', 'l33t.tar'),
+        ]
+    )
     def test_get_name(self, path: Text, name: Text):
-        assert name == self.klass.get_name(path) 
+        assert name == self.klass.get_name(path)
 
-    @mark.params('path, extension', [
-        ('/l33t', ''),
-        ('/l33t.3p0', '3p0'),
-        ('/.3p0', ''),
-        ('', ''),
-    ])
+    @mark.params(
+        'path, extension', [
+            ('/l33t', ''),
+            ('/l33t.3p0', '3p0'),
+            ('/.3p0', ''),
+            ('r00.de.m00', 'm00'),
+        ]
+    )
     def test_get_extension(self, path: Text, extension: Text):
         assert extension == self.klass.get_extension(path)
 
-    @mark.params('path, dir_name', [
-        ('/l33t/path', 'l33t'),
-        ('/l33t/path/', 'l33t'),
-    ])
+    @mark.params(
+        'path, dir_name', [
+            ('/path/to/l33t', 'to'),
+            ('/path/to/l33t/', 'l33t'),
+        ]
+    )
     def test_get_dir_name(self, path: Text, dir_name: Text):
         assert dir_name == self.klass.get_dir_name(path)
 
-    @mark.params('path, dir_path', [
-        ('/my/l33t/path', '/my/l33t/path'),
-        ('/my/l33t/path/', '/my/l33t/path/'),
-    ])
+    @mark.params(
+        'path, dir_path', [
+            ('/my/l33t/path', '/my/l33t'),
+            ('/my/l33t/path/', '/my/l33t/path'),
+        ]
+    )
     def test_get_dir_path(self, path: Text, dir_path: Text):
         assert dir_path == self.klass.get_dir_path(path)
 
-    @mark.params('path, extension, new_path', [
-        ('/my/l33t.txt', 'jpg', '/my/l33t.jpg'),
-    ])
+    @mark.params(
+        'path, extension, new_path', [
+            ('/my/l33t.txt', 'jpg', '/my/l33t.jpg'),
+            ('/l33t.txt', 'rar', '/l33t.rar'),
+            ('r33t.bmp', 'tar.gz', 'r33t.tar.gz'),
+            ('b33p.tar.bzip2', 'zip', 'b33p.tar.zip'),
+        ]
+    )
     def test_replace_extension(self, path: Text, extension: Text, new_path: Text):
         assert new_path == self.klass.replace_extension(path, extension)
 

@@ -66,17 +66,19 @@ class PathUtils(object):
         """
         # Get Dir Path
         """
-        return dirname(realpath(path))
+        return dirname(path)
 
     @classmethod
     def replace_extension(cls, path: Text, extension: Text = None) -> Text:
         """
         # Replace Extension
+        With the provided file path, replace its extension with
         """
         name = cls.get_name(path)
         if extension is None:
             return name
-        return f'{name}.{extension}'
+        name_pos = path.rfind(name)
+        return cls.join(path[:name_pos], f'{name}.{extension}')
 
     @classmethod
     def exists(cls, path: Text) -> Text:
