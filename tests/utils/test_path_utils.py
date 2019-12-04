@@ -76,18 +76,23 @@ class TestPathUtils(BaseTests):
     def test_replace_extension(self, path: Text, extension: Text, new_path: Text):
         assert new_path == self.klass.replace_extension(path, extension)
 
+    @mark.skip('need fs')
     @mark.params('path, exists', [
         ('', ''),
     ])
     def test_exists(self, path: Text, exists: bool):
         pass
 
-    @mark.params('path, paths', [
-        ('', ''),
+    @mark.params('path, paths, join_path', [
+        ('/r00t', 't00t', '/r00t/t00t'),
+        ('b00t', 'sc00t', 'b00t/sc00t'),
+        ('/r00t', '/m00t', '/m00t'),
+        ('/p00t', './d00t', '/p00t/./d00t'),
     ])
-    def test_join(self, path: Text, paths):
-        pass
+    def test_join(self, path: Text, paths, join_path: Text):
+        assert join_path == self.klass.join(path, paths)
 
+    @mark.skip('need fs')
     @mark.params('path, depth, file_ext', [
         ('', '', ''),
     ])
