@@ -9,8 +9,8 @@ from inspect import (
 
 
 class FuncUtils(object):
-    @staticmethod
-    def partition_arguments(signature, arguments: Dict) -> (Tuple, Dict):
+    @classmethod
+    def partition_arguments(cls, signature, arguments: Dict) -> (Tuple, Dict):
         """
         Uses the function signature to partition the elements of the arguments
         dict into a list of positional arguments and a dict of keyword arguments

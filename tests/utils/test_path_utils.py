@@ -86,7 +86,7 @@ class TestPathUtils(BaseTests):
     @mark.params('path, paths, join_path', [
         ('/r00t', 't00t', '/r00t/t00t'),
         ('b00t', 'sc00t', 'b00t/sc00t'),
-        ('/r00t', '/m00t', '/m00t'),
+        ('/b00p', '/m00t', '/m00t'),
         ('/p00t', './d00t', '/p00t/./d00t'),
     ])
     def test_join(self, path: Text, paths, join_path: Text):

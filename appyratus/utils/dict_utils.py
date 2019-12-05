@@ -6,6 +6,7 @@ from typing import Dict, Tuple, List, Text, Set, Callable
 
 
 class DictObject(object):
+
     @classmethod
     def from_list(cls, key, data):
         newdata = OrderedDict()
@@ -79,8 +80,9 @@ class DictUtils(object):
             xtype, xid = None, None
         return (xkey, xtype, xid)
 
-    @staticmethod
+    @classmethod
     def flatten_keys(
+        cls,
         data: Dict,
         acc: Dict = None,
         parent: List = None,
@@ -113,7 +115,7 @@ class DictUtils(object):
             for k, v in data.items():
                 kparent = copy(parent)
                 kparent.append(str(k))
-                vacc = DictUtils.flatten_keys(
+                vacc = cls.flatten_keys(
                     data=deepcopy(v), acc=acc, separator=separator, parent=kparent
                 )
                 if isinstance(vacc, dict) and vacc:
@@ -126,7 +128,7 @@ class DictUtils(object):
                 kparent = copy(parent)
                 if kparent:
                     kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
-                kacc = DictUtils.flatten_keys(
+                kacc = cls.flatten_keys(
                     data=v, acc=acc, separator=separator, parent=kparent
                 )
                 if isinstance(kacc, dict):
@@ -139,8 +141,8 @@ class DictUtils(object):
         # da return
         return acc
 
-    @staticmethod
-    def unflatten_keys(data: Dict, separator: Text = None) -> Dict:
+    @classmethod
+    def unflatten_keys(cls, data: Dict, separator: Text = None) -> Dict:
         """
         # Unflatten keys
         Convert dot-notated keys into nested dictionaries
@@ -155,14 +157,14 @@ class DictUtils(object):
                 path = k.split(separator)
                 obj = new_data
                 for x in path[:-1]:
-                    xkey, xtype, xid = DictUtils.key_parts(x)
+                    xkey, xtype, xid = cls.key_parts(x)
                     xval = obj.get(xkey)
                     if not xtype:
                         if not isinstance(xval, dict):
                             if xval:
                                 raise ValueError(
-                                    'Expected value to be a dictionary, got "{}"'.
-                                    format(xval)
+                                    'Expected value to be a dictionary, got "{}"'
+                                    .format(xval)
                                 )
                             obj[xkey] = {}
                     else:
@@ -182,8 +184,8 @@ class DictUtils(object):
                 obj[path[-1]] = v
         return new_data
 
-    @staticmethod
-    def merge(data: Dict, other: Dict, in_place=False) -> Dict:
+    @classmethod
+    def merge(cls, data: Dict, other: Dict, in_place=False) -> Dict:
         """
         # Merge
         Merge contents of other dictionary into data dictionary.
@@ -197,14 +199,14 @@ class DictUtils(object):
         for other_k, other_v in other.items():
             data_v = new_data.get(other_k, None)
             if isinstance(data_v, dict):
-                data_v = DictUtils.merge(data=data_v, other=other_v)
+                data_v = cls.merge(data=data_v, other=other_v)
             else:
                 data_v = other_v
             new_data[other_k] = data_v
         return new_data
 
-    @staticmethod
-    def diff(data: Dict, other: Dict) -> Dict:
+    @classmethod
+    def diff(cls, data: Dict, other: Dict) -> Dict:
         """
         # Diff
         Perform a difference on two dictionaries, returning a dictionary of the
@@ -222,7 +224,7 @@ class DictUtils(object):
                     other_v = other.get(k)
                 else:
                     other_v = None
-                vres = DictUtils.diff(v, other_v)
+                vres = cls.diff(v, other_v)
                 if isinstance(vres, (list, dict)):
                     if vres:
                         changed[k] = vres
@@ -241,7 +243,7 @@ class DictUtils(object):
                 else:
 
                     other_v = None
-                vres = DictUtils.diff(v, other_v)
+                vres = cls.diff(v, other_v)
                 if vres:
                     changed.append(vres)
         else:
@@ -249,8 +251,9 @@ class DictUtils(object):
                 changed = data
         return changed
 
-    @staticmethod
+    @classmethod
     def remove_keys(
+        cls,
         data: Dict,
         keys: Set = None,
         values: Set = None,
@@ -292,14 +295,14 @@ class DictUtils(object):
         if isinstance(new_data, list):
             vlist = []
             for idx, v in enumerate(new_data):
-                vres = DictUtils.remove_keys(v, keys, values, empty_values)
+                vres = cls.remove_keys(v, keys, values, empty_values)
                 if vres not in values:
                     vlist.append(vres)
             new_data = vlist
         elif isinstance(new_data, dict):
             vdict = {}
             for k, v in new_data.items():
-                vres = DictUtils.remove_keys(v, keys, values, empty_values)
+                vres = cls.remove_keys(v, keys, values, empty_values)
                 if k in keys:
                     continue
                 if not isinstance(vres, (list, dict)) and vres in values:
@@ -311,9 +314,14 @@ class DictUtils(object):
 
         return new_data
 
-    @staticmethod
+    @classmethod
     def traverse(
-        data: Dict, method, depth: int = None, acc: Dict = None, **kwargs
+        cls,
+        data: Dict,
+        method,
+        depth: int = None,
+        acc: Dict = None,
+        **kwargs,
     ) -> Dict:
         """
         Traverse a dictionary while passing values into the provided callable
@@ -329,7 +337,7 @@ class DictUtils(object):
             for kd, vd in data.items():
                 if isinstance(vd, (list, dict)):
                     dres = method(kd, vd, depth=depth, **kwargs)
-                    dres = DictUtils.traverse(dres, method, depth=next_depth, **kwargs)
+                    dres = cls.traverse(dres, method, depth=next_depth, **kwargs)
                 else:
                     dres = method(kd, vd, depth=depth, **kwargs)
                 new_data[kd] = dres
@@ -337,14 +345,14 @@ class DictUtils(object):
             for kl, vl in enumerate(data):
                 if isinstance(vl, (list, dict)):
                     lres = method(kl, vl, depth=depth, **kwargs)
-                    lres = DictUtils.traverse(lres, method, depth=next_depth, **kwargs)
+                    lres = cls.traverse(lres, method, depth=next_depth, **kwargs)
                 else:
                     lres = method(kl, vl, depth=depth, **kwargs)
                 new_data[kl] = lres
         return new_data
 
-    @staticmethod
-    def index(key, records: List[Dict]) -> Dict:
+    @classmethod
+    def index(cls, key, records: List[Dict]) -> Dict:
         index = {}
         for record in records:
             try:
@@ -357,12 +365,12 @@ class DictUtils(object):
                 index[k].append(record)
         return index
 
-    @staticmethod
-    def keep(condition, records) -> List:
+    @classmethod
+    def keep(cls, condition, records) -> List:
         return [x for x in records if condition(x)]
 
-    @staticmethod
-    def map(mapper: Callable, record: Dict) -> Dict:
+    @classmethod
+    def map(cls, mapper: Callable, record: Dict) -> Dict:
         mapped_records = []
         for k, v in records.items():
             k_mapped, v_mapped = mapper(k, v)
