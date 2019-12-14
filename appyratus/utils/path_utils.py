@@ -95,8 +95,27 @@ class PathUtils(object):
         return join(path, *paths)
 
     @classmethod
-    def get_nodes(cls, path: Text, depth: int = 0, file_ext=None,
-                  predicate=None) -> List[tuple]:
+    def split(cls, path: Text, separator=None) -> List[Text]:
+        """
+        # Split
+        Different implementation than os's path split where the split segments
+        all path parts into a list, not just the last one.
+        """
+        if separator is None:
+            separator = '/'
+        split_path = path.split(separator)
+        if split_path[0] == '':
+            split_path.pop(0)
+        return split_path
+
+    @classmethod
+    def get_nodes(
+        cls,
+        path: Text,
+        depth: int = 0,
+        file_ext=None,
+        predicate=None,
+    ) -> List[tuple]:
         """
         # Get Nodes
         Get directory and file nodes for a specified path

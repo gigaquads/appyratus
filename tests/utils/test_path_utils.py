@@ -83,14 +83,28 @@ class TestPathUtils(BaseTests):
     def test_exists(self, path: Text, exists: bool):
         pass
 
-    @mark.params('path, paths, join_path', [
-        ('/r00t', 't00t', '/r00t/t00t'),
-        ('b00t', 'sc00t', 'b00t/sc00t'),
-        ('/b00p', '/m00t', '/m00t'),
-        ('/p00t', './d00t', '/p00t/./d00t'),
-    ])
+    @mark.params(
+        'path, paths, join_path', [
+            ('/r00t', 't00t', '/r00t/t00t'),
+            ('b00t', 'sc00t', 'b00t/sc00t'),
+            ('/b00p', '/m00t', '/m00t'),
+            ('/p00t', './d00t', '/p00t/./d00t'),
+        ]
+    )
     def test_join(self, path: Text, paths, join_path: Text):
         assert join_path == self.klass.join(path, paths)
+
+    @mark.params(
+        'path, split_path, separator', [
+            ('/r00t/d0g', ['r00t', 'd0g'], None),
+            ('/r00t/d0g/j34h', ['r00t', 'd0g', 'j34h'], None),
+            ('r00t/d0g', ['r00t', 'd0g'], None),
+            (':r00t:d0g:', ['r00t', 'd0g', ''], ':'),
+            (':r00t:d0g:', [':r00t:d0g:'], '-'),
+        ]
+    )
+    def test_split(self, path: Text, split_path: Text, separator):
+        assert split_path == self.klass.split(path, separator)
 
     @mark.skip('need fs')
     @mark.params('path, depth, file_ext', [
