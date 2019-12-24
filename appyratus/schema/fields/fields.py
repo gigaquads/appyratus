@@ -134,17 +134,13 @@ class Field(object):
         return (value, None)
 
     def on_generate(self, constraint=None, *args, **kwargs):
-        return self.generator.generate(
-            self, constraint=constraint, *args, **kwargs
-        )
+        return self.generator.generate(self, constraint=constraint, *args, **kwargs)
 
 
 class Enum(Field):
 
     generator = Field.Generator(
-        default=lambda f, cield, *args, **kwargs: (
-            random.choice(list(field.values()))
-        )
+        default=lambda f, cield, *args, **kwargs: (random.choice(list(field.values())))
     )
 
     def __init__(self, nested: Field, values, **kwargs):
@@ -495,9 +491,7 @@ class Float(Field):
 
 class Email(String):
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.faker.email()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.faker.email())
 
     def process(self, value):
         dest, error = super().process(value)
@@ -570,9 +564,7 @@ class Bool(Field):
     truthy = {True, 'T', 't', 'TRUE', 'True', 'true', 1, '1'}
     falsey = {False, 'F', 'f', 'FALSE', 'False', 'false', 0, '0'}
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.faker.boolean()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.faker.boolean())
 
     def process(self, value):
         if isinstance(value, bool):
@@ -743,7 +735,7 @@ class List(Field):
     def process(self, sequence):
         dest_sequence = []
         idx2error = {}
-        if not sequence:
+        if sequence is None:
             if self.nullable:
                 return (None, None)
             else:
@@ -833,9 +825,7 @@ class Nested(Field):
 
 class Dict(Field):
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.faker.pydict()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.faker.pydict())
 
     def process(self, value):
         if isinstance(value, dict):
@@ -851,9 +841,7 @@ class FilePath(String):
     userpath if specified.
     """
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.faker.file_path()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.faker.file_path())
 
     def process(self, value):
         if isinstance(value, str):
@@ -869,9 +857,7 @@ class IpAddress(String):
     """
 
     generator = ValueGenerator(
-        default=lambda f, c: (
-            f.faker.ipv4() if random.randint(0, 1) else f.faker.ipv6()
-        )
+        default=lambda f, c: (f.faker.ipv4() if random.randint(0, 1) else f.faker.ipv6())
     )
 
 
@@ -880,9 +866,7 @@ class DomainName(String):
     # Domain Name
     """
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.faker.domain_name()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.faker.domain_name())
 
 
 class Url(String):
@@ -890,9 +874,7 @@ class Url(String):
     # Web URL
     """
 
-    generator = ValueGenerator(
-        default=lambda f, c: f.faker.url()
-    )
+    generator = ValueGenerator(default=lambda f, c: f.faker.url())
 
 
 class BcryptString(String):
