@@ -1,8 +1,21 @@
 import re
-
-from collections import OrderedDict, defaultdict
-from copy import copy, deepcopy
-from typing import Dict, Tuple, List, Text, Set, Callable
+from collections import (
+    OrderedDict,
+    defaultdict,
+)
+from copy import (
+    copy,
+    deepcopy,
+)
+from shlex import shlex
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Set,
+    Text,
+    Tuple,
+)
 
 
 class DictObject(object):
@@ -152,36 +165,67 @@ class DictUtils(object):
         new_data = deepcopy(data)
 
         for k in data.keys():
-            if separator in k:
-                v = new_data.pop(k)
-                path = k.split(separator)
-                obj = new_data
-                for x in path[:-1]:
-                    xkey, xtype, xid = cls.key_parts(x)
-                    xval = obj.get(xkey)
-                    if not xtype:
-                        if not isinstance(xval, dict):
-                            if xval:
-                                raise ValueError(
-                                    'Expected value to be a dictionary, got "{}"'
-                                    .format(xval)
-                                )
-                            obj[xkey] = {}
-                    else:
-                        if not isinstance(xval, list):
-                            if xval:
-                                raise ValueError(
-                                    'Expected value to be a list, got "{}"'.format(xval)
-                                )
-                            obj[xkey] = []
-                        try:
-                            obj[xkey][xid]
-                        except IndexError:
-                            obj[xkey].insert(xid, {})
-                    obj = obj[xkey]
-                    if xtype:
-                        obj = obj[xid]
-                obj[path[-1]] = v
+            v = new_data.pop(k)
+
+            # here we support more complex keys such as `a.b."c.d"` where
+            # `c.d` is a key and not a separator indicating that `d` is a
+            # key of dict `c`
+            spath = [s for s in shlex(k, posix=True)]
+            path_parts = []
+            path = []
+            for s in spath:
+                if s == separator:
+                    path.append(''.join(path_parts))
+                    path_parts = []
+                    continue
+                if s is not None:
+                    path_parts.append(s)
+            if path_parts:
+                path.append(''.join(path_parts))
+
+            #if separator not in k:
+            #    continue
+            obj = new_data
+
+            # take everything in path but the last item
+            for idx, x in enumerate(path):
+                # break apart the key into key parts to determine what the
+                # nested structure should look like
+                xkey, xtype, xid = cls.key_parts(x)
+                xval = obj.get(xkey)
+                if not xtype:
+                    #
+                    if not isinstance(xval, dict):
+                        if xval:
+                            raise ValueError(
+                                'Expected value to be a dictionary, got "{}"'
+                                .format(xval)
+                            )
+                        obj[xkey] = {}
+                # xparts found
+                else:
+                    if not isinstance(xval, list):
+                        if xval:
+                            raise ValueError(
+                                'Expected value to be a list, got "{}"'.format(xval)
+                            )
+                        obj[xkey] = []
+                    try:
+                        obj[xkey][xid]
+                    except IndexError:
+                        obj[xkey].insert(xid, {})
+                # no xtype found.. and if this is the last item in the
+                # pathway, then we will consider it the key and not process
+                # it any further
+                if idx == len(path) - 1:
+                    continue
+                # update reference to obj
+                obj = obj[xkey]
+                if xtype:
+                    obj = obj[xid]
+
+            # now that we are at the end of the pathway, set the value
+            obj[path[-1]] = v
         return new_data
 
     @classmethod
@@ -221,7 +265,10 @@ class DictUtils(object):
             changed = {}
             for k, v in data.items():
                 if other:
-                    other_v = other.get(k)
+                    if isinstance(other, str):
+                        other_v = v
+                    else:
+                        other_v = other.get(k)
                 else:
                     other_v = None
                 vres = cls.diff(v, other_v)

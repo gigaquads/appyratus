@@ -6,6 +6,7 @@ from collections import namedtuple
 
 @mark.unit
 class TestDictUtils(BaseTests):
+
     @property
     def klass(self):
         return DictUtils
@@ -13,6 +14,14 @@ class TestDictUtils(BaseTests):
     @mark.params(
         'actual, expected',
         [
+    # lists at the trailing end are taken into consideration
+            ({
+                'data.feel[0]': 'plenty'
+            }, {
+                'data': {
+                    'feel': ['plenty']
+                }
+            }),
     # hey
             (
                 {
