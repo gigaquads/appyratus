@@ -100,6 +100,11 @@ class TestDictUtils(BaseTests):
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
+        print("\n")
+        print(actual)
+        print(expected)
+        print(result)
+        import ipdb; ipdb.set_trace(); print('=' * 100)
         diff_result = self.klass.diff(expected, result)
         assert not diff_result
 

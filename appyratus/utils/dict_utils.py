@@ -84,14 +84,15 @@ class DictUtils(object):
         """
         xparts = cls.RE_KEY_PARTS.split(key)
         if len(xparts) == 5:
-            # xtype exists, an array referenced has been found in the key.
-            _, xkey, xtype, xid, _ = xparts
+            # xref exists, an array reference has been found in the key.
+            _, xkey, xref, xid, _ = xparts
             xid = int(xid) if xid else xid
         else:
             # normal key
             xkey = key
-            xtype, xid = None, None
-        return (xkey, xtype, xid)
+            xref, xid = None, None
+
+        return (xkey, xref, xid)
 
     @classmethod
     def flatten_keys(
@@ -191,41 +192,45 @@ class DictUtils(object):
             for idx, x in enumerate(path):
                 # break apart the key into key parts to determine what the
                 # nested structure should look like
-                xkey, xtype, xid = cls.key_parts(x)
+                xkey, xref, xid = cls.key_parts(x)
+                xval = None
+                # if this is the last item in the pathway, then we will
+                # consider it the key and not process it any further
+
+                # now get the value of the objects key
+                is_last = len(path) - 1 == idx
+                terminal = is_last    # and not isinstance(xval, (list, dict))
+
+                is_list = None
+                is_str = None
+                is_dict = None
+
+                # no xref found, attempt to detect the type from the value now
                 xval = obj.get(xkey)
-                if not xtype:
-                    #
-                    if not isinstance(xval, dict):
-                        if xval:
-                            raise ValueError(
-                                'Expected value to be a dictionary, got "{}"'
-                                .format(xval)
-                            )
+
+                # still no xref found
+                if not xref:
+                    if not isinstance(xval, (dict, str)):
                         obj[xkey] = {}
-                # xparts found
+                # xref found
                 else:
-                    if not isinstance(xval, list):
-                        if xval:
-                            raise ValueError(
-                                'Expected value to be a list, got "{}"'.format(xval)
-                            )
+                    if not isinstance(xval, (list, str)):
                         obj[xkey] = []
                     try:
                         obj[xkey][xid]
                     except IndexError:
-                        obj[xkey].insert(xid, {})
-                # no xtype found.. and if this is the last item in the
-                # pathway, then we will consider it the key and not process
-                # it any further
-                if idx == len(path) - 1:
-                    continue
+                        xv = v if v is not None else []
+                        obj[xkey].insert(xid, xv)
+
                 # update reference to obj
                 obj = obj[xkey]
-                if xtype:
+                # and if there is a reference id then point to it
+                if xref:
                     obj = obj[xid]
 
             # now that we are at the end of the pathway, set the value
-            obj[path[-1]] = v
+            if isinstance(obj, dict):
+                obj[path[-1]] = v
         return new_data
 
     @classmethod
