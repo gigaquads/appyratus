@@ -14,14 +14,6 @@ class TestDictUtils(BaseTests):
     @mark.params(
         'actual, expected',
         [
-    # lists at the trailing end are taken into consideration
-            ({
-                'data.feel[0]': 'plenty'
-            }, {
-                'data': {
-                    'feel': ['plenty']
-                }
-            }),
     # hey
             (
                 {
@@ -38,6 +30,14 @@ class TestDictUtils(BaseTests):
                         }]
                 }
             ),
+    # lists at the trailing end are taken into consideration
+            ({
+                'data.feel[0]': 'plenty'
+            }, {
+                'data': {
+                    'feel': ['plenty']
+                }
+            }),
     # keys without separators will not be affected
             ({
                 'data': 'android'
@@ -104,7 +104,6 @@ class TestDictUtils(BaseTests):
         print(actual)
         print(expected)
         print(result)
-        import ipdb; ipdb.set_trace(); print('=' * 100)
         diff_result = self.klass.diff(expected, result)
         assert not diff_result
 

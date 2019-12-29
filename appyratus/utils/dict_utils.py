@@ -163,11 +163,11 @@ class DictUtils(object):
         """
         if not separator:
             separator = '.'
-        new_data = deepcopy(data)
-
-        for k in data.keys():
-            v = new_data.pop(k)
-
+        save_data = deepcopy(data)
+        next_data = {}
+        # data is a dictionary
+        for k, v in data.items():
+            obj = next_data
             # here we support more complex keys such as `a.b."c.d"` where
             # `c.d` is a key and not a separator indicating that `d` is a
             # key of dict `c`
@@ -184,54 +184,53 @@ class DictUtils(object):
             if path_parts:
                 path.append(''.join(path_parts))
 
-            #if separator not in k:
-            #    continue
-            obj = new_data
-
-            # take everything in path but the last item
+            # now run through the path items and build up the new data
+            # structure
             for idx, x in enumerate(path):
                 # break apart the key into key parts to determine what the
                 # nested structure should look like
                 xkey, xref, xid = cls.key_parts(x)
-                xval = None
-                # if this is the last item in the pathway, then we will
-                # consider it the key and not process it any further
-
-                # now get the value of the objects key
+                # misc
+                val_is_list = xid is not None
+                val_is_dict = xid is None
                 is_last = len(path) - 1 == idx
-                terminal = is_last    # and not isinstance(xval, (list, dict))
 
-                is_list = None
-                is_str = None
-                is_dict = None
+                if obj is None:
+                    obj = {}
+                objval = obj.get(xkey)
 
-                # no xref found, attempt to detect the type from the value now
-                xval = obj.get(xkey)
-
-                # still no xref found
-                if not xref:
-                    if not isinstance(xval, (dict, str)):
+                # value is a dictionary 
+                if val_is_dict:
+                    if objval is None:
                         obj[xkey] = {}
-                # xref found
-                else:
-                    if not isinstance(xval, (list, str)):
+                    # update object reference
+                    if is_last:
+                        obj[xkey] = v
+                        break
+                    else:
+                        obj = obj[xkey]
+
+                # value is a list
+                elif val_is_list:
+                    objval = obj.get(xkey)
+                    # make a new list if it doesn't already exist
+                    if not isinstance(objval, list):
                         obj[xkey] = []
+                    # check if the reference index exists and if not then insert it
                     try:
                         obj[xkey][xid]
                     except IndexError:
-                        xv = v if v is not None else []
-                        obj[xkey].insert(xid, xv)
+                        obj[xkey].insert(xid, {})
+                    # set value
+                    if is_last:
+                        obj[xkey][xid] = v
+                        break
+                    else:
+                        # update object reference
+                        obj = obj[xkey]
+                        obj = obj[xid]
 
-                # update reference to obj
-                obj = obj[xkey]
-                # and if there is a reference id then point to it
-                if xref:
-                    obj = obj[xid]
-
-            # now that we are at the end of the pathway, set the value
-            if isinstance(obj, dict):
-                obj[path[-1]] = v
-        return new_data
+        return next_data
 
     @classmethod
     def merge(cls, data: Dict, other: Dict, in_place=False) -> Dict:
