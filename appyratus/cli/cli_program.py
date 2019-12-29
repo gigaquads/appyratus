@@ -1,7 +1,12 @@
 import argparse
 from inspect import isclass
+from typing import (
+    List,
+    Tuple,
+)
 
 from appyratus.utils import DictUtils
+
 from .parser import Parser
 
 
@@ -142,7 +147,7 @@ class CliProgram(Parser):
         args: list = None,
         merge_unknown: bool = True,
         unflatten_keys: bool = True,
-    ) -> Tuple('Arguments', List):
+    ) -> Tuple['Arguments', List]:
         """
         # Parse arguments from command-line
         """
