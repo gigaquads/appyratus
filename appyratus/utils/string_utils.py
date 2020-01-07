@@ -2,7 +2,6 @@ import re
 import codecs
 
 
-
 class StringUtils(object):
     """
     Transform Text in various ways
@@ -73,11 +72,34 @@ class StringUtils(object):
         return re.sub(r'\s', r'-', cls.normalize(value)).lower()
 
     @classmethod
-    def camel(cls, value):
+    def camel(cls, value, lower=False):
         """
-        Camel case, `SuchAsThis`
+        # Camel Case
+        Camel case can be broken down into two cases: upper, and lower. And
+        with this method, the default is upper.
+        - upper: `ThisIsAnExample`
+        - lower: `thisIsAnExample`
+
+        # Args
+        - `lower` bool, default false, the control for responsible for toggling
+          the first character of camel case to lower
+
+        # More
+        - https://wiki.c2.com/?CamelCase
         """
-        return re.sub(r'\s', '', cls.title(value))
+        upper = re.sub(r'\s', '', cls.title(value))
+        if lower and upper:
+            upper[0] = upper[0].lower()
+        return upper
+
+    @classmethod
+    def plural(cls, value):
+        """
+        # Plural
+        Unintelligently appends an 's' to the end of the string
+        TODO Improve
+        """
+        return value + 's'
 
     @classmethod
     def dot(cls, value):
