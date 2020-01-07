@@ -1,11 +1,14 @@
-import re
 import codecs
+import re
+
+import inflect
 
 
 class StringUtils(object):
     """
     Transform Text in various ways
     """
+    inflect_engine = inflect.engine()
 
     @classmethod
     def normalize(cls, value):
@@ -89,7 +92,9 @@ class StringUtils(object):
         """
         upper = re.sub(r'\s', '', cls.title(value))
         if lower and upper:
+            upper = list(upper)
             upper[0] = upper[0].lower()
+            upper = ''.join(upper)
         return upper
 
     @classmethod
@@ -99,7 +104,7 @@ class StringUtils(object):
         Unintelligently appends an 's' to the end of the string
         TODO Improve
         """
-        return value + 's'
+        return cls.inflect_engine.plural(value)
 
     @classmethod
     def dot(cls, value):
