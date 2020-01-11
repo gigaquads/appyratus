@@ -61,6 +61,20 @@ class StringUtils(object):
         return re.sub(r'\s', r'_', cls.normalize(value)).lower()
 
     @classmethod
+    def upper(cls, value):
+        """
+        # Upper case
+        """
+        return value.upper()
+
+    @classmethod
+    def constant(cls, value):
+        """
+        # Constant case `
+        """
+        return cls.upper(cls.snake(value))
+
+    @classmethod
     def title(cls, value):
         """
         Title `Such As This`
@@ -101,10 +115,15 @@ class StringUtils(object):
     def plural(cls, value):
         """
         # Plural
-        Unintelligently appends an 's' to the end of the string
-        TODO Improve
         """
         return cls.inflect_engine.plural(value)
+
+    @classmethod
+    def singular(cls, value):
+        """
+        # Plural
+        """
+        return cls.inflect_engine.singular_noun(value)
 
     @classmethod
     def dot(cls, value):

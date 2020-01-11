@@ -134,6 +134,8 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 'title': StringUtils.title,
                 'camel': StringUtils.camel,
                 'plural': StringUtils.plural,
+                'singular': StringUtils.singular,
+                'constant': StringUtils.constant,
                 'dot': StringUtils.dot,
                 'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
                 'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx)
