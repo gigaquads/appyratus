@@ -9,6 +9,7 @@ from typing import (
 )
 
 import jinja2
+from jinja2 import meta
 
 from .string_utils import StringUtils
 
@@ -23,6 +24,12 @@ class TemplateUtils(object):
     @classmethod
     def get_environment(cls):
         return TemplateEnvironment()
+
+    @classmethod
+    def get_template_variables(cls, template: Text = None):
+        env = cls.get_environment()
+        parsed_content = env._env.parse(template)
+        return meta.find_undeclared_variables(parsed_content)
 
 
 class Template(object):
@@ -119,12 +126,16 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         # XXX imported here as it causes circular depedency
         from appyratus.files import Json
         self._env = None
+        self._loaders = None
         self.add_filters(
             {
                 'snake': StringUtils.snake,
                 'dash': StringUtils.dash,
                 'title': StringUtils.title,
                 'camel': StringUtils.camel,
+                'plural': StringUtils.plural,
+                'singular': StringUtils.singular,
+                'constant': StringUtils.constant,
                 'dot': StringUtils.dot,
                 'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
                 'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx)
@@ -149,11 +160,14 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 loaders.append(jinja2.DictLoader(self.templates))
             if self.search_path:
                 loaders.append(jinja2.FileSystemLoader(self.search_path))
+        else:
+            loaders.append(loader)
         env = jinja2.Environment(
             loader=jinja2.ChoiceLoader(loaders),
             autoescape=True,
             trim_blocks=True,
         )
+        self._loaders = loaders
         env.globals.update(self._methods)
         return env
 
