@@ -78,6 +78,10 @@ class DictUtils(object):
     RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+)?\])?$')
 
     @classmethod
+    def pluck(cls, data: Dict, keys) -> Dict:
+        return {k: data[k] for k in keys if k in data}
+
+    @classmethod
     def key_parts(cls, key) -> Tuple:
         """
         Extract relevant key parts from a key.

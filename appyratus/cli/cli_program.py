@@ -137,10 +137,11 @@ class CliProgram(Parser):
 
     def run(self):
         """
-        # Run this program
+        # Run this program and return the results
         """
         self.build()
         action_res = self.route_action()
+        return action_res
 
     def parse_cli_args(
         self,
@@ -185,4 +186,5 @@ class CliProgram(Parser):
             args_dict = DictUtils.unflatten_keys(args_dict)
 
         arguments = type('Arguments', (object, ), args_dict)()
+
         return arguments, unknown_args
