@@ -1,4 +1,4 @@
-from os import walk
+from os import walk, makedirs
 from os.path import (
     basename,
     dirname,
@@ -107,6 +107,14 @@ class PathUtils(object):
         if split_path[0] == '':
             split_path.pop(0)
         return split_path
+
+
+    @classmethod
+    def create(cls, path: Text, exist_ok=True) -> None:
+        """
+        # Create a directory
+        """
+        makedirs(path, exist_ok=exist_ok)
 
     @classmethod
     def get_nodes(
