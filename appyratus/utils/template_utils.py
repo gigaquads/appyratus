@@ -38,8 +38,9 @@ class Template(object):
     The template object
     """
 
-    def __init__(self, template_obj=None, context: Dict = None):
+    def __init__(self, template_obj=None, context: Dict = None, env=None):
         self._template_obj = template_obj
+        self._env = env
         self._context = context if context is not None else {}
 
     def render(self, context: Dict = None):
@@ -182,37 +183,16 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         Providing a string, return a template
         """
         jtpl = self.env.from_string(value)
-        return Template(jtpl)
+        return Template(jtpl, env=self)
 
     def from_filename(self, filename: Text):
         """
         Providing a template filename, return a template
         """
         jtpl = self.env.get_template(filename)
-        return Template(jtpl)
+        return Template(jtpl, env=self)
 
 
 class TemplateEnvironment(JinjaTemplateEnvironment):
     # XXX Temporary because of refactoring
     pass
-
-
-class Template(object):
-    """
-    # Template
-    The template object
-    """
-
-    def __init__(self, template_obj=None, context: Dict = None):
-        self._template_obj = template_obj
-        self._context = context if context is not None else {}
-
-    def render(self, context: Dict = None):
-        """
-        # Render
-        """
-        if context is None:
-            context = {}
-        base_context = deepcopy(self._context)
-        base_context.update(context)
-        return self._template_obj.render(base_context)
