@@ -343,3 +343,53 @@ class TestDictUtils(BaseTests):
     def test__remove_keys(self, data, keys, values, empty_values, expected):
         result = self.klass.remove_keys(data, keys, values, empty_values)
         assert result == expected
+
+    @mark.params(
+        'data, keys, expected',
+        [
+    # providing a key will return the entire value
+            (
+                {
+                    'a': [1, 2]
+                },
+                ['a'],
+                {
+                    'a': [1, 2]
+                },
+            ),
+    # providing a key with an index will return the index of the key value's
+    # list
+            (
+                {
+                    'a': [1, 2, 3],
+                    'b': 4,
+                    'c': None,
+                },
+                ['a[2]', 'b'],
+                {
+                    'a': [3],
+                    'b': 4,
+                },
+            ),
+    # more something
+            (
+                {
+                    'a': [{
+                        'b': 1
+                    }, {
+                        'c': 2
+                    }]
+                },
+                ['a[0].c'],
+                {
+                    'a': [{'c': 2}]
+                },
+            ),
+        ]
+    )
+    def test__pluck(self, data, keys, expected):
+        result = self.klass.pluck(data, keys)
+        print("\n")
+        print(data)
+        print(keys)
+        print(expected, '==', result)
