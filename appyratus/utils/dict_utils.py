@@ -7,7 +7,6 @@ from copy import (
     copy,
     deepcopy,
 )
-from shlex import shlex
 from typing import (
     Callable,
     Dict,
@@ -80,20 +79,18 @@ class DictUtils(object):
     RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+|\*)?\])?$')
 
     @classmethod
-    def pluck(cls, data: Dict, keys: List) -> Dict:
+    def project(cls, data: Dict, keys: List) -> Dict:
         """
-        # Pluck
-        Extract keys from data
+        # Project
+        Create an projection of an object using the provided keys
         """
-
-
         ndata = {}
-        # self way
+        # go through all the keys and resolve their values
         for k in keys:
             # split up the key path and get all the parts
             path = PathUtils.get_parts(k, separator='.')
             # set the object of focus to the main data structure and the one we
-            # are populating, they should both be at the same level 
+            # are populating, they should both be at the same level
             dobj = data
             nobj = ndata
             # now iterate over the path parts to get the current key's value
@@ -122,20 +119,14 @@ class DictUtils(object):
                     # make a new list if it doesn't already exist
                     if not isinstance(nval, list):
                         nobj[xkey] = []
-                    nval = nobj[xkey]
 
                     # set the final value if terminal, or update the object ref
                     if is_last:
                         nobj[xkey] = [dval[xid]]
                     else:
-                        import ipdb; ipdb.set_trace(); print('=' * 100)
                         dobj = dval[xid]
-                        try:
-                            nval[xid]
-                        except IndexError:
-                            nval.insert(xid, None)
-                        nobj = nval
-
+                        nobj[xkey].append(dobj)
+                        nobj = dobj
 
                 # value is a dict
                 elif val_is_dict:

@@ -380,15 +380,15 @@ class TestDictUtils(BaseTests):
                         'c': 2
                     }]
                 },
-                ['a[0].c'],
+                ['a[1].c'],
                 {
                     'a': [{'c': 2}]
                 },
             ),
         ]
     )
-    def test__pluck(self, data, keys, expected):
-        result = self.klass.pluck(data, keys)
+    def test__project(self, data, keys, expected):
+        result = self.klass.project(data, keys)
         print("\n")
         print(data)
         print(keys)
