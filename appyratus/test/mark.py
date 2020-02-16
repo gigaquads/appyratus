@@ -10,5 +10,6 @@ skip = mark.skip
 # however in the right context you should import this module
 # entirely, referenced as `mark.params`, and not be concerned
 # otherwise.  It is worth mentioning that in it's next incarnation,
-# it will be a better `params` method entirely
+# it will be a better `params` method entirely, or perhaps not.
 params = mark.parametrize
+parametrize = mark.parametrize

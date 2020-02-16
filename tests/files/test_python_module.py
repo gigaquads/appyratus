@@ -1,28 +1,26 @@
 import ast
-from io import StringIO
-from collections import namedtuple
 
-from appyratus.test import mark, BaseTests
 from appyratus.files import PythonModule
+from appyratus.test import (
+    FileTypeTests,
+    mark,
+)
 
 
-@mark.unit
-class TestPythonModuleFile(BaseTests):
-    @property
-    def klass(self):
+def pytest_generate_tests(metafunc):
+    TestPythonModuleFileType.parameterize(metafunc)
+
+
+class TestPythonModuleFileType(FileTypeTests):
+
+    @classmethod
+    def __klass__(cls):
         return PythonModule
 
-    def test__from_file(self):
-        source = "print('hi')\n"
-        source_path = '/tmp/wat.py'
-        source_file = PythonModule.to_file(
-            source_path, PythonModule.load_string(source)
-        )
-        res = self.klass.from_file(source_path)
-        new_source = self.klass.to_source(res)
-        assert new_source == source
+    @staticmethod
+    def sample_data_is_equal(source_data, dest_data):
+        """
+        Python ast Modules cannot be directly compared, so we will dump and compare
+        """
+        return ast.dump(source_data) == ast.dump(dest_data)
 
-    def test__from_string(self):
-        file_path = "print('hi')"
-        res = self.klass.from_string(file_path)
-        assert isinstance(res, ast.Module)

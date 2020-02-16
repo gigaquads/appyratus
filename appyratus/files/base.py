@@ -1,87 +1,72 @@
 from __future__ import absolute_import
 
-import os
+from typing import (
+    Set,
+    Text,
+)
 
-from typing import Set, Text
+from appyratus.utils import PathUtils
 
 
 class BaseFile(object):
 
     @classmethod
-    def exists(cls, file_path: str):
-        return os.path.exists(file_path)
+    def exists(cls, path: Text):
+        return PathUtils.exists(path)
 
     @staticmethod
     def extensions() -> Set[Text]:
         raise NotImplementedError('override in subclass')
 
-    def read(cls, file_path: str):
+    @staticmethod
+    def default_extension():
+        """
+        # Default Extension
+        The default extension to be used when handling File types
+        
+        By default this will use the first extension in the sorted list of
+        extensions bearing your File type provided it
+        """
+        extensions = self.extensions()
+        if not extensions:
+            return None
+        return sorted(list(self.extensions()))[0]
+
+    @staticmethod
+    def has_extension(extension: Text):
+        """
+        # Has Extension
+        If your File type has the appropriate extension registered in it.
+
+        As there is normalizing of extension happening, it will return the
+        normalized extension if one has been found, otherwise None
+        """
+        if not extension:
+            return None
+        extension = extension.lower()
+        return extension in self.extensions()
+
+    def read(cls, path: str, **kwargs):
+        """
+        Read the contents of a file from it's destination
+        """
         raise NotImplementedError('override in subclass')
 
-    def write(cls, file_path: str, contents):
+    def write(cls, path: str, data, encode: bool = True, **kwargs):
+        """
+        Write the contents to a file's destination
+        """
         raise NotImplementedError('override in subclass')
 
-    def from_file(cls, file_path: str, *args, **kwargs):
+    def load(cls, data, **kwargs):
+        """
+        Load contents into a Python data structure
+        """
         raise NotImplementedError('override in subclass')
 
-    def to_file(cls, file_path: str, contents, *args, **kwargs):
+    def dump(cls, data, **kwargs):
+        """
+        Dump the contents of a python data structure to the expected format
+        """
         raise NotImplementedError('override in subclass')
 
-    def load(cls, data):
-        raise NotImplementedError('override in subclass')
-
-    def dump(cls, data):
-        raise NotImplementedError('override in subclass')
-
-class File(BaseFile):
-
-    UTF_ENCODINGS = {'utf-8', 'utf-16'}
-
-    @classmethod
-    def exists(cls, file_path: str):
-        return os.path.exists(file_path)
-
-    @classmethod
-    def read(cls, file_path: str):
-        if not cls.exists(file_path):
-            return
-
-        data = None
-        is_read_success = False
-
-        for encoding in cls.UTF_ENCODINGS:
-            try:
-                with open(file_path, encoding=encoding) as contents:
-                    data = contents.read()
-                    is_read_success = True
-                    break
-            except:
-                pass
-
-        if not is_read_success:
-            raise IOError(
-                'could not open {}. the file must be '
-                'encoded in any of the following formats: '
-                '{}'.format(
-                    file_path, ', '.join(cls.UTF_ENCODINGS)
-                )
-            )
-
-        return data
-
-    @classmethod
-    def write(cls, file_path: str, contents=None):
-        with open(file_path, 'wb') as write_bytes:
-            write_bytes.write(contents.encode())
-
-    @classmethod
-    def dir_path(cls, path):
-        return os.path.dirname(os.path.realpath(path))
-
-    @classmethod
-    def from_file(cls, file_path: str):
-        return cls.read(file_path)
-
-    @classmethod
-    def to_file(cls, file_path: str, contents):
-        cls.write(file_path, contents)

@@ -17,9 +17,25 @@ class BaseTests(object):
     @abstractmethod
     def klass(self):
         """
+        # Legacy Klass
         Class associated to this test
         """
+        return self.__klass__()
+
+    @classmethod
+    @abstractmethod
+    def __klass__(cls):
+        """
+        # Class reference
+        """
         return
+
+    @classmethod
+    def get_klass(cls):
+        """
+        # Get Class
+        """
+        return cls.__klass__()
 
     @property
     @abstractmethod
@@ -56,10 +72,10 @@ class BaseTests(object):
     @contextmanager
     def mock(
         self,
-        path: str=None,
-        method: str=None,
-        prop: str=None,
-        raw: bool=False,
+        path: str = None,
+        method: str = None,
+        prop: str = None,
+        raw: bool = False,
         **kwargs
     ):
         """

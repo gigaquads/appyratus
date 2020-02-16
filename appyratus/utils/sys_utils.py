@@ -9,10 +9,10 @@ from IPython.core import ultratb
 
 class SysUtils(object):
 
-    @staticmethod
-    def sys_exec(command: Text, capture=None) -> Text:
+    @classmethod
+    def sys_exec(cls, command: Text, capture=None) -> Text:
         """
-        Run a command in a subproces, output goes to STDOUT
+        Run a command in a subprocess, output goes to STDOUT
         Or run a command and capture it's output
         """
         if not capture:
@@ -20,8 +20,8 @@ class SysUtils(object):
         else:
             return os.popen(command).read().rstrip()
 
-    @staticmethod
-    def safe_main(main_callable, debug_level: int=None) -> object:
+    @classmethod
+    def safe_main(cls, main_callable, debug_level: int=None) -> object:
         """
         Call
         """
@@ -30,8 +30,8 @@ class SysUtils(object):
         except Exception as exc:
             SysUtils.raise_exception(exc, level=debug_level)
 
-    @staticmethod
-    def raise_exception(exception, level: int=None):
+    @classmethod
+    def raise_exception(cls, exception, level: int=None):
         if not level:
             print('!!! An error occured, {}'.format(exception))
         else:
@@ -41,9 +41,9 @@ class SysUtils(object):
                 sys.excepthook = ultratb.VerboseTB()
             raise exception
 
-    @staticmethod
-    def resolve_bin(bin_file: Text):
+    @classmethod
+    def resolve_bin(cls, bin_file: Text):
         """
         Resolve bin path
         """
-        return sys_exec('/usr/bin/env which {}'.format(bin_file), capture=True)
+        return SysUtils.sys_exec('/usr/bin/env which {}'.format(bin_file), capture=True)

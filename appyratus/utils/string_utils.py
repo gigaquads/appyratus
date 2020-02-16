@@ -1,12 +1,14 @@
-import re
 import codecs
+import re
 
+import inflect
 
 
 class StringUtils(object):
     """
     Transform Text in various ways
     """
+    inflect_engine = inflect.engine()
 
     @classmethod
     def normalize(cls, value):
@@ -59,6 +61,20 @@ class StringUtils(object):
         return re.sub(r'\s', r'_', cls.normalize(value)).lower()
 
     @classmethod
+    def upper(cls, value):
+        """
+        # Upper case
+        """
+        return value.upper()
+
+    @classmethod
+    def constant(cls, value):
+        """
+        # Constant case `
+        """
+        return cls.upper(cls.snake(value))
+
+    @classmethod
     def title(cls, value):
         """
         Title `Such As This`
@@ -73,11 +89,41 @@ class StringUtils(object):
         return re.sub(r'\s', r'-', cls.normalize(value)).lower()
 
     @classmethod
-    def camel(cls, value):
+    def camel(cls, value, lower=False):
         """
-        Camel case, `SuchAsThis`
+        # Camel Case
+        Camel case can be broken down into two cases: upper, and lower. And
+        with this method, the default is upper.
+        - upper: `ThisIsAnExample`
+        - lower: `thisIsAnExample`
+
+        # Args
+        - `lower` bool, default false, the control for responsible for toggling
+          the first character of camel case to lower
+
+        # More
+        - https://wiki.c2.com/?CamelCase
         """
-        return re.sub(r'\s', '', cls.title(value))
+        upper = re.sub(r'\s', '', cls.title(value))
+        if lower and upper:
+            upper = list(upper)
+            upper[0] = upper[0].lower()
+            upper = ''.join(upper)
+        return upper
+
+    @classmethod
+    def plural(cls, value):
+        """
+        # Plural
+        """
+        return cls.inflect_engine.plural(value)
+
+    @classmethod
+    def singular(cls, value):
+        """
+        # Plural
+        """
+        return cls.inflect_engine.singular_noun(value)
 
     @classmethod
     def dot(cls, value):

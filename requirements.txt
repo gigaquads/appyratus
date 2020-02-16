@@ -8,7 +8,12 @@ pytz
 numpy
 uvloop
 jinja2
-ujson
 python-rapidjson
 aiohttp
 bcrypt
+inflect
+beautifulsoup4
+astor
+webcolors
+colormath
+yapf

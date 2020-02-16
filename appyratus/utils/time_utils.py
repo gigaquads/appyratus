@@ -26,21 +26,22 @@ class TimeUtils(object):
         """
         if datetime_obj is None:
             return None
-
+        timezone = pytz.utc
         if isinstance(datetime_obj, datetime):
             if datetime_obj.tzinfo is None:
-                raise ValueError('datetime object has no timezone')
+                datetime_obj = datetime_obj.replace(tzinfo=timezone)
         elif isinstance(datetime_obj, date):
             datetime_obj = datetime\
                 .strptime(str(datetime_obj), "%Y-%m-%d")\
-                .replace(tzinfo=pytz.utc)
+                .replace(tzinfo=timezone)
 
-        epoch = datetime.fromtimestamp(0, pytz.utc)
+        epoch = datetime.fromtimestamp(0, timezone)
         return int((datetime_obj - epoch).total_seconds())
 
     @classmethod
-    def from_timestamp(cls, timestamp) -> datetime:
+    def from_timestamp(cls, timestamp, timezone=None) -> datetime:
         """
         Return the timestamp int as a UTC datetime object.
         """
-        return datetime.fromtimestamp(timestamp, tz=pytz.utc)
+        timezone = pytz.utc
+        return datetime.fromtimestamp(timestamp, tz=timezone)

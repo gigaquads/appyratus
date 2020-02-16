@@ -1,0 +1,5 @@
+name: Yaml Non-explicit
+description: A Yaml document that does not contain any start or end document tags "---" and "..."
+data:
+  one: 1
+  two: 2

@@ -1,21 +1,41 @@
 from __future__ import absolute_import
 
-import ujson
+from typing import Text
 
-from .base import BaseFile, File
+from appyratus.json import JsonEncoder
+
+from .file import File
 
 
-class Json(BaseFile):
+class Json(File):
+    """
+    # Json File Type
+    """
+
+    _encoder = JsonEncoder.get_instance()
 
     @staticmethod
     def extensions():
         return {'json'}
 
     @classmethod
-    def load_file(cls, file_path):
-        data = File.read(file_path)
-        return ujson.loads(data) if data else None
+    def read(cls, path: Text):
+        data = super().read(path)
+        return cls.load(data)
 
     @classmethod
-    def dump(cls, content):
-        return ujson.dumps(content)
+    def write(cls, path: Text, data=None, **kwargs):
+        file_data = cls.dump(data, **kwargs)
+        super().write(path=path, data=file_data, **kwargs)
+
+    @classmethod
+    def load(cls, data):
+        return cls._encoder.decode(data) if data else None
+
+    @classmethod
+    def dump(cls, data, indent: int = 2, sort_keys: bool = True, **kwargs):
+        return cls._encoder.encode(
+            data,
+            indent=indent,
+            sort_keys=sort_keys,
+        )

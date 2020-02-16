@@ -6,6 +6,7 @@ from collections import namedtuple
 
 @mark.unit
 class TestDictUtils(BaseTests):
+
     @property
     def klass(self):
         return DictUtils
@@ -20,16 +21,23 @@ class TestDictUtils(BaseTests):
                     'tanagra[1].name': 'jalad',
                     'tanagra[1].weird': 'culture',
                 }, {
-                    'tanagra': [
-                        {
+                    'tanagra':
+                        [{
                             'name': 'darmok',
                         }, {
                             'name': 'jalad',
                             'weird': 'culture',
-                        }
-                    ]
+                        }]
                 }
             ),
+    # lists at the trailing end are taken into consideration
+            ({
+                'data.feel[0]': 'plenty'
+            }, {
+                'data': {
+                    'feel': ['plenty']
+                }
+            }),
     # keys without separators will not be affected
             ({
                 'data': 'android'
@@ -37,27 +45,23 @@ class TestDictUtils(BaseTests):
                 'data': 'android'
             }),
     # keys with special characters will not be split apart incorrectly
-            (
-                {
-                    'deanna-troi.mpath': 'counselor'
-                }, {
-                    'deanna-troi': {
-                        'mpath': 'counselor'
-                    }
+            ({
+                'deanna-troi.mpath': 'counselor'
+            }, {
+                'deanna-troi': {
+                    'mpath': 'counselor'
                 }
-            ),
+            }),
     # keys with multiple separators will be transformed into a nested dictionary
-            (
-                {
-                    'jean.luc.picard': 'captain'
-                }, {
-                    'jean': {
-                        'luc': {
-                            'picard': 'captain'
-                        }
+            ({
+                'jean.luc.picard': 'captain'
+            }, {
+                'jean': {
+                    'luc': {
+                        'picard': 'captain'
                     }
                 }
-            ),
+            }),
     # keys with trailing separator will create an empty dict key (not good)
             ({
                 'tasha.': 'romulan'
@@ -67,17 +71,15 @@ class TestDictUtils(BaseTests):
                 }
             }),
     # keys with leading separator will create an empty dict key (not good)
-            (
-                {
-                    '.will.riker': 'cavalier'
-                }, {
-                    '': {
-                        'will': {
-                            'riker': 'cavalier'
-                        }
+            ({
+                '.will.riker': 'cavalier'
+            }, {
+                '': {
+                    'will': {
+                        'riker': 'cavalier'
                     }
                 }
-            ),
+            }),
     # integer keys will be converted to dict keys, and not a list
             (
                 {
@@ -98,6 +100,10 @@ class TestDictUtils(BaseTests):
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
+        print("\n")
+        print(actual)
+        print(expected)
+        print(result)
         diff_result = self.klass.diff(expected, result)
         assert not diff_result
 
@@ -173,16 +179,14 @@ class TestDictUtils(BaseTests):
         'data, other, expected',
         [
     # unique keys are merged
-            (
-                {
-                    'worf': 'klingon'
-                }, {
-                    'honor': True
-                }, {
-                    'worf': 'klingon',
-                    'honor': True
-                }
-            ),
+            ({
+                'worf': 'klingon'
+            }, {
+                'honor': True
+            }, {
+                'worf': 'klingon',
+                'honor': True
+            }),
     # nested keys are merged
             (
                 {
@@ -272,42 +276,120 @@ class TestDictUtils(BaseTests):
         assert has_no_change is not is_changed
 
     @mark.params(
-        'data, expected',
+        'data, keys, values, empty_values, expected',
         [
-    #wat
+    # remove a key by name
             ({
-                'blah': 'blah!'
-            }, {}),
-    #wat
+                'a': 1,
+                'b': 2
+            }, ('a', ), None, None, {
+                'b': 2
+            }),
+    # skip a key by name
             ({
-                'meh': {
-                    'blah': 'blah!'
+                'a': 1,
+            }, ('z', ), None, None, {
+                'a': 1
+            }),
+
+    # remove multiple keys by name
+            ({
+                'a': 1,
+                'b': 2
+            }, ('a', 'b'), None, None, {}),
+    # remove a key by value
+            ({
+                'a': 1,
+                'b': 2
+            }, None, (1, ), None, {
+                'b': 2
+            }),
+    # remove multiple keys by value
+            ({
+                'a': 1,
+                'b': {
+                    'z': None
                 }
-            }, {
-                'meh': {}
+            }, None, (1, None), None, {
+                'b': {}
             }),
-    #wat
+    # remove a key by empty value type
             ({
-                'meh': None
-            }, {}),
-    #wat
+                'a': [],
+            }, None, None, (list, ), {}),
+    # ignore a key by empty value type
             ({
-                'meh': {
-                    'meh': None
-                }
-            }, {
-                'meh': {}
+                'a': [],
+            }, None, None, (dict, ), {
+                'a': []
             }),
-    #wat
+    # remove multiple keys by value type
+            (
+                {
+                    'a': [],
+                    'b': '',
+                    'c': {},
+                    'd': None,
+                }, None, None, (list, str, dict, type(None)), {}
+            ),
+    # non-set operations can be provided
             ({
-                'meh': 'meh!'
-            }, {
-                'meh': 'meh!'
-            }),
+                'a': [],
+                'b': '',
+                'c': {},
+            }, 'a', '', dict, {}),
         ]
     )
-    def test__remove_keys(self, data, expected):
-        keys = ['blah', 'hmph']
-        values = [None]
-        res = self.klass.remove_keys(data, keys, values)
-        #print("\n", expected, res)
+    def test__remove_keys(self, data, keys, values, empty_values, expected):
+        result = self.klass.remove_keys(data, keys, values, empty_values)
+        assert result == expected
+
+    @mark.params(
+        'data, keys, expected',
+        [
+    # providing a key will return the entire value
+            (
+                {
+                    'a': [1, 2]
+                },
+                ['a'],
+                {
+                    'a': [1, 2]
+                },
+            ),
+    # providing a key with an index will return the index of the key value's
+    # list
+            (
+                {
+                    'a': [1, 2, 3],
+                    'b': 4,
+                    'c': None,
+                },
+                ['a[2]', 'b'],
+                {
+                    'a': [3],
+                    'b': 4,
+                },
+            ),
+    # more something
+            (
+                {
+                    'a': [{
+                        'b': 1
+                    }, {
+                        'c': 2
+                    }]
+                },
+                ['a[1].c'],
+                {
+                    'a': [{'c': 2}]
+                },
+            ),
+        ]
+    )
+    def test__project(self, data, keys, expected):
+        result = self.klass.project(data, keys)
+        print("\n")
+        print(data)
+        print(keys)
+        print(expected, '==', result)
