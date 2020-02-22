@@ -5,7 +5,7 @@ class FieldAdapter(object):
     """
     TypeAdapter is used by anything that needs to be able to convert an
     appyratus Field type to a corresponding field type used by some other
-    library. See the SqlalchemyDao in the `pybiz` project for an example.
+    library. See the SqlalchemyDao in the `ravel` project for an example.
     """
 
     def __init__(
