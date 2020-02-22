@@ -1,11 +1,25 @@
 import re
-
-from collections import OrderedDict, defaultdict
-from copy import copy, deepcopy
-from typing import Dict, Tuple, List, Text, Set, Callable
+from collections import (
+    OrderedDict,
+    defaultdict,
+)
+from copy import (
+    copy,
+    deepcopy,
+)
+from shlex import shlex
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Set,
+    Text,
+    Tuple,
+)
 
 
 class DictObject(object):
+
     @classmethod
     def from_list(cls, key, data):
         newdata = OrderedDict()
@@ -76,23 +90,29 @@ class DictUtils(object):
     RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+)?\])?$')
 
     @classmethod
+    def pluck(cls, data: Dict, keys) -> Dict:
+        return {k: data[k] for k in keys if k in data}
+
+    @classmethod
     def key_parts(cls, key) -> Tuple:
         """
         Extract relevant key parts from a key.
         """
         xparts = cls.RE_KEY_PARTS.split(key)
         if len(xparts) == 5:
-            # xtype exists, an array referenced has been found in the key.
-            _, xkey, xtype, xid, _ = xparts
+            # xref exists, an array reference has been found in the key.
+            _, xkey, xref, xid, _ = xparts
             xid = int(xid) if xid else xid
         else:
             # normal key
             xkey = key
-            xtype, xid = None, None
-        return (xkey, xtype, xid)
+            xref, xid = None, None
 
-    @staticmethod
+        return (xkey, xref, xid)
+
+    @classmethod
     def flatten_keys(
+        cls,
         data: Dict,
         acc: Dict = None,
         parent: List = None,
@@ -125,7 +145,7 @@ class DictUtils(object):
             for k, v in data.items():
                 kparent = copy(parent)
                 kparent.append(str(k))
-                vacc = DictUtils.flatten_keys(
+                vacc = cls.flatten_keys(
                     data=deepcopy(v), acc=acc, separator=separator, parent=kparent
                 )
                 if isinstance(vacc, dict) and vacc:
@@ -138,7 +158,7 @@ class DictUtils(object):
                 kparent = copy(parent)
                 if kparent:
                     kparent[-1] = '{}[{}]'.format(kparent[-1], str(idx))
-                kacc = DictUtils.flatten_keys(
+                kacc = cls.flatten_keys(
                     data=v, acc=acc, separator=separator, parent=kparent
                 )
                 if isinstance(kacc, dict):
@@ -151,72 +171,106 @@ class DictUtils(object):
         # da return
         return acc
 
-    @staticmethod
-    def unflatten_keys(data: Dict, separator: Text = None) -> Dict:
+    @classmethod
+    def unflatten_keys(cls, data: Dict, separator: Text = None) -> Dict:
         """
         # Unflatten keys
         Convert dot-notated keys into nested dictionaries
         """
         if not separator:
             separator = '.'
-        new_data = deepcopy(data)
+        save_data = deepcopy(data)
+        next_data = {}
+        # data is a dictionary
+        for k, v in data.items():
+            obj = next_data
+            # here we support more complex keys such as `a.b."c.d"` where
+            # `c.d` is a key and not a separator indicating that `d` is a
+            # key of dict `c`
+            spath = [s for s in shlex(k, posix=True)]
+            path_parts = []
+            path = []
+            for s in spath:
+                if s == separator:
+                    path.append(''.join(path_parts))
+                    path_parts = []
+                    continue
+                if s is not None:
+                    path_parts.append(s)
+            if path_parts:
+                path.append(''.join(path_parts))
 
-        for k in data.keys():
-            if separator in k:
-                v = new_data.pop(k)
-                path = k.split(separator)
-                obj = new_data
-                for x in path[:-1]:
-                    xkey, xtype, xid = DictUtils.key_parts(x)
-                    xval = obj.get(xkey)
-                    if not xtype:
-                        if not isinstance(xval, dict):
-                            if xval:
-                                raise ValueError(
-                                    'Expected value to be a dictionary, got "{}"'.
-                                    format(xval)
-                                )
-                            obj[xkey] = {}
+            # now run through the path items and build up the new data
+            # structure
+            for idx, x in enumerate(path):
+                # break apart the key into key parts to determine what the
+                # nested structure should look like
+                xkey, xref, xid = cls.key_parts(x)
+                # misc
+                val_is_list = xid is not None
+                val_is_dict = xid is None
+                is_last = len(path) - 1 == idx
+
+                if obj is None:
+                    obj = {}
+                objval = obj.get(xkey)
+
+                # value is a dictionary 
+                if val_is_dict:
+                    if objval is None:
+                        obj[xkey] = {}
+                    # update object reference
+                    if is_last:
+                        obj[xkey] = v
+                        break
                     else:
-                        if not isinstance(xval, list):
-                            if xval:
-                                raise ValueError(
-                                    'Expected value to be a list, got "{}"'.format(xval)
-                                )
-                            obj[xkey] = []
-                        try:
-                            obj[xkey][xid]
-                        except IndexError:
-                            obj[xkey].insert(xid, {})
-                    obj = obj[xkey]
-                    if xtype:
-                        obj = obj[xid]
-                obj[path[-1]] = v
-        return new_data
+                        obj = obj[xkey]
 
-    @staticmethod
-    def merge(data: Dict, other: Dict, dict_type=dict) -> Dict:
+                # value is a list
+                elif val_is_list:
+                    objval = obj.get(xkey)
+                    # make a new list if it doesn't already exist
+                    if not isinstance(objval, list):
+                        obj[xkey] = []
+                    # check if the reference index exists and if not then insert it
+                    try:
+                        obj[xkey][xid]
+                    except IndexError:
+                        obj[xkey].insert(xid, {})
+                    # set value
+                    if is_last:
+                        obj[xkey][xid] = v
+                        break
+                    else:
+                        # update object reference
+                        obj = obj[xkey]
+                        obj = obj[xid]
+
+        return next_data
+
+    @classmethod
+    def merge(cls, data: Dict, other: Dict, in_place=False) -> Dict:
         """
         # Merge
         Merge contents of other dictionary into data dictionary.
         """
-        new_data = dict_type(deepcopy(data))
+        if in_place:
+            new_data = data
+        else:
+            new_data = deepcopy(data)
         if not other:
             return new_data
         for other_k, other_v in other.items():
             data_v = new_data.get(other_k, None)
             if isinstance(data_v, dict):
-                data_v = DictUtils.merge(
-                    data=data_v, other=other_v,
-                    dict_type=dict_type
-                )
+                data_v = cls.merge(data=data_v, other=other_v)
             else:
                 data_v = other_v
             new_data[other_k] = data_v
         return new_data
 
-    @staticmethod
-    def diff(data: Dict, other: Dict) -> Dict:
+    @classmethod
+    def diff(cls, data: Dict, other: Dict) -> Dict:
         """
         # Diff
         Perform a difference on two dictionaries, returning a dictionary of the
@@ -231,10 +285,13 @@ class DictUtils(object):
             changed = {}
             for k, v in data.items():
                 if other:
-                    other_v = other.get(k)
+                    if isinstance(other, str):
+                        other_v = v
+                    else:
+                        other_v = other.get(k)
                 else:
                     other_v = None
-                vres = DictUtils.diff(v, other_v)
+                vres = cls.diff(v, other_v)
                 if isinstance(vres, (list, dict)):
                     if vres:
                         changed[k] = vres
@@ -253,7 +310,7 @@ class DictUtils(object):
                 else:
 
                     other_v = None
-                vres = DictUtils.diff(v, other_v)
+                vres = cls.diff(v, other_v)
                 if vres:
                     changed.append(vres)
         else:
@@ -261,8 +318,9 @@ class DictUtils(object):
                 changed = data
         return changed
 
-    @staticmethod
+    @classmethod
     def remove_keys(
+        cls,
         data: Dict,
         keys: Set = None,
         values: Set = None,
@@ -304,14 +362,14 @@ class DictUtils(object):
         if isinstance(new_data, list):
             vlist = []
             for idx, v in enumerate(new_data):
-                vres = DictUtils.remove_keys(v, keys, values, empty_values)
+                vres = cls.remove_keys(v, keys, values, empty_values)
                 if vres not in values:
                     vlist.append(vres)
             new_data = vlist
         elif isinstance(new_data, dict):
             vdict = {}
             for k, v in new_data.items():
-                vres = DictUtils.remove_keys(v, keys, values, empty_values)
+                vres = cls.remove_keys(v, keys, values, empty_values)
                 if k in keys:
                     continue
                 if not isinstance(vres, (list, dict)) and vres in values:
@@ -323,9 +381,14 @@ class DictUtils(object):
 
         return new_data
 
-    @staticmethod
+    @classmethod
     def traverse(
-        data: Dict, method, depth: int = None, acc: Dict = None, **kwargs
+        cls,
+        data: Dict,
+        method,
+        depth: int = None,
+        acc: Dict = None,
+        **kwargs,
     ) -> Dict:
         """
         Traverse a dictionary while passing values into the provided callable
@@ -341,7 +404,7 @@ class DictUtils(object):
             for kd, vd in data.items():
                 if isinstance(vd, (list, dict)):
                     dres = method(kd, vd, depth=depth, **kwargs)
-                    dres = DictUtils.traverse(dres, method, depth=next_depth, **kwargs)
+                    dres = cls.traverse(dres, method, depth=next_depth, **kwargs)
                 else:
                     dres = method(kd, vd, depth=depth, **kwargs)
                 new_data[kd] = dres
@@ -349,14 +412,14 @@ class DictUtils(object):
             for kl, vl in enumerate(data):
                 if isinstance(vl, (list, dict)):
                     lres = method(kl, vl, depth=depth, **kwargs)
-                    lres = DictUtils.traverse(lres, method, depth=next_depth, **kwargs)
+                    lres = cls.traverse(lres, method, depth=next_depth, **kwargs)
                 else:
                     lres = method(kl, vl, depth=depth, **kwargs)
                 new_data[kl] = lres
         return new_data
 
-    @staticmethod
-    def index(key, records: List[Dict]) -> Dict:
+    @classmethod
+    def index(cls, key, records: List[Dict]) -> Dict:
         index = {}
         for record in records:
             try:
@@ -369,12 +432,12 @@ class DictUtils(object):
                 index[k].append(record)
         return index
 
-    @staticmethod
-    def keep(condition, records) -> List:
+    @classmethod
+    def keep(cls, condition, records) -> List:
         return [x for x in records if condition(x)]
 
-    @staticmethod
-    def map(mapper: Callable, record: Dict) -> Dict:
+    @classmethod
+    def map(cls, mapper: Callable, record: Dict) -> Dict:
         mapped_records = []
         for k, v in records.items():
             k_mapped, v_mapped = mapper(k, v)

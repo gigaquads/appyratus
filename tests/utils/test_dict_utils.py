@@ -6,6 +6,7 @@ from collections import namedtuple
 
 @mark.unit
 class TestDictUtils(BaseTests):
+
     @property
     def klass(self):
         return DictUtils
@@ -29,6 +30,14 @@ class TestDictUtils(BaseTests):
                         }]
                 }
             ),
+    # lists at the trailing end are taken into consideration
+            ({
+                'data.feel[0]': 'plenty'
+            }, {
+                'data': {
+                    'feel': ['plenty']
+                }
+            }),
     # keys without separators will not be affected
             ({
                 'data': 'android'
@@ -91,6 +100,10 @@ class TestDictUtils(BaseTests):
     )
     def test__unflatten_keys(self, actual, expected):
         result = self.klass.unflatten_keys(actual)
+        print("\n")
+        print(actual)
+        print(expected)
+        print(result)
         diff_result = self.klass.diff(expected, result)
         assert not diff_result
 

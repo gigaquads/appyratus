@@ -9,6 +9,7 @@ from typing import (
 )
 
 import jinja2
+from jinja2 import meta
 
 from .string_utils import StringUtils
 
@@ -24,6 +25,12 @@ class TemplateUtils(object):
     def get_environment(cls):
         return TemplateEnvironment()
 
+    @classmethod
+    def get_template_variables(cls, template: Text = None):
+        env = cls.get_environment()
+        parsed_content = env._env.parse(template)
+        return meta.find_undeclared_variables(parsed_content)
+
 
 class Template(object):
     """
@@ -31,8 +38,9 @@ class Template(object):
     The template object
     """
 
-    def __init__(self, template_obj=None, context: Dict = None):
+    def __init__(self, template_obj=None, context: Dict = None, env=None):
         self._template_obj = template_obj
+        self._env = env
         self._context = context if context is not None else {}
 
     def render(self, context: Dict = None):
@@ -119,12 +127,16 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         # XXX imported here as it causes circular depedency
         from appyratus.files import Json
         self._env = None
+        self._loaders = None
         self.add_filters(
             {
                 'snake': StringUtils.snake,
                 'dash': StringUtils.dash,
                 'title': StringUtils.title,
                 'camel': StringUtils.camel,
+                'plural': StringUtils.plural,
+                'singular': StringUtils.singular,
+                'constant': StringUtils.constant,
                 'dot': StringUtils.dot,
                 'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
                 'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx)
@@ -149,11 +161,14 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 loaders.append(jinja2.DictLoader(self.templates))
             if self.search_path:
                 loaders.append(jinja2.FileSystemLoader(self.search_path))
+        else:
+            loaders.append(loader)
         env = jinja2.Environment(
             loader=jinja2.ChoiceLoader(loaders),
             autoescape=True,
             trim_blocks=True,
         )
+        self._loaders = loaders
         env.globals.update(self._methods)
         return env
 
@@ -168,37 +183,16 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         Providing a string, return a template
         """
         jtpl = self.env.from_string(value)
-        return Template(jtpl)
+        return Template(jtpl, env=self)
 
     def from_filename(self, filename: Text):
         """
         Providing a template filename, return a template
         """
         jtpl = self.env.get_template(filename)
-        return Template(jtpl)
+        return Template(jtpl, env=self)
 
 
 class TemplateEnvironment(JinjaTemplateEnvironment):
     # XXX Temporary because of refactoring
     pass
-
-
-class Template(object):
-    """
-    # Template
-    The template object
-    """
-
-    def __init__(self, template_obj=None, context: Dict = None):
-        self._template_obj = template_obj
-        self._context = context if context is not None else {}
-
-    def render(self, context: Dict = None):
-        """
-        # Render
-        """
-        if context is None:
-            context = {}
-        base_context = deepcopy(self._context)
-        base_context.update(context)
-        return self._template_obj.render(base_context)

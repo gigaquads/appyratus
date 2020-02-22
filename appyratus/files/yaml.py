@@ -1,15 +1,31 @@
 from __future__ import absolute_import
-from typing import Dict, Text
+
+import re
+from typing import (
+    Dict,
+    Text,
+)
 
 import yaml
+
 from appyratus.enum import Enum
 
-from .file import File, FileObject
+from .file import (
+    File,
+    FileObject,
+)
 
 EXTENSIONS = Enum.of_strings('yml', 'yaml')
 
 
 class Yaml(File):
+    """
+    # Yaml
+    Yaml file type
+
+    # References
+    https://pyyaml.org/wiki/PyYAMLDocumentation
+    """
 
     @staticmethod
     def extensions():
@@ -59,11 +75,33 @@ class Yaml(File):
             'explicit_start': True,
             'explicit_end': True
         }
-        if multi:
-            data = yaml.dump_all(data, **dump_args)
-        else:
-            data = yaml.dump(data, **dump_args)
+        # here as a last defense we should check if this data is yaml construct
+        # otherwise a string of yaml erroneously dumped will result in a
+        # document with a a list of characters from that dumped string
+        if not cls.is_dumped(data):
+            if multi:
+                data = yaml.dump_all(data, **dump_args)
+            else:
+                data = yaml.dump(data, **dump_args)
         return data
+
+    @staticmethod
+    def is_dumped(data) -> bool:
+        """
+        # Is Dumped
+        Checks for explicit YAML document "---" prefix)
+        """
+        r_header = r"^---\n"
+        dumped = False
+        if isinstance(data, str):
+            # we check here to see if the string has
+            match = re.match(r_header, data)
+            if match:
+                dumped = True
+            # TODO an intensive check would be to load the data and capture any
+            # exceptions- if loaded without error then that is an expensive
+            # indication that the string is yaml
+        return dumped
 
 
 class YamlFileObject(FileObject):

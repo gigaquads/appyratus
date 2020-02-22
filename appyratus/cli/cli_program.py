@@ -1,9 +1,13 @@
 import argparse
 from inspect import isclass
+from typing import (
+    List,
+    Tuple,
+)
 
 from appyratus.utils import DictUtils
-from .parser import Parser
 
+from .parser import Parser
 
 
 class CliProgram(Parser):
@@ -74,9 +78,7 @@ class CliProgram(Parser):
         Build main program parser for interactivity.
         """
         # setup the parser with defaults and version information
-        parser = argparse.ArgumentParser(
-            prog=self.name, description='', epilog=''
-        )
+        parser = argparse.ArgumentParser(prog=self.name, description='', epilog='')
         parser.set_defaults(**self.defaults)
         return parser
 
@@ -135,12 +137,18 @@ class CliProgram(Parser):
 
     def run(self):
         """
-        # Run this program
+        # Run this program and return the results
         """
         self.build()
         action_res = self.route_action()
+        return action_res
 
-    def parse_cli_args(self, args: list = None, merge_unknown: bool = True, unflatten_keys: bool = True):
+    def parse_cli_args(
+        self,
+        args: list = None,
+        merge_unknown: bool = True,
+        unflatten_keys: bool = True,
+    ) -> Tuple['Arguments', List]:
         """
         # Parse arguments from command-line
         """
@@ -158,7 +166,6 @@ class CliProgram(Parser):
         # handling it should probably not go here anyway, but it is
         if hasattr(cli_args, 'func'):
             self._perform = cli_args.func
-
 
         unknown_args_dict = {}
         for i in range(0, len(unknown_args), 2):
@@ -179,4 +186,5 @@ class CliProgram(Parser):
             args_dict = DictUtils.unflatten_keys(args_dict)
 
         arguments = type('Arguments', (object, ), args_dict)()
+
         return arguments, unknown_args
