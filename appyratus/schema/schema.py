@@ -63,12 +63,15 @@ class schema_type(type):
         cls.required_fields = {}
         cls.optional_fields = {}
         cls.source_2_field = {}
+        cls.scalar_fields = {}
 
         for k, field in cls.fields.items():
             cls.source_2_field[field.source] = field
             # track required and optional fields
             if field.nullable:
                 cls.nullable_fields[k] = field
+            if field.scalar:
+                cls.scalar_fields[k] = field
             if field.required:
                 cls.required_fields[k] = field
             else:
@@ -266,11 +269,13 @@ class Schema(Field, metaclass=schema_type):
                     f'intend to replace the existing field.'
                 )
             del cls.source_2_field[name]
-            if old_field.nullable:
+            if old_field.name in cls.nullable_fields:
                 del cls.nullable_fields[name]
-            if old_field.required:
+            if old_field.name in cls.scalar_fields:
+                del cls.scalar_fields[name]
+            if old_field.name in cls.required_fields:
                 del cls.required_fields[name]
-            else:
+            elif old_field.name in cls.optional_fields:
                 del cls.optional_fields[name]
             if isinstance(old_field, Schema):
                 cls.children.remove(old_field)
@@ -280,6 +285,8 @@ class Schema(Field, metaclass=schema_type):
             cls.children.add(new_field)
         if new_field.nullable:
             cls.nullable_fields[name] = new_field
+        if new_field.scalar:
+            cls.scalar_fields[name] = new_field
         if new_field.required:
             cls.required_fields[name] = new_field
         else:

@@ -112,6 +112,11 @@ class EnumValue(object, metaclass=EnumValueMeta):
         return cls._value2name.get(cls(value))
 
     @classmethod
+    def validate(cls, value):
+        if value not in cls._value2name:
+            raise EnumValueError(str(value))
+
+    @classmethod
     def get_normalized_key(cls, key):
         return cls.RE_NON_WORD.sub('_', key.lower())
 
@@ -133,7 +138,7 @@ class EnumValue(object, metaclass=EnumValueMeta):
 
     def __geq__(self, other):
         return self >= cls(other)
-        
+
     def __ge__(self, other):
         return self > cls(other)
 
@@ -154,6 +159,9 @@ class EnumValueStr(str, EnumValue):
 
     def __str__(self):
         return repr(self)
+
+    def __getattr__(self, name):
+        raise EnumValueError(name)
 
 
 class EnumValueInt(int, EnumValue):

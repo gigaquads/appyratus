@@ -56,17 +56,18 @@ class Field(object):
     Adapter = FieldAdapter
     Generator = ValueGenerator
 
-    generator = ValueGenerator()
     faker = Faker()
+    generator = ValueGenerator()
 
     def __init__(
         self,
         source: Text = None,
         name: Text = None,
         required: bool = False,
-        nullable: bool = True,
+        nullable: bool = False,
         default: object = None,
         meta: typing.Dict = None,
+        scalar: bool = True,
         on_create: object = None,
         pre_process: object = None,
         post_process: object = None,
@@ -89,6 +90,7 @@ class Field(object):
         self.required = required
         self.nullable = nullable
         self.default = default
+        self.scalar = scalar
         self.on_create = on_create
         self.pre_process = pre_process
         self.post_process = post_process
@@ -101,11 +103,12 @@ class Field(object):
             self.on_generate = on_generate
 
     def __repr__(self):
+        info_str = ''
+        if self.source:
+            info_str = self.source
         if self.source != self.name:
-            load_to = ' -> ' + self.name
-        else:
-            load_to = ''
-        return f'<{self.__class__.__name__}({self.source}{load_to})>'
+            info_str += ' -> ' + self.name
+        return f'<{self.__class__.__name__}({info_str})>'
 
     @classmethod
     def adapt(cls, on_adapt, **kwargs) -> FieldAdapter:
@@ -142,8 +145,8 @@ class Field(object):
 class Enum(Field):
 
     generator = Field.Generator(
-        default=lambda f, cield, *args, **kwargs: (
-            random.choice(list(field.values()))
+        default=lambda f, c, *args, **kwargs: (
+            random.choice(list(f.values))
         )
     )
 
@@ -203,7 +206,8 @@ class String(Field):
             'credit_card_number': lambda f, c: f.faker.credit_card_number(),
             'security_code': lambda f, c: f.faker.credit_card_security_code(),
             'credit_card_security_code': lambda f, c: f.faker.credit_card_security_code(),
-            'color': lambda f, c: StringUtils.snake(f.faker.color_name()),
+            'label': lambda f, c: StringUtils.snake(f.faker.color_name()).lower(),
+            'color': lambda f, c: StringUtils.snake(f.faker.color_name()).lower(),
             'currency_code': lambda f, c: f.faker.currency_code(),
             'currency_name': lambda f, c: f.faker.currency_name(),
             'ein': lambda f, c: f.faker.ein(),
@@ -595,15 +599,16 @@ class DateTime(Field):
         default=lambda f, c: f.faker.date_time_this_year(tzinfo=pytz.utc)
     )
 
-    def __init__(self, timezone=None, **kwargs):
-        super().__init__(**kwargs)
-        if timezone is None:
-            timezone = pytz.utc
-        self.timezone = timezone
+    def __init__(self, tz=None, default=None, **kwargs):
+        self.tz = tz or pytz.utc
+        if default is True:
+            default = TimeUtils.utc_now
+
+        super().__init__(default=default, **kwargs)
 
     def process(self, value):
         if isinstance(value, datetime):
-            return (value.replace(tzinfo=self.timezone), None)
+            return (value.replace(tzinfo=self.tz), None)
         elif isinstance(value, (int, float)):
             try:
                 return (TimeUtils.from_timestamp(value), None)
@@ -703,17 +708,20 @@ class List(Field):
     _inflect = inflect.engine()
 
     def __init__(self, nested: Field = None, **kwargs):
-        on_create_custom = kwargs.pop('on_create', None)
 
         def on_create():
             singular_name = self._inflect.singular_noun(self.name)
             self.nested.name = singular_name
             self.nested.source = singular_name
+            on_create_custom = kwargs.pop('on_create', None)
             if on_create_custom:
                 on_create_custom()
 
         super().__init__(on_create=on_create, **kwargs)
+
+        self.scalar = False
         self.nested = None
+
         from appyratus.schema import Schema
 
         if isinstance(nested, Nested):
@@ -797,13 +805,17 @@ class Nested(Field):
     ```
     """
 
-    generator = ValueGenerator(default=lambda f, c: f.nested.generate())
+    generator = ValueGenerator(default=lambda f, c: f.schema.generate())
 
     def __init__(self, obj, **kwargs):
-        from appyratus.schema import Schema
         super().__init__(**kwargs)
+
+        from appyratus.schema import Schema
+
+        self.scalar = False
         self.schema_type = None
         self.schema = None
+
         if isinstance(obj, dict):
             if self.name is not None:
                 name = self.name.replace('_', ' ').title().replace(' ', '')
@@ -813,12 +825,12 @@ class Nested(Field):
             self.schema_type = Schema.factory(class_name, obj)
             self.schema = self.schema_type()
 
-        elif isinstance(obj, Schema):
+        elif isinstance(obj, type) and issubclass(obj, Schema):
             self.schema_type = obj
             self.schema = self.schema_type()
         elif callable(obj):
             self.schema = obj()
-            self.schema_type = obj.__class__
+            self.schema_type = type(self.schema)
 
     def __repr__(self):
         if self.source != self.name:
@@ -836,6 +848,10 @@ class Dict(Field):
     generator = ValueGenerator(
         default=lambda f, c: f.faker.pydict()
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.scalar = False
 
     def process(self, value):
         if isinstance(value, dict):
