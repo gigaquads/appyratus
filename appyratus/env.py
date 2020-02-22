@@ -42,6 +42,12 @@ class Environment(object):
         else:
             raise EnvironmentValidationError(errors)
 
+    def get(self, key, default=None, dtype=None):
+        if key in self._data:
+            value = self._data[key]
+            return dtype(value) if dtype else value
+        return default
+
     def __getattr__(self, key):
         return self[key]
 

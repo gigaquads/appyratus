@@ -28,8 +28,14 @@ class DictObject(object):
             newdata[k] = d
         return cls(newdata)
 
-    def __init__(self, data: Dict = None):
-        self.__dict__['_data'] = data if data is not None else {}
+    def __init__(self, data: Dict = None, **more_data):
+        if data is not None:
+            if more_data:
+                data.update(more_data)
+        else:
+            data = OrderedDict()
+
+        self.__dict__['_data'] = data
 
     def __getitem__(self, key):
         return self._data[key]
@@ -54,6 +60,12 @@ class DictObject(object):
 
     def __len__(self):
         return len(self._data)
+
+    def update(self, mapping):
+        self._data.update(mapping)
+
+    def pop(self, key, default=None):
+        return self._data.pop(key, default)
 
     def get(self, key, default=None):
         return self._data.get(key, default)
