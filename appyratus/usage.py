@@ -32,38 +32,6 @@ class RenderersNotDefinedError(UsageError):
     error_message = 'Renderers Not Defined Error'
 
 
-class BaseUsageRenderer(object):
-    """
-    # Base Usage Renderer
-    Responsible for rendering usage examples 
-    """
-
-    def __init__(self, context: Dict = None):
-        self._context = context if context is not None else {}
-
-    def __call__(self, context: Dict = None, **kwargs):
-        return self.perform(context, **kwargs)
-
-    def perform(self, context: Dict = None, **kwargs):
-        if context is None:
-            context = {}
-        if context is not None:
-            context = {**self._context, **context}
-        template = self.get_template()
-        res = template.format(**context)
-        return res
-
-    @classmethod
-    def get_template(cls):
-        raise NotImplementedError('implement in subclass')
-
-    def build_template(self, context: Dict = None):
-        if context is None:
-            context = {}
-        template = self.get_template()
-        return f'{template}'
-
-
 class BaseUsage(object):
     """
     # Base Usage
@@ -76,7 +44,6 @@ class BaseUsage(object):
         name: Text = None,
         description: Text = None,
         renderers: List = None,
-        formatter: Text = None,
         data: Dict = None,
         **kwargs
     ):
@@ -87,14 +54,8 @@ class BaseUsage(object):
         self._description = description
         self._renderer = None
         self._renderers = renderers or {}
-        self._formatter = formatter
 
-    def __call__(
-        self,
-        renderer: Text = None,
-        context: Dict = None,
-        **kwargs
-    ):
+    def __call__(self, renderer: Text = None, context: Dict = None, **kwargs):
         return self.render(renderer=renderer, context=context, **kwargs)
 
     def get_renderer(self, name: Text = None):
@@ -122,8 +83,7 @@ class BaseUsage(object):
         # Render
         Render the usage example
         """
-        renderer = self.get_renderer(renderer)()
-        #formatter = self.get_formatter(formatter)
+        renderer = self.renderer = self.get_renderer(renderer)(usage=self)
         base_context = {
             'name': self._name,
             'description': self._description,
@@ -141,10 +101,45 @@ class BaseUsage(object):
         return DictUtils.merge(left, right)
 
 
-
 class ShellCommand(object):
     pass
 
+
+class BaseUsageRenderer(object):
+    """
+    # Base Usage Renderer
+    Responsible for rendering usage examples 
+    """
+
+    def __init__(self, usage, context: Dict = None):
+        self._usage = usage
+        self._context = context if context is not None else {}
+
+    def __call__(self, context: Dict = None, **kwargs):
+        return self.perform(context, **kwargs)
+
+    def perform(self, context: Dict = None, **kwargs):
+        if context is None:
+            context = {}
+        if context is not None:
+            context = {**self._context, **context}
+        template = self.get_template()
+        res = template.format(**context)
+        return res
+
+    @classmethod
+    def get_template(cls):
+        raise NotImplementedError('implement in subclass')
+
+    def build_template(self, context: Dict = None):
+        if context is None:
+            context = {}
+        template = self.get_template()
+        return f'{template}'
+
+    @property
+    def usage(self):
+        return self._usage
 
 class CurlUsageRenderer(BaseUsageRenderer):
 
