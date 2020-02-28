@@ -7,7 +7,6 @@ from copy import (
     copy,
     deepcopy,
 )
-from shlex import shlex
 from typing import (
     Callable,
     Dict,
@@ -16,6 +15,7 @@ from typing import (
     Text,
     Tuple,
 )
+from .path_utils import PathUtils
 
 
 class DictObject(object):
@@ -87,11 +87,71 @@ class DictUtils(object):
     """
     # Dict Utils
     """
-    RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+)?\])?$')
+    #RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+|\*)?\])?$')
+    RE_KEY_PARTS = re.compile('^([\w-]+)(\[(\d+|\*)?\])?$')
 
     @classmethod
-    def pluck(cls, data: Dict, keys) -> Dict:
-        return {k: data[k] for k in keys if k in data}
+    def project(cls, data: Dict, keys: List) -> Dict:
+        """
+        # Project
+        Create an projection of an object using the provided keys
+        """
+        ndata = {}
+        # go through all the keys and resolve their values
+        for k in keys:
+            # split up the key path and get all the parts
+            path = PathUtils.get_parts(k, separator='.')
+            # set the object of focus to the main data structure and the one we
+            # are populating, they should both be at the same level
+            dobj = data
+            nobj = ndata
+            # now iterate over the path parts to get the current key's value
+            for idx, path_part in enumerate(path):
+                xkey, xref, xid = kparts = cls.key_parts(path_part)
+
+                # determine what kind of value is expected
+                val_is_list = xid is not None
+                val_is_dict = xid is None
+                # we keep track of the last node in order to set the final
+                # value in the new data object
+                is_last = len(path) - 1 == idx
+
+                # get the associated value from the passed in data
+                if dobj is None:
+                    dobj = {}
+                dval = dobj.get(xkey)
+                nval = nobj.get(xkey)
+
+                # key does not exist in data.. skip it
+                if xkey not in dobj:
+                    continue
+
+                # value is a list
+                if val_is_list:
+                    # make a new list if it doesn't already exist
+                    if not isinstance(nval, list):
+                        nobj[xkey] = []
+
+                    # set the final value if terminal, or update the object ref
+                    if is_last:
+                        nobj[xkey] = [dval[xid]]
+                    else:
+                        dobj = dval[xid]
+                        nobj[xkey].append(dobj)
+                        nobj = dobj
+
+                # value is a dict
+                elif val_is_dict:
+                    if dval is None:
+                        dobj[xkey] = {}
+                    # set the final value if terminal, or update the object ref
+                    if is_last:
+                        nobj[xkey] = dval
+                        break
+                    else:
+                        dobj = dobj[xkey]
+                        nobj = nobj[xkey]
+        return ndata
 
     @classmethod
     def key_parts(cls, key) -> Tuple:
@@ -102,7 +162,11 @@ class DictUtils(object):
         if len(xparts) == 5:
             # xref exists, an array reference has been found in the key.
             _, xkey, xref, xid, _ = xparts
-            xid = int(xid) if xid else xid
+            if xid:
+                try:
+                    xid = int(xid)
+                except:
+                    pass
         else:
             # normal key
             xkey = key
@@ -187,18 +251,7 @@ class DictUtils(object):
             # here we support more complex keys such as `a.b."c.d"` where
             # `c.d` is a key and not a separator indicating that `d` is a
             # key of dict `c`
-            spath = [s for s in shlex(k, posix=True)]
-            path_parts = []
-            path = []
-            for s in spath:
-                if s == separator:
-                    path.append(''.join(path_parts))
-                    path_parts = []
-                    continue
-                if s is not None:
-                    path_parts.append(s)
-            if path_parts:
-                path.append(''.join(path_parts))
+            path = PathUtils.get_parts(k, separator='.')
 
             # now run through the path items and build up the new data
             # structure
@@ -215,7 +268,7 @@ class DictUtils(object):
                     obj = {}
                 objval = obj.get(xkey)
 
-                # value is a dictionary 
+                # value is a dictionary
                 if val_is_dict:
                     if objval is None:
                         obj[xkey] = {}

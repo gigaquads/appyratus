@@ -12,7 +12,7 @@ class SysUtils(object):
     @classmethod
     def sys_exec(cls, command: Text, capture=None) -> Text:
         """
-        Run a command in a subproces, output goes to STDOUT
+        Run a command in a subprocess, output goes to STDOUT
         Or run a command and capture it's output
         """
         if not capture:

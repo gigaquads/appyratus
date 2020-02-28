@@ -158,7 +158,7 @@ class CliProgram(Parser):
         # now combine known and unknown arguments into a single dict
         args_dict = {
             k: getattr(cli_args, k)
-            for k in dir(cli_args) if not k.startswith('_') and k is not 'func'
+            for k in dir(cli_args) if not k.startswith('_') and k != 'func'
         }
 
         # XXX we want the func reference as this points directly to the

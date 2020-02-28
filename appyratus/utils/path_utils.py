@@ -7,6 +7,7 @@ from os.path import (
     realpath,
     splitext,
 )
+from shlex import shlex
 from typing import (
     List,
     Text,
@@ -108,7 +109,6 @@ class PathUtils(object):
             split_path.pop(0)
         return split_path
 
-
     @classmethod
     def create(cls, path: Text, exist_ok=True) -> None:
         """
@@ -166,3 +166,25 @@ class PathUtils(object):
                 # limit recursion
                 break
         return (ndirs, nfiles)
+
+    @classmethod
+    def get_parts(cls, path, separator=None):
+        """
+        # Get path parts
+        A more advanced form of `split`
+        """
+        if not separator:
+            separator = '/'
+        spath = [s for s in shlex(path, posix=True)]
+        path_parts = []
+        rpath = []
+        for s in spath:
+            if s == separator:
+                rpath.append(''.join(path_parts))
+                path_parts = []
+                continue
+            if s is not None:
+                path_parts.append(s)
+        if path_parts:
+            rpath.append(''.join(path_parts))
+        return rpath
