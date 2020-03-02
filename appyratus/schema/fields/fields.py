@@ -779,7 +779,9 @@ class Nested(Field):
                 class_name = 'Schema'
             self.schema_type = Schema.factory(class_name, obj)
             self.schema = self.schema_type()
-
+        elif isinstance(obj, Schema):
+            self.schema = obj
+            self.schema_type = type(obj)
         elif isinstance(obj, type) and issubclass(obj, Schema):
             self.schema_type = obj
             self.schema = self.schema_type()
