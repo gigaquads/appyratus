@@ -123,7 +123,9 @@ class StringUtils(object):
         """
         # Plural
         """
-        return cls.inflect_engine.singular_noun(value)
+        singular = cls.inflect_engine.singular_noun(value)
+        if not singular:
+            return value
 
     @classmethod
     def dot(cls, value):
@@ -167,3 +169,14 @@ class StringUtils(object):
         if separator is None:
             return
         return re.sub(r'\s', r"{}".format(separator), value)
+
+    @classmethod
+    def wrap(cls, value, left=None, right=None, padding=None):
+        if padding is None:
+            padding = 0
+        if left is None:
+            left = ''
+        if right is None:
+            right = ''
+        return f'{left}{value}{right}'
+

@@ -138,8 +138,10 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 'singular': StringUtils.singular,
                 'constant': StringUtils.constant,
                 'dot': StringUtils.dot,
+                'wrap': StringUtils.wrap,
                 'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
-                'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx)
+                'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx),
+
             }
         )
         if filters:
