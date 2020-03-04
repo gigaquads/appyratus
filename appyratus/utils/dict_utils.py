@@ -312,7 +312,7 @@ class DictUtils(object):
         else:
             new_data = deepcopy(data)
         if not other:
-            return new_data
+            return new_data or {}
         for other_k, other_v in other.items():
             data_v = new_data.get(other_k, None)
             if isinstance(data_v, dict):
