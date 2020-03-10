@@ -42,6 +42,9 @@ class Environment(object):
         else:
             raise EnvironmentValidationError(errors)
 
+        for k, v in self._data.items():
+            setattr(self, k, v)
+
     def get(self, key, default=None, dtype=None):
         if key in self._data:
             value = self._data[key]
