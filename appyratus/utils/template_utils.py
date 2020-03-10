@@ -202,4 +202,7 @@ class TemplateEnvironment(JinjaTemplateEnvironment):
 class TemplateFilter(object):
 
     def __call__(self, value=None):
+        return self.perform(value)
+
+    def perform(self, value=None):
         raise NotImplementedError()
