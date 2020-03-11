@@ -141,7 +141,6 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 'wrap': StringUtils.wrap,
                 'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
                 'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx),
-
             }
         )
         if filters:
@@ -198,3 +197,9 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
 class TemplateEnvironment(JinjaTemplateEnvironment):
     # XXX Temporary because of refactoring
     pass
+
+
+class TemplateFilter(object):
+
+    def __call__(self, value=None):
+        raise NotImplementedError()

@@ -2,7 +2,6 @@ import pytest
 
 from appyratus.utils import StringUtils
 
-
 SU = StringUtils
 
 SNAKE_CASE = 'rock_and_roll_star'
@@ -14,16 +13,42 @@ SPACE_STR = '  this   is   too  much   space    '
 
 
 class TestStringUtils(object):
+
     @pytest.mark.parametrize(
         'value_was, value_is', [
-            (MIXED_CASE, 'So help Me god'), (CAMEL_CASE, 'Save A Plant'),
-            (CONST_CASE, 'DRIVE ME CRAZY'), (SNAKE_CASE, 'rock and roll star'),
-            (DASH_CASE,
-             'when do we get paid'), (SPACE_STR, 'this is too much space')
+            (MIXED_CASE, 'So help Me god'),
+            (CAMEL_CASE, 'Save A Plant'),
+            (CONST_CASE, 'DRIVE ME CRAZY'),
+            (SNAKE_CASE, 'rock and roll star'),
+            (DASH_CASE, 'when do we get paid'),
+            (SPACE_STR, 'this is too much space'),
         ]
     )
     def test_normalize(self, value_was, value_is):
         assert SU.normalize(value_was) == value_is
+
+    @pytest.mark.parametrize(
+        'value_was, value_is',
+        [
+            ('resource', 'resources'),
+            ('resources', 'resources'),
+            ('', ''),
+    # fails with TypeError: expected string or bytes-like object
+    # (None, None),
+    # (True, True),
+        ]
+    )
+    def test_plural(self, value_was, value_is):
+        assert SU.plural(value_was) == value_is
+
+    @pytest.mark.parametrize(
+        'value_was, value_is', [
+            ('resources', 'resource'),
+            ('resource', 'resource'),
+        ]
+    )
+    def test_singular(self, value_was, value_is):
+        assert SU.singular(value_was) == value_is
 
     def test_split_class_name(self):
         assert SU.split_class_name(CAMEL_CASE) == 'Save A Plant'
@@ -36,10 +61,12 @@ class TestStringUtils(object):
 
     @pytest.mark.parametrize(
         'value_was, value_is', [
-            (MIXED_CASE, 'so_help_me_god'), (CAMEL_CASE, 'save_a_plant'),
-            (CONST_CASE, 'drive_me_crazy'), (SNAKE_CASE, 'rock_and_roll_star'),
-            (DASH_CASE,
-             'when_do_we_get_paid'), (SPACE_STR, 'this_is_too_much_space')
+            (MIXED_CASE, 'so_help_me_god'),
+            (CAMEL_CASE, 'save_a_plant'),
+            (CONST_CASE, 'drive_me_crazy'),
+            (SNAKE_CASE, 'rock_and_roll_star'),
+            (DASH_CASE, 'when_do_we_get_paid'),
+            (SPACE_STR, 'this_is_too_much_space'),
         ]
     )
     def test_snake(self, value_was, value_is):
@@ -47,10 +74,12 @@ class TestStringUtils(object):
 
     @pytest.mark.parametrize(
         'value_was, value_is', [
-            (MIXED_CASE, 'so-help-me-god'), (CAMEL_CASE, 'save-a-plant'),
-            (CONST_CASE, 'drive-me-crazy'), (SNAKE_CASE, 'rock-and-roll-star'),
-            (DASH_CASE,
-             'when-do-we-get-paid'), (SPACE_STR, 'this-is-too-much-space')
+            (MIXED_CASE, 'so-help-me-god'),
+            (CAMEL_CASE, 'save-a-plant'),
+            (CONST_CASE, 'drive-me-crazy'),
+            (SNAKE_CASE, 'rock-and-roll-star'),
+            (DASH_CASE, 'when-do-we-get-paid'),
+            (SPACE_STR, 'this-is-too-much-space'),
         ]
     )
     def test_dash(self, value_was, value_is):

@@ -116,16 +116,24 @@ class StringUtils(object):
         """
         # Plural
         """
-        return cls.inflect_engine.plural(value)
+        # inflect engine singular noun returns false when a value is in
+        # singular form, so we use this as an indication to pluralize
+        is_plural = cls.inflect_engine.singular_noun(value) 
+        if is_plural == False:
+            res = cls.inflect_engine.plural(value)
+        else:
+            res = value
+        return res
 
     @classmethod
     def singular(cls, value):
         """
         # Plural
         """
-        singular = cls.inflect_engine.singular_noun(value)
-        if not singular:
+        res = cls.inflect_engine.singular_noun(value)
+        if res is False:
             return value
+        return res
 
     @classmethod
     def dot(cls, value):
@@ -179,4 +187,3 @@ class StringUtils(object):
         if right is None:
             right = ''
         return f'{left}{value}{right}'
-
