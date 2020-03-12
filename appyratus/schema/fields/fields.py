@@ -97,7 +97,7 @@ class Field(object):
         self.on_create = on_create
         self.pre_process = pre_process or self.pre_process
         self.post_process = post_process or self.post_process
-        self.generate = on_generate or self.on_generate
+        self.on_generate = on_generate or self.on_generate
         self.meta = meta or {}
         self.meta.update(kwargs)
 
@@ -192,6 +192,7 @@ class String(Field):
             'description': lambda f, **kwargs: f.faker.paragraph(nb_sentences=10),
             'descr': lambda f, **kwargs: f.faker.paragraph(nb_sentences=10),
             'summary': lambda f, **kwargs: f.faker.paragraph(nb_sentences=6),
+            'comment': lambda f, **kwargs: f.faker.paragraph(nb_sentences=4),
             'city': lambda f, **kwargs: f.faker.city(),
             'address': lambda f, **kwargs: f.faker.address(),
             'phone': lambda f, **kwargs: f.faker.phone_number(),
@@ -367,6 +368,7 @@ class Int(Field):
             'id': lambda f, **kwargs: f.faker.random_number(digits=16),
             'public_id': lambda f, **kwargs: f.faker.random_number(digits=16),
             'age': lambda f, **kwargs: random.randint(10, 100),
+            'rating': lambda f, **kwargs: random.randint(1, 10),
             'width': lambda f, **kwargs: random.randint(0, 100),
             'height': lambda f, **kwargs: random.randint(0, 100),
             'size': lambda f, **kwargs: random.randint(0, 100),
