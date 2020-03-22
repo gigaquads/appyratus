@@ -55,6 +55,13 @@ class Arg(object):
         # bed if it finds one that is empty and shouldn't belong in
         # conjunction with another Args' kwargs
         kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
+        dtype = kwargs.get('type')
+        if dtype:
+            # in cases when an unknown type is provided, like perhaps a class,
+            # then assume a str type
+            type_known = dtype in (str, int, dict, list)
+            if not callable(dtype) and not type_known:
+                kwargs['type'] = str
         return parent._parser.add_argument(*self.flags, **kwargs)
 
 
