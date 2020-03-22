@@ -55,15 +55,6 @@ class Arg(object):
         # bed if it finds one that is empty and shouldn't belong in
         # conjunction with another Args' kwargs
         kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
-        # not all types are callable, like if you reference a class in a string
-        if 'type' in kwargs:
-            # if action is provided and type exists then an exception will raise
-            if 'action' in kwargs:
-                del kwargs['type']
-            else:
-                type_known = kwargs['type'] in (str, int, dict, list)
-                if not callable(kwargs['type']) or not type_known:
-                    kwargs['type'] = str
         return parent._parser.add_argument(*self.flags, **kwargs)
 
 
