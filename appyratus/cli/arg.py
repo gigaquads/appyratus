@@ -138,16 +138,39 @@ class ListArg(OptionalArg):
     An argument for specifying multiple values for the same argument key
     """
 
-    def __init__(self, name=None, default=None, usage=None, choices=None, **kwargs):
-        action = 'append'
+    def __init__(
+        self,
+        name=None,
+        default=None,
+        usage=None,
+        choices=None,
+        comma_separated=True,
+        **kwargs
+    ):
         if not choices:
             choices = None
         if choices is not None:
             # dedupe choices
             pass
         self._choices = choices
+
+        # by default the list arg supports parsing via the comma separated list
+        # type, which splits up strings by comma.  this must utilize the extend
+        # action as the result is a list
+        if comma_separated:
+            action = 'extend'
+            dtype = 'comma_separated_list'
+        else:
+            action = 'append'
+            dtype = None
+
         super().__init__(
-            name=name, default=default, usage=usage, action=action, choices=choices
+            name=name,
+            default=default,
+            usage=usage,
+            choices=choices,
+            action=action,
+            dtype=dtype
         )
 
 
