@@ -151,20 +151,29 @@ class PathUtils(object):
             # file processing, here we support optionally
             # filtering paths by file extension
             for fpath in files:
-                add_file = True
+                matches = []
                 if predicate is not None and callable(predicate):
-                    add_file = predicate(fpath)
+                    matches.append(predicate(fpath))
                 if file_ext is not None:
-                    add_file = cls.get_extension(fpath) == file_ext
-                if add_file:
+                    matches.append(cls.get_extension(fpath) == file_ext)
+                if any(matches):
                     nfiles.append(cls.join(root, fpath))
             # directory processing
             for d in dirs:
-                ndirs.append(cls.join(root, d))
+                # it is to be determined if directories should qualify as
+                # participants of the predicate check, right now they do so
+                # that the returned directories list does not return all
+                # directories that it normally would
+                if predicate:
+                    add_dir = predicate(d)
+                else:
+                    add_dir = True
+                if add_dir:
+                    ndirs.append(cls.join(root, d))
             cur_depth += 1
             if depth is not None and cur_depth > depth:
                 # limit recursion
-                break
+                continue
         return (ndirs, nfiles)
 
     @classmethod
