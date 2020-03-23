@@ -59,8 +59,9 @@ class Arg(object):
         if dtype:
             # in cases when an unknown type is provided, like perhaps a class,
             # then assume a str type
-            type_known = dtype in (str, int, dict, list)
-            if not callable(dtype) and not type_known:
+            basic_type_known = dtype in (str, int, dict, list)
+            registry_type_known = dtype in parent._parser._registries['type']
+            if not callable(dtype) and not any([basic_type_known, registry_type_known]):
                 kwargs['type'] = str
         return parent._parser.add_argument(*self.flags, **kwargs)
 
