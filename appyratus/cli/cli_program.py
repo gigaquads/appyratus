@@ -80,21 +80,7 @@ class CliProgram(Parser):
         # setup the parser with defaults and version information
         parser = argparse.ArgumentParser(prog=self.name, description='', epilog='')
         parser.set_defaults(**self.defaults)
-        self.register_custom_types(parser)
         return parser
-    
-    def register_custom_types(self, parser):
-        """
-        Register custom types for this program
-        """
-        def comma_separated_list(value):
-            """
-            Take a value and split it by the all-separating comma
-            """
-            if not value:
-                return
-            return value.split(',')
-        parser.register('type', 'comma_separated_list', comma_separated_list)
 
     def build_subparser(self):
         """

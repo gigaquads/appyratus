@@ -14,6 +14,10 @@ class File(BaseFile):
 
     UTF_ENCODINGS = {'utf-8', 'utf-16'}
 
+    @staticmethod
+    def extensions():
+        return {}
+
     @classmethod
     def read(cls, path: Text, **kwargs):
         if not cls.exists(path):

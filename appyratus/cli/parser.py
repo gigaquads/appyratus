@@ -4,6 +4,7 @@ from appyratus.memoize import memoized_property
 
 
 class Parser(object):
+
     def __init__(self, name=None, args=None, subparsers=None, perform=None):
         """
         # Args
@@ -43,10 +44,45 @@ class Parser(object):
         """
         self.parent = parent
         self._parser = self.build_parser()
+        self.register_custom_types(self._parser)
         if self._subparsers:
             self._subparser = self.build_subparser()
         self.build_subparsers()
         self.build_args()
+
+    def register_custom_types(self, parser):
+        """
+        Register custom types for this program
+        """
+
+        def comma_separated_list(value):
+            """
+            Take a value and split it by the all-separating comma
+            """
+            if not value:
+                return
+            return value.split(',')
+
+        parser.register('type', 'comma_separated_list', comma_separated_list)
+
+        def file_type(value):
+            from appyratus import files
+            from appyratus.utils import PathUtils
+            import inspect
+            ext = PathUtils.get_extension(value)
+
+            known_file_type = None
+            classes = inspect.getmembers(files)
+            for name, obj in classes:
+                if not issubclass(obj, files.File):
+                    continue
+                if ext in obj.extensions():
+                    known_file_type = obj
+                    break
+            data = known_file_type.read(value)
+            return data
+
+        parser.register('type', 'file_type', file_type)
 
     @abstractmethod
     def build_parser(self):

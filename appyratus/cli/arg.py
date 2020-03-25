@@ -83,8 +83,9 @@ class OptionalArg(Arg):
     """
     # Optional Arg
     An optional argument is not required, however like a positional argument it
-    will default flags to look as such. In that it uses the first letter of the
-    name `-j`, and the name itself `--jesus`.
+    will utilize the name in order to gnerate the short and long flag. For
+    example if the arg is `jesus`, it uses the first letter of the
+    name `-j`, and the name in full `--jesus`.
     """
 
     def __init__(
@@ -173,5 +174,6 @@ class ListArg(OptionalArg):
         )
 
 
-class FileArg(Arg):
-    pass
+class FileArg(OptionalArg):
+    def __init__(self, allow_types: List = None, **kwargs):
+        super().__init__(dtype='file_type', **kwargs)
