@@ -120,12 +120,8 @@ class CliProgram(Parser):
 
     def route_action(self, action: str = None):
         """
-
         Argparser will recognize the called subparser (at whatever depth) and
         use the supplied func to deliver
-
-        Previously, using the provided action, locate the matching subparser
-        and perform the action bound to this method.
 
         The default action is to print usage.
         """
