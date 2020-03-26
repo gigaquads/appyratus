@@ -1,6 +1,9 @@
+import inspect
 from abc import abstractmethod
 
+from appyratus import files
 from appyratus.memoize import memoized_property
+from appyratus.utils import PathUtils
 
 
 class Parser(object):
@@ -66,9 +69,6 @@ class Parser(object):
         parser.register('type', 'comma_separated_list', comma_separated_list)
 
         def file_type(value):
-            from appyratus import files
-            from appyratus.utils import PathUtils
-            import inspect
             ext = PathUtils.get_extension(value)
 
             known_file_type = None
