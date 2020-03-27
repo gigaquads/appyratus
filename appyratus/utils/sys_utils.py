@@ -21,7 +21,7 @@ class SysUtils(object):
             return os.popen(command).read().rstrip()
 
     @classmethod
-    def safe_main(cls, main_callable, debug_level: int=None) -> object:
+    def safe_main(cls, main_callable, debug_level: int = None) -> object:
         """
         Call
         """
@@ -31,13 +31,15 @@ class SysUtils(object):
             SysUtils.raise_exception(exc, level=debug_level)
 
     @classmethod
-    def raise_exception(cls, exception, level: int=None):
+    def raise_exception(cls, exception, level: int = None):
         if not level:
             print('!!! An error occured, {}'.format(exception))
         else:
             if level == 1:
+                sys.excepthook = ultratb.ColorTB(tb_offset=-5)
+            if level == 2:
                 sys.excepthook = ultratb.ColorTB()
-            elif level == 2:
+            elif level == 3:
                 sys.excepthook = ultratb.VerboseTB()
             raise exception
 

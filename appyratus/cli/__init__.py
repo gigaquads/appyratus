@@ -9,5 +9,5 @@ Concepts:
 
 from .cli_program import CliProgram
 from .subparser import Subparser
-from .arg import Arg, PositionalArg, OptionalArg, FlagArg, ListArg
+from .arg import Arg, PositionalArg, OptionalArg, FlagArg, ListArg, FileArg
 from .parser import Parser
