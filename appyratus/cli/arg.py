@@ -1,5 +1,9 @@
 from typing import List
-from appyratus.utils import DictUtils
+
+from appyratus.utils import (
+    DictUtils,
+    StringUtils,
+)
 
 
 class Arg(object):
@@ -99,7 +103,7 @@ class OptionalArg(Arg):
             if short_flag:
                 flags.append('-{}'.format(name[0]))
             if long_flag:
-                flags.append('--{}'.format(name))
+                flags.append('--{}'.format(StringUtils.dash(name)))
         super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
 
 
