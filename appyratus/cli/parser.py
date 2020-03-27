@@ -1,4 +1,5 @@
 import inspect
+import re
 from abc import abstractmethod
 
 from appyratus import files
@@ -69,8 +70,21 @@ class Parser(object):
         parser.register('type', 'comma_separated_list', comma_separated_list)
 
         def file_type(value):
-            ext = PathUtils.get_extension(value)
-
+            """
+            a file ref can be either
+            - filename.ext, which reads the file and returns the data
+            - context-key:filename.ext, which reads the file and returns the
+              data inside of context-key's value
+            """
+            # look for the context using reference
+            context_ref = r'(?:(.*):)?(.*)'
+            context_parts = re.match(context_ref, value)
+            if not context_parts:
+                raise Exception('unknown file type format')
+            matched = context_parts.groups()
+            context_key, context_file = matched
+            # determine the extension of the file and load
+            ext = PathUtils.get_extension(context_file)
             known_file_type = None
             classes = inspect.getmembers(files)
             for name, obj in classes:
@@ -79,7 +93,11 @@ class Parser(object):
                 if ext in obj.extensions():
                     known_file_type = obj
                     break
-            data = known_file_type.read(value)
+            # read the file contents in
+            data = known_file_type.read(context_file)
+            # and if the context key was specified then nest the data
+            if context_key:
+                data = {context_key: data}
             return data
 
         parser.register('type', 'file_type', file_type)
