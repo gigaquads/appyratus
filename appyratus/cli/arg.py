@@ -99,11 +99,20 @@ class OptionalArg(Arg):
         long_flag = True if long_flag is None else long_flag
         if flags is None:
             flags = []
-        if name and not flags:
+        if not flags:
             if short_flag:
-                flags.append('-{}'.format(name[0]))
+                short_name = name
+                if short_flag is not True:
+                    short_name = short_flag
+                if short_name:
+                    flags.append(f'-{short_name[0]}')
             if long_flag:
-                flags.append('--{}'.format(StringUtils.dash(name)))
+                long_name = name
+                if long_flag is not True:
+                    long_name = long_flag
+                if long_name:
+                    flags.append('--{}'.format(StringUtils.dash(long_name)))
+                    flags.append('--{}'.format(StringUtils.snake(long_name)))
         super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
 
 
@@ -179,5 +188,6 @@ class ListArg(OptionalArg):
 
 
 class FileArg(OptionalArg):
+
     def __init__(self, allow_types: List = None, **kwargs):
         super().__init__(dtype='file_type', **kwargs)
