@@ -119,6 +119,11 @@ class Schema(Field, metaclass=schema_type):
         self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
         self.allow_additional = allow_additional
 
+    def copy(self):
+        schema_copy = super().copy()
+        schema_copy.allow_additional = self.allow_additional
+        return schema_copy
+
     def process(
         self,
         source: Dict,
