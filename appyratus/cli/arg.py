@@ -125,20 +125,22 @@ class FlagArg(Arg):
     requires no value to be specified.  E.g., `-lame`, `-lamest`
     """
 
-    def __init__(self, name=None, default=None, usage=None, **kwargs):
+    def __init__(self, name=None, store=None, usage=None, **kwargs):
         """
         # Intialize the Flag Arg
 
         # Args
         - `name`, the name of the arg
-        - `value`, the boolean value that this flag will take on,
-          True or False.  As this arg is optional and does not
-          require a keyword value to be specified, it would be used
+        - `store`, the boolean value that this flag will take on when the arg
+          has been specified. when True default is False, when False default is True
         """
-        flags = ('-{}'.format(name), )
-        if default is None:
-            default = True
-        if default is True:
+        flags = (
+            '-{}'.format(StringUtils.dash(name)),
+            '-{}'.format(StringUtils.snake(name)),
+        )
+        if store is None:
+            store = True
+        if store is True:
             action = 'store_true'
         else:
             action = 'store_false'
