@@ -119,6 +119,11 @@ class Schema(Field, metaclass=schema_type):
         self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
         self.allow_additional = allow_additional
 
+    def copy(self):
+        schema_copy = super().copy()
+        schema_copy.allow_additional = self.allow_additional
+        return schema_copy
+
     def process(
         self,
         source: Dict,
@@ -181,7 +186,7 @@ class Schema(Field, metaclass=schema_type):
                     skip_field = False
                     source_val = generate_default(field)
                 elif field.required and not ignore_required:
-                    errors[field.name] = 'missing'
+                    errors[field.name] = f'{field.name} is required'
                     continue
                 else:
                     continue
@@ -199,7 +204,7 @@ class Schema(Field, metaclass=schema_type):
                         dest[field.name] = source_val
                     elif not ignore_nullable:
                         # but None not allowed!
-                        errors[field.name] = 'null'
+                        errors[field.name] = f'{field.name} not nullable'
                     continue
                 else:
                     # when it is nullable then set to None
@@ -231,7 +236,7 @@ class Schema(Field, metaclass=schema_type):
             )
             # now recheck nullity of the post-processed field value
             if ((dest_val is None) and (not field.nullable and not ignore_nullable)):
-                errors[field.name] = 'null'
+                errors[field.name] = f'{field.name} not nullable'
             elif not field_err:
                 dest[field.name] = field_val
             else:

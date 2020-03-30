@@ -109,6 +109,20 @@ class Field(object):
             info_str += ' -> ' + self.name
         return f'{self.__class__.__name__}({info_str})'
 
+    def copy(self):
+        field_type = type(self)
+        field_copy = field_type(
+            name=self.name,
+            source=self.source,
+            required=self.required,
+            default=self.default,
+            scalar=self.scalar,
+            on_create=self.on_create,
+            pre_process=self.pre_process,
+            post_process=self.post_process,
+            meta=self.meta,
+        )
+
     def process(self, value):
         return (value, None)
 
