@@ -16,6 +16,7 @@ class Arg(object):
         name=None,
         flags=None,
         dtype=None,
+        dest=None,
         default=None,
         usage=None,
         action=None,
@@ -33,6 +34,7 @@ class Arg(object):
         self.name = name
         self.flags = flags
         self.dtype = dtype
+        self.dest = dest
         self.default = default
         self.usage = usage
         self.action = action
@@ -43,6 +45,7 @@ class Arg(object):
     def kwargs(self):
         return {
             'default': self.default,
+            'dest': self.dest,
             'help': self.usage,
             'action': self.action,
             'nargs': self.nargs,
@@ -67,7 +70,7 @@ class Arg(object):
             registry_type_known = dtype in parent._parser._registries['type']
             if not callable(dtype) and not any([basic_type_known, registry_type_known]):
                 kwargs['type'] = str
-        return parent._parser.add_argument(*self.flags, **kwargs)
+        return parent.add_argument(*self.flags, **kwargs)
 
 
 class PositionalArg(Arg):
@@ -144,7 +147,8 @@ class FlagArg(Arg):
             action = 'store_true'
         else:
             action = 'store_false'
-        super().__init__(name=name, action=action, flags=flags, usage=usage)
+        dest = StringUtils.snake(name)
+        super().__init__(name=name, dest=dest, action=action, flags=flags, usage=usage)
 
 
 class ListArg(OptionalArg):
@@ -190,6 +194,12 @@ class ListArg(OptionalArg):
 
 
 class FileArg(OptionalArg):
+    """
+    # File Arg
+    Use the provided value as a file path, and load the file if a known
+    extension can be detected.  Will return the contents of the file in a data
+    structure
+    """
 
     def __init__(self, allow_types: List = None, **kwargs):
         super().__init__(dtype='file_type', **kwargs)
