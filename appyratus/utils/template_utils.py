@@ -21,12 +21,12 @@ class TemplateUtils(object):
 
     @classmethod
     def get_environment(cls):
-        return TemplateEnvironment()
+        return TemplateEnvironment
 
     @classmethod
     def get_template_variables(cls, template: Text = None):
         env = cls.get_environment()
-        parsed_content = env._env.parse(template)
+        parsed_content = env()._env.parse(template)
         return meta.find_undeclared_variables(parsed_content)
 
 

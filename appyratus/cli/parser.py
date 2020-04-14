@@ -124,6 +124,9 @@ class Parser(object):
             return self._args
         return []
 
+    def add_argument(self, *args, **kwargs):
+        self._parser.add_argument(*args, **kwargs)
+
     def build_args(self):
         """
         Build parser arguments
@@ -132,6 +135,7 @@ class Parser(object):
             return
         for arg in self._args:
             arg.build(self)
+
 
     def subparsers(self):
         """

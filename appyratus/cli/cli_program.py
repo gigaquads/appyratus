@@ -95,16 +95,13 @@ class CliProgram(Parser):
     def add_version_arg(self):
         # XXX this uses the underlying parser structure make it an Arg
         if self.version:
-            self._parser.add_argument(
+            self.add_argument(
                 '-v',
                 '--version',
                 action='version',
                 help='The version of {}'.format(self.name),
                 version=self.show_info()
             )
-
-    def add_argument(self, *args, **kwargs):
-        self._parser.add_argument(*args, **kwargs)
 
     def show_usage(self):
         """
