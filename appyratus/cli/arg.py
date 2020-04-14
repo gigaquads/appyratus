@@ -16,6 +16,7 @@ class Arg(object):
         name=None,
         flags=None,
         dtype=None,
+        dest=None,
         default=None,
         usage=None,
         action=None,
@@ -33,6 +34,7 @@ class Arg(object):
         self.name = name
         self.flags = flags
         self.dtype = dtype
+        self.dest = dest
         self.default = default
         self.usage = usage
         self.action = action
@@ -43,6 +45,7 @@ class Arg(object):
     def kwargs(self):
         return {
             'default': self.default,
+            'dest': self.dest,
             'help': self.usage,
             'action': self.action,
             'nargs': self.nargs,
@@ -67,7 +70,7 @@ class Arg(object):
             registry_type_known = dtype in parent._parser._registries['type']
             if not callable(dtype) and not any([basic_type_known, registry_type_known]):
                 kwargs['type'] = str
-        return parent._parser.add_argument(*self.flags, **kwargs)
+        return parent.add_argument(*self.flags, **kwargs)
 
 
 class PositionalArg(Arg):
@@ -125,24 +128,27 @@ class FlagArg(Arg):
     requires no value to be specified.  E.g., `-lame`, `-lamest`
     """
 
-    def __init__(self, name=None, default=None, usage=None, **kwargs):
+    def __init__(self, name=None, store=None, usage=None, **kwargs):
         """
         # Intialize the Flag Arg
 
         # Args
         - `name`, the name of the arg
-        - `value`, the boolean value that this flag will take on,
-          True or False.  As this arg is optional and does not
-          require a keyword value to be specified, it would be used
+        - `store`, the boolean value that this flag will take on when the arg
+          has been specified. when True default is False, when False default is True
         """
-        flags = ('-{}'.format(name), )
-        if default is None:
-            default = True
-        if default is True:
+        flags = (
+            '-{}'.format(StringUtils.dash(name)),
+            '-{}'.format(StringUtils.snake(name)),
+        )
+        if store is None:
+            store = True
+        if store is True:
             action = 'store_true'
         else:
             action = 'store_false'
-        super().__init__(name=name, action=action, flags=flags, usage=usage)
+        dest = StringUtils.snake(name)
+        super().__init__(name=name, dest=dest, action=action, flags=flags, usage=usage)
 
 
 class ListArg(OptionalArg):
@@ -188,6 +194,12 @@ class ListArg(OptionalArg):
 
 
 class FileArg(OptionalArg):
+    """
+    # File Arg
+    Use the provided value as a file path, and load the file if a known
+    extension can be detected.  Will return the contents of the file in a data
+    structure
+    """
 
     def __init__(self, allow_types: List = None, **kwargs):
         super().__init__(dtype='file_type', **kwargs)

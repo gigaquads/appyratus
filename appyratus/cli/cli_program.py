@@ -103,6 +103,9 @@ class CliProgram(Parser):
                 version=self.show_info()
             )
 
+    def add_argument(self, *args, **kwargs):
+        self._parser.add_argument(*args, **kwargs)
+
     def show_usage(self):
         """
         Output program usage
