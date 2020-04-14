@@ -109,6 +109,7 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         'dash': StringUtils.dash,
         'title': StringUtils.title,
         'camel': StringUtils.camel,
+        'camel_lower': lambda x: StringUtils.camel(x, lower=True),
         'plural': StringUtils.plural,
         'singular': StringUtils.singular,
         'constant': StringUtils.constant,
