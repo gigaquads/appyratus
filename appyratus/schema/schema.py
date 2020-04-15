@@ -230,7 +230,7 @@ class Schema(Field, metaclass=schema_type):
 
         # call all post-process callbacks
         for field in post_process_fields:
-            dest_val = dest.pop(field.name)
+            dest_val = dest.pop(field.name, None)
             field_val, field_err = field.post_process(
                 field, dest_val, dest, context=context
             )
