@@ -1,5 +1,9 @@
 from typing import List
-from appyratus.utils import DictUtils
+
+from appyratus.utils import (
+    DictUtils,
+    StringUtils,
+)
 
 
 class Arg(object):
@@ -12,6 +16,7 @@ class Arg(object):
         name=None,
         flags=None,
         dtype=None,
+        dest=None,
         default=None,
         usage=None,
         action=None,
@@ -29,6 +34,7 @@ class Arg(object):
         self.name = name
         self.flags = flags
         self.dtype = dtype
+        self.dest = dest
         self.default = default
         self.usage = usage
         self.action = action
@@ -39,6 +45,7 @@ class Arg(object):
     def kwargs(self):
         return {
             'default': self.default,
+            'dest': self.dest,
             'help': self.usage,
             'action': self.action,
             'nargs': self.nargs,
@@ -55,16 +62,15 @@ class Arg(object):
         # bed if it finds one that is empty and shouldn't belong in
         # conjunction with another Args' kwargs
         kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
-        # not all types are callable, like if you reference a class in a string
-        if 'type' in kwargs:
-            # if action is provided and type exists then an exception will raise
-            if 'action' in kwargs:
-                del kwargs['type']
-            else:
-                type_known = kwargs['type'] in (str, int, dict, list)
-                if not callable(kwargs['type']) or not type_known:
-                    kwargs['type'] = str
-        return parent._parser.add_argument(*self.flags, **kwargs)
+        dtype = kwargs.get('type')
+        if dtype:
+            # in cases when an unknown type is provided, like perhaps a class,
+            # then assume a str type
+            basic_type_known = dtype in (str, int, dict, list)
+            registry_type_known = dtype in parent._parser._registries['type']
+            if not callable(dtype) and not any([basic_type_known, registry_type_known]):
+                kwargs['type'] = str
+        return parent.add_argument(*self.flags, **kwargs)
 
 
 class PositionalArg(Arg):
@@ -84,8 +90,9 @@ class OptionalArg(Arg):
     """
     # Optional Arg
     An optional argument is not required, however like a positional argument it
-    will default flags to look as such. In that it uses the first letter of the
-    name `-j`, and the name itself `--jesus`.
+    will utilize the name in order to gnerate the short and long flag. For
+    example if the arg is `jesus`, it uses the first letter of the
+    name `-j`, and the name in full `--jesus`.
     """
 
     def __init__(
@@ -95,11 +102,20 @@ class OptionalArg(Arg):
         long_flag = True if long_flag is None else long_flag
         if flags is None:
             flags = []
-        if name and not flags:
+        if not flags:
             if short_flag:
-                flags.append('-{}'.format(name[0]))
+                short_name = name
+                if short_flag is not True:
+                    short_name = short_flag
+                if short_name:
+                    flags.append(f'-{short_name[0]}')
             if long_flag:
-                flags.append('--{}'.format(name))
+                long_name = name
+                if long_flag is not True:
+                    long_name = long_flag
+                if long_name:
+                    flags.append('--{}'.format(StringUtils.dash(long_name)))
+                    flags.append('--{}'.format(StringUtils.snake(long_name)))
         super().__init__(name=name, flags=tuple(flags), *args, **kwargs)
 
 
@@ -112,24 +128,27 @@ class FlagArg(Arg):
     requires no value to be specified.  E.g., `-lame`, `-lamest`
     """
 
-    def __init__(self, name=None, default=None, usage=None, **kwargs):
+    def __init__(self, name=None, store=None, usage=None, **kwargs):
         """
         # Intialize the Flag Arg
 
         # Args
         - `name`, the name of the arg
-        - `value`, the boolean value that this flag will take on,
-          True or False.  As this arg is optional and does not
-          require a keyword value to be specified, it would be used
+        - `store`, the boolean value that this flag will take on when the arg
+          has been specified. when True default is False, when False default is True
         """
-        flags = ('-{}'.format(name), )
-        if default is None:
-            default = True
-        if default is True:
+        flags = (
+            '-{}'.format(StringUtils.dash(name)),
+            '-{}'.format(StringUtils.snake(name)),
+        )
+        if store is None:
+            store = True
+        if store is True:
             action = 'store_true'
         else:
             action = 'store_false'
-        super().__init__(name=name, action=action, flags=flags, usage=usage)
+        dest = StringUtils.snake(name)
+        super().__init__(name=name, dest=dest, action=action, flags=flags, usage=usage)
 
 
 class ListArg(OptionalArg):
@@ -138,18 +157,49 @@ class ListArg(OptionalArg):
     An argument for specifying multiple values for the same argument key
     """
 
-    def __init__(self, name=None, default=None, usage=None, choices=None, **kwargs):
-        action = 'append'
+    def __init__(
+        self,
+        name=None,
+        default=None,
+        usage=None,
+        choices=None,
+        comma_separated=True,
+        **kwargs
+    ):
         if not choices:
             choices = None
         if choices is not None:
             # dedupe choices
             pass
         self._choices = choices
+
+        # by default the list arg supports parsing via the comma separated list
+        # type, which splits up strings by comma.  this must utilize the extend
+        # action as the result is a list
+        if comma_separated:
+            action = 'extend'
+            dtype = 'comma_separated_list'
+        else:
+            action = 'append'
+            dtype = None
+
         super().__init__(
-            name=name, default=default, usage=usage, action=action, choices=choices
+            name=name,
+            default=default,
+            usage=usage,
+            choices=choices,
+            action=action,
+            dtype=dtype
         )
 
 
-class FileArg(Arg):
-    pass
+class FileArg(OptionalArg):
+    """
+    # File Arg
+    Use the provided value as a file path, and load the file if a known
+    extension can be detected.  Will return the contents of the file in a data
+    structure
+    """
+
+    def __init__(self, allow_types: List = None, **kwargs):
+        super().__init__(dtype='file_type', **kwargs)

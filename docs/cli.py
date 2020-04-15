@@ -2,7 +2,8 @@ from appyratus.cli import CliProgram, FlagArg, PositionalArg, OptionalArg
 
 
 class LameProgram(CliProgram):
-    def perform(self, program):
+    @staticmethod
+    def perform(program):
         print(program.cli_args.data)
 
     def args(self):

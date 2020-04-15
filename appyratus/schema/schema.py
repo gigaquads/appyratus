@@ -1,17 +1,23 @@
-from collections import namedtuple
+from uuid import UUID
+from inspect import getmembers
+from datetime import datetime, date
+from collections import namedtuple, defaultdict
 from copy import deepcopy
 from typing import (
+    Callable,
     Dict,
     List,
     Set,
     Text,
     Type,
+    Union,
 )
 
-import venusian
+from faker import Faker
 
-from appyratus.memoize import memoized_property
+from appyratus.utils import StringUtils
 
+from . import fields
 from .exc import ValidationError
 from .fields import (
     Field,
@@ -113,8 +119,10 @@ class Schema(Field, metaclass=schema_type):
         self.tuple_factory = namedtuple('results', field_names=['data', 'errors'])
         self.allow_additional = allow_additional
 
-    def __getitem__(self, field_name: Text) -> 'Field':
-        return self.fields[field_name]
+    def copy(self):
+        schema_copy = super().copy()
+        schema_copy.allow_additional = self.allow_additional
+        return schema_copy
 
     def process(
         self,
@@ -178,7 +186,7 @@ class Schema(Field, metaclass=schema_type):
                     skip_field = False
                     source_val = generate_default(field)
                 elif field.required and not ignore_required:
-                    errors[field.name] = 'missing'
+                    errors[field.name] = f'{field.name} is required'
                     continue
                 else:
                     continue
@@ -196,7 +204,7 @@ class Schema(Field, metaclass=schema_type):
                         dest[field.name] = source_val
                     elif not ignore_nullable:
                         # but None not allowed!
-                        errors[field.name] = 'null'
+                        errors[field.name] = f'{field.name} not nullable'
                     continue
                 else:
                     # when it is nullable then set to None
@@ -222,11 +230,13 @@ class Schema(Field, metaclass=schema_type):
 
         # call all post-process callbacks
         for field in post_process_fields:
-            dest_val = dest.pop(field.name)
-            field_val, field_err = field.post_process(dest_val, dest, context=context)
+            dest_val = dest.pop(field.name, None)
+            field_val, field_err = field.post_process(
+                field, dest_val, dest, context=context
+            )
             # now recheck nullity of the post-processed field value
             if ((dest_val is None) and (not field.nullable and not ignore_nullable)):
-                errors[field.name] = 'null'
+                errors[field.name] = f'{field.name} not nullable'
             elif not field_err:
                 dest[field.name] = field_val
             else:
@@ -292,52 +302,110 @@ class Schema(Field, metaclass=schema_type):
         else:
             cls.optional_fields[name] = new_field
 
-    def generate(
-        self,
-        fields: Set[Text] = None,
-        constraints: Dict[Text, 'Constraint'] = None
-    ) -> Dict:
-        field_names = fields or self.fields.keys()
-        constraints = constraints or {}
+    def on_generate(self, fields: Set[Text] = None, **kwargs) -> Dict:
         return {
-            k: self.fields[k].generate(constraint=constraints.get(k))
-            for k in field_names
+            k: self.fields[k].generate()
+            for k in (fields or self.fields)
         }
 
+    @classmethod
+    def infer(
+        cls,
+        target: Dict,
+        name: Text = None,
+        predicate: Callable = None,
+        depth: int = 0,
+    ) -> 'Schema':
+        """
+        Return a new Schema class that mirrors the structure of the input target
+        object, as best as possible.
+        """
+        acc = {}
+        depth -= 1
 
-class Constraint(object):
+        if not name:
+            faker = Faker()
+            name = f'{faker.color_name()}Schema'
 
-    def __init__(self, constraint_type):
-        self.constraint_type = constraint_type
+        if predicate is None:
+            predicate = lambda k, v: not k.startswith('_')
 
-    @property
-    def is_range_constraint(self):
-        return self.constraint_type == 'range'
+        py_type_2_field_type = {
+            str: fields.String,
+            int: fields.Int,
+            float: fields.Float,
+            bool: fields.Bool,
+            bytes: fields.Bytes,
+            UUID: fields.Uuid,
+            datetime: fields.DateTime,
+            date: fields.DateTime,
+        }
 
-    @property
-    def is_equality_constraint(self):
-        return self.constraint_type == 'equality'
+        def build_nested_field(seq):
+            contained_py_types = {type(x) for x in seq}
+            if len(contained_py_types) == 1:
+                sub_target = list(seq)[0]
+                py_type = list(contained_py_types)[0]
+                if py_type in py_type_2_field_type:
+                    field_type = py_type_2_field_type[py_type]
+                    return field_type(example=sub_target)
+                elif py_type in (list, tuple, set):
+                    nested = build_nested_field(sub_target)
+                    return fields.List(nested)
+                elif py_type is dict:
+                    return cls.infer(
+                        target=sub_target,
+                        predicate=predicate,
+                        depth=(depth - 1)
+                    )()
+            return field.Field()
 
 
-class RangeConstraint(Constraint):
+        for k, v in  target.items():
+            if not predicate(k, v):
+                continue
 
-    def __init__(
-        self,
-        lower_value=None,
-        upper_value=None,
-        is_lower_inclusive=True,
-        is_upper_inclusive=False
-    ):
-        super().__init__('range')
-        self.upper_value = upper_value
-        self.lower_value = lower_value
-        self.is_upper_inclusive = is_upper_inclusive
-        self.is_lower_inclusive = is_lower_inclusive
+            if isinstance(v, dict):
+                if depth != 0:
+                    sub_schema_type = cls.infer(
+                        target=v,
+                        name=StringUtils.camel(f'{k}Schema'),
+                        predicate=predicate,
+                        depth=(depth - 1)
+                    )
+                    acc[k] = fields.Nested(
+                        sub_schema_type, name=k, source=k, example=v
+                    )
+                else:
+                    acc[k] = fields.Dict(name=k, source=k, example=v)
 
+            else:
+                scalar_field_type = py_type_2_field_type.get(type(v))
+                if scalar_field_type:
+                    if scalar_field_type is fields.String:
+                        # TODO resolve String to more specific field type if possible
+                        acc[k] = scalar_field_type(
+                            name=k, source=k, example=v
+                        )
+                    else:
+                        acc[k] = scalar_field_type(
+                            name=k, source=k, example=v
+                        )
+                elif isinstance(v, (list, set, tuple)):
+                    nested = build_nested_field(v)
+                    nested.name = k
+                    nested.source = k
+                    if isinstance(nested, Schema):
+                        type(nested).__name__ = StringUtils.camel(
+                            f'{StringUtils.singular(k)}Schema', lower=False
+                        )
+                    acc[k] = fields.List(
+                        nested=nested, name=k, source=k, example=v
+                    )
+                else:
+                    acc[k] = fields.Field(
+                        name=k, source=k, example=v
+                    )
 
-class ConstantValueConstraint(Constraint):
-
-    def __init__(self, value, is_negative=False):
-        super().__init__('equality')
-        self.value = value
-        self.is_negative = is_negative
+        new_schema_type = type(name, (cls, ), acc)
+        return new_schema_type

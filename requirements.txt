@@ -9,7 +9,7 @@ numpy
 uvloop
 jinja2
 python-rapidjson
-aiohttp
+aiohttp==3.6.2
 bcrypt
 inflect
 beautifulsoup4
@@ -17,3 +17,4 @@ astor
 webcolors
 colormath
 yapf
+faker

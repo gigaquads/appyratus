@@ -2,9 +2,26 @@ import re
 
 import inflect
 
-from typing import Type, Callable, Text, Dict
+from types import MethodType
+from typing import Type, Callable, Text, Dict, List, Set
 
 RE_FIELD_NAME_SUFFIX = re.compile(r'^.+_([^_]+)$')
+
+
+class Bounds(object):
+    def __init__(
+        self,
+        lower=None,
+        upper=None,
+        lower_inclusive=True,
+        upper_inclusive=False,
+        exclude: Set = None,
+    ):
+        self.lower = lower
+        self.upper = upper
+        self.lower_inclusive = lower_inclusive
+        self.upper_inclusive = upper_inclusive
+        self.exclude = set(exclude) if not isinstance(exclude, set) else exclude
 
 
 class ValueGenerator(object):
@@ -31,15 +48,24 @@ class ValueGenerator(object):
         """
         return self.callbacks.pop(field_name, None)
 
-    def generate(self, field: 'Field', constraint=None, *args, **kwargs):
+    def generate(
+        self,
+        field: 'Field',
+        bounds: Bounds = None,
+        **kwargs
+    ):
         """
         Apply a callback to generate a value for the given field, using its name
         to determine the callback.
         """
-        if field.name is None:
-            func = self.default
+        if field.name is None or (bounds is not None):
+            if bounds is None:
+                func = field.on_generate
+            else:
+                func = field.on_generate_range
+                kwargs['bounds'] = bounds
         else:
-            func = self.callbacks.get(field.name, self.default)
+            func = self.callbacks.get(field.name, field.on_generate)
             if func is self.default:
                 singular_name = self.inflect.singular_noun(field.name)
                 func = self.callbacks.get(singular_name, self.default)
@@ -47,6 +73,14 @@ class ValueGenerator(object):
                 match = RE_FIELD_NAME_SUFFIX.match(field.name)
                 if match:
                     name = match.groups()[0]
-                    func = self.callbacks.get(name, self.default)
+                    func = self.callbacks.get(name, field.on_generate)
 
-        return func(field, constraint, *args, **kwargs)
+        # if func resolves to the instance method, don't pass "field"
+        # as the first positional argument to the on_generate* callback
+        if (
+            isinstance(func, MethodType) and
+            isinstance(func.__self__, type(field))
+        ):
+            return func(**kwargs)
+        else:
+            return func(field, **kwargs)

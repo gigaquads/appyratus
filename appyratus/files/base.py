@@ -8,6 +8,7 @@ from typing import (
 from appyratus.utils import PathUtils
 
 
+
 class BaseFile(object):
 
     @classmethod

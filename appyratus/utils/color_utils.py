@@ -84,19 +84,15 @@ class ColorUtils(object):
         return hex_hash + hex_value
 
     @classmethod
-    def name2hex(cls, value: Text):
-        """
-        # Name2hex
-        Take a color by name and attempt to convert it into hex
-        """
-        value = value.replace(' ', '')    # names here must not contain any spacing
-        result = webcolors.name_to_hex(value)
-        if not result:
-            return
-        return result[1:]    # remove the '#'
-
-    @classmethod
     def detect_rgb(cls, value):
+        """
+        # Detect RGB
+        Detect an RGB color type by the given value 
+        - a list with the length of 3, then it is considered RGB
+        - a list with the length of 2, then it is considered XY
+        - a string then it is considered hex
+        - a string that is not hex is considered a webcolor
+        """
         rgb = None
         if isinstance(value, (list, tuple)):
             if len(value) == 3:
@@ -112,6 +108,18 @@ class ColorUtils(object):
                 rgb = cls.hex2rgb(hex_value)
 
         return rgb
+
+    @classmethod
+    def name2hex(cls, value: Text):
+        """
+        # Name2hex
+        Take a color by name and attempt to convert it into hex
+        """
+        value = value.replace(' ', '')    # names here must not contain any spacing
+        result = webcolors.name_to_hex(value)
+        if not result:
+            return
+        return result[1:]    # remove the '#'
 
     @classmethod
     def xy2rgb(cls, value):
@@ -144,7 +152,7 @@ class ColorUtils(object):
                 rgb = cls.hex2rgb(hex_value)
 
         if rgb:
-            xyy = convert_color(rgb, xyYColor)
+            xyy = convert_color(sRGBColor(*rgb), xyYColor)
             xy = [xyy.xyy_x, xyy.xyy_y]
         return xy
 
@@ -173,9 +181,21 @@ class Color(object):
         pass
 
     @property
+    def hex(self):
+        if not self._hex:
+            self._hex = ColorUtils.detect_hex(self._value)
+        return self._hex
+
+    @property
+    def rgb(self):
+        if not self._rgb:
+            self._rgb = ColorUtils.detect_rgb(self._value)
+        return self._rgb
+
+    @property
     def xy(self):
         if not self._xy:
-            self._xy = self.detect_xy(self._value)
+            self._xy = ColorUtils.detect_xy(self._value)
         return self._xy
 
 
