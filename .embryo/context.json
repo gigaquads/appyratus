@@ -8,7 +8,10 @@
         "timestamp": 1558192313
       },
       "project": {
-        "name": "appyratus"
+        "author": "Gigaquads",
+        "author_email": "notdsk@gmail.com",
+        "name": "appyratus",
+        "url": "https://github.com/appyratus"
       }
     }
   ],
