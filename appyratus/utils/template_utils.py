@@ -117,6 +117,8 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         'wrap': StringUtils.wrap,
         'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
         'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx),
+        'jinja_exp': lambda x: "{{ " + x +  " }}",
+        'jinja_stmt': lambda x: "{% " + x +  " %}",
     }
 
     def __init__(
