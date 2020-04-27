@@ -18,3 +18,4 @@ webcolors
 colormath
 yapf
 faker
+jsbeautifier

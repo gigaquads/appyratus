@@ -58,6 +58,10 @@ class File(BaseFile):
     def dump(cls, data: Text):
         return data
 
+    @classmethod
+    def prettify(cls, data: Text):
+        return data
+
 
 class FileObject(object):
 

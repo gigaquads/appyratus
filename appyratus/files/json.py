@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from typing import Text
 
+import jsbeautifier
+
 from appyratus.json import JsonEncoder
 
 from .file import File
@@ -32,10 +34,18 @@ class Json(File):
     def load(cls, data):
         return cls._encoder.decode(data) if data else None
 
+
     @classmethod
-    def dump(cls, data, indent: int = 2, sort_keys: bool = True, **kwargs):
-        return cls._encoder.encode(
+    def dump(cls, data, indent: int = 2, sort_keys: bool = True, prettify: bool = True, **kwargs):
+        data = cls._encoder.encode(
             data,
             indent=indent,
             sort_keys=sort_keys,
         )
+        if prettify:
+            cls.prettify(data)
+        return data
+
+    @classmethod
+    def prettify(cls, data):
+        return jsbeautifier.beautify(data)
