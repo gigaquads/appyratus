@@ -35,11 +35,15 @@ class Html(File):
         return parser
 
     @classmethod
-    def dump(cls, data):
-        parser = cls.get_parser(data)
-        return parser.prettify()
-        pass
+    def dump(cls, data, prettify: bool = True):
+        if prettify:
+            data = cls.prettify(data)
+        return data
 
     @classmethod
     def get_parser(cls, data):
         return BeautifulSoup(data, features='html.parser')
+
+    @classmethod
+    def prettify(cls, data):
+        return cls.get_parser()(data).prettify()

@@ -71,3 +71,9 @@ class BaseFile(object):
         """
         raise NotImplementedError('override in subclass')
 
+    def prettify(cls, data, **kwargs):
+        """
+        Perform superficial prettification of provided data
+        """
+        raise NotImplementedError('override in subclass')
+
