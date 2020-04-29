@@ -51,9 +51,7 @@ class PathUtils(object):
                 ext = ext.split('.')[-1]
             return ext
         except Exception as exc:
-            import ipdb
-            ipdb.set_trace()
-            print('=' * 100)
+            raise exc
 
     @classmethod
     def get_dir_name(cls, path: Text) -> Text:
