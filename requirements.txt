@@ -1,3 +1,4 @@
+ipython
 pytest
 python-dateutil
 pyyaml
