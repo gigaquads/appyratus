@@ -46,4 +46,4 @@ class Html(File):
 
     @classmethod
     def prettify(cls, data):
-        return cls.get_parser()(data).prettify()
+        return cls.get_parser(data).prettify()
