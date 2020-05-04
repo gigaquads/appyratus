@@ -201,5 +201,5 @@ class FileArg(OptionalArg):
     structure
     """
 
-    def __init__(self, allow_types: List = None, **kwargs):
+    def __init__(self, allow_types: List = None, dtype=None, **kwargs):
         super().__init__(dtype='file_type', **kwargs)
