@@ -46,6 +46,10 @@ class StringUtils(object):
         return value.strip()
 
     @classmethod
+    def alphanumeric(cls, value):
+        return re.sub(r'[\W_]', '', value)
+
+    @classmethod
     def non_word_to_space(cls, value):
         return re.sub(r'[\W_]', ' ', value)
 
@@ -118,7 +122,7 @@ class StringUtils(object):
         """
         # inflect engine singular noun returns false when a value is in
         # singular form, so we use this as an indication to pluralize
-        is_plural = cls.inflect_engine.singular_noun(value) 
+        is_plural = cls.inflect_engine.singular_noun(value)
         if is_plural == False:
             res = cls.inflect_engine.plural(value)
         else:
