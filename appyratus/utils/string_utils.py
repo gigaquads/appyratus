@@ -54,6 +54,10 @@ class StringUtils(object):
         return re.sub(r'\s+', ' ', value).strip()
 
     @classmethod
+    def alphanumeric(cls, value):
+        return re.sub(r'[\W_]', '', value)
+
+    @classmethod
     def snake(cls, value):
         """
         Snake case `such_as_this`

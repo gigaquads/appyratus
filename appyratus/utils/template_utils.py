@@ -113,6 +113,7 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         'plural': StringUtils.plural,
         'singular': StringUtils.singular,
         'constant': StringUtils.constant,
+        'alphanumeric': StringUtils.alphanumeric,
         'dot': StringUtils.dot,
         'wrap': StringUtils.wrap,
         'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
