@@ -16,7 +16,6 @@ from appyratus.memoize import memoized_property
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
-
 class AsyncHttpClientError(BaseError):
     pass
 
@@ -129,9 +128,7 @@ class AsyncHttpClient(object):
 
     async def _prepare_request(self, request: Request, loop=None):
         loop = loop or self._loop
-        async with aiohttp.ClientSession(
-            loop=loop, json_serialize=Json.dump
-        ) as session:
+        async with aiohttp.ClientSession(loop=loop, json_serialize=Json.dump) as session:
             return await self._do_request(session, request)
 
     async def _do_request(
