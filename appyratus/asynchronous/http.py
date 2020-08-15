@@ -169,6 +169,21 @@ class AsyncHttpClient(object):
         """
         Send the provided requests, returning the results
         """
+        if not isinstance(requests, (list, tuple)) and isinstance(requests, Request):
+            requests = [requests]
         coroutines = [self._prepare_request(request) for request in requests]
         results = self._loop.run_until_complete(asyncio.gather(*coroutines))
         return results
+
+    @classmethod
+    def from_url(cls, url):
+        host = None
+        scheme = None
+        path = None
+        client = cls(host=host, scheme=scheme)
+        request = cls.Request(path=path, method='get')
+        return (client, request)
+
+
+
+
