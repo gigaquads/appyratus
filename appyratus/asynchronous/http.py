@@ -79,8 +79,7 @@ class AsyncHttpClient(object):
             """
             if not self.is_ok:
                 raise AsyncHttpClientError(
-                    message="HTTP status code '{}'".format(self.status_code),
-                    data={'error': self.json}
+                    message="HTTP status code '{}'".format(self.status_code), data={'error': self.json}
                 )
 
         @property
