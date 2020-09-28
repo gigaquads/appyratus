@@ -32,8 +32,16 @@ class File(BaseFile):
                     data = contents.read()
                     is_read_success = True
                     break
-            except:
+            except Exception as exc:
+                print(exc)
                 pass
+
+        if not is_read_success:
+            with open(path, mode='rb') as contents:
+                rawdata = contents.read()
+                data = ''.join([chr(int(x)) for x in rawdata])
+                is_read_success = True
+
 
         if not is_read_success:
             raise IOError(
