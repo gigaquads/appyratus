@@ -33,7 +33,6 @@ class File(BaseFile):
                     is_read_success = True
                     break
             except Exception as exc:
-                print(exc)
                 pass
 
         if not is_read_success:

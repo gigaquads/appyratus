@@ -3,6 +3,7 @@ from typing import List
 
 
 class ListUtils(object):
+
     @classmethod
     def flatten(cls, value: List) -> List:
         if value is None:
