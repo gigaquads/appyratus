@@ -64,9 +64,7 @@ class PythonNode(object):
     def prepend(self, obj) -> 'PythonNode':
         return self.insert(obj, index=0)
 
-    def build_nodes(
-        self, node_class: 'PythonNode', data: List, key: Text = None
-    ):
+    def build_nodes(self, node_class: 'PythonNode', data: List, key: Text = None):
         if not key:
             key = 'name'
         if not data:
