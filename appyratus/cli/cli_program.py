@@ -5,7 +5,7 @@ from typing import (
     Tuple,
 )
 
-from appyratus.logging import logger 
+from appyratus.logging import logger
 from appyratus.utils import DictUtils
 
 from .parser import Parser
@@ -54,7 +54,7 @@ class CliProgram(Parser):
         self._cli_args = None
         self._unknown_cli_args = None or cli_args
         self._raw_cli_args = cli_args
-        self._merge_unknown = merge_unknown or True
+        self._merge_unknown = merge_unknown if merge_unknown is not None else True
 
     @property
     def cli_args(self):
@@ -169,7 +169,7 @@ class CliProgram(Parser):
         unknown_kwargs = {}
 
         last_arg_id = 0
-        for i in range(0, len(cli_unknown_args)-1):
+        for i in range(0, len(cli_unknown_args) - 1):
             v = cli_unknown_args[i]
             if v[0] == '-':
                 last_arg_id = i
