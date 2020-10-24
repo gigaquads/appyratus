@@ -94,3 +94,6 @@ class ConsoleLoggerInterface(LoggerInterface):
     def _to_yaml(self, data):
         lines = yaml.dump(data, default_flow_style=False).split('\n')
         return '\n'.join('  ' + line for line in lines)
+
+
+logger = ConsoleLoggerInterface('appyratus')

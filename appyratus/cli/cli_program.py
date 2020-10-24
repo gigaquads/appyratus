@@ -5,6 +5,7 @@ from typing import (
     Tuple,
 )
 
+from appyratus.logging import logger 
 from appyratus.utils import DictUtils
 
 from .parser import Parser
@@ -53,7 +54,7 @@ class CliProgram(Parser):
         self._cli_args = None
         self._unknown_cli_args = None or cli_args
         self._raw_cli_args = cli_args
-        self._merge_unknown = merge_unknown or False
+        self._merge_unknown = merge_unknown or True
 
     @property
     def cli_args(self):
@@ -149,7 +150,7 @@ class CliProgram(Parser):
         # Parse arguments from command-line
         """
         # let argparser do the initial parsing
-        cli_args, unknown_args = self._parser.parse_known_args(args)
+        cli_args, cli_unknown_args = self._parser.parse_known_args(args)
 
         # now combine known and unknown arguments into a single dict
         args_dict = {
@@ -163,18 +164,29 @@ class CliProgram(Parser):
         if hasattr(cli_args, 'func'):
             self._perform = cli_args.func
 
-        unknown_args_dict = {}
-        for i in range(0, len(unknown_args), 2):
-            k = unknown_args[i]
+        # process unknown args
+        unknown_args = []
+        unknown_kwargs = {}
+
+        last_arg_id = 0
+        for i in range(0, len(cli_unknown_args)-1):
+            v = cli_unknown_args[i]
+            if v[0] == '-':
+                last_arg_id = i
+                break
+            unknown_args.append(v)
+
+        for i in range(last_arg_id, len(cli_unknown_args), 2):
+            k = cli_unknown_args[i]
             try:
-                v = unknown_args[i + 1]
-                unknown_args_dict[k.lstrip('-')] = v
+                v = cli_unknown_args[i + 1]
+                unknown_kwargs[k.lstrip('-')] = v
             except Exception as err:
-                print('unmatched arg "{}"'.format(k))
+                logger.info(f'unmatched arg "{k}"')
 
         if merge_unknown:
             # and any unknown args pairs will get added
-            args_dict.update(unknown_args_dict)
+            args_dict.update(unknown_kwargs)
 
         if unflatten_keys:
             # this will expand any keys that are dot notated with the
@@ -183,4 +195,4 @@ class CliProgram(Parser):
 
         arguments = type('Arguments', (object, ), args_dict)()
 
-        return arguments, unknown_args
+        return arguments, cli_unknown_args

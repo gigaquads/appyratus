@@ -39,7 +39,7 @@ class SysUtils(object):
     @classmethod
     def raise_exception(cls, exception, level: int = None):
         if not level:
-            print('!!! An error occured, {}'.format(exception))
+            logger.exception(f'!!! An error occured, {exception}')
         else:
             if level == 1:
                 sys.excepthook = ultratb.ColorTB(tb_offset=-5)
