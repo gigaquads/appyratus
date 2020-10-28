@@ -1,4 +1,10 @@
-from os import walk, makedirs
+import os
+import stat
+from os import (
+    chmod,
+    makedirs,
+    walk,
+)
 from os.path import (
     basename,
     dirname,
@@ -195,3 +201,25 @@ class PathUtils(object):
         if path_parts:
             rpath.append(''.join(path_parts))
         return rpath
+
+    @classmethod
+    def make_executable(
+        cls, path, user: bool = None, group: bool = None, world: bool = None
+    ):
+        """
+        Make a path executable
+        """
+
+        if not path:
+            return
+        cur_stat = os.stat(path).st_mode
+        next_stat = 0
+        exec_user, exec_group, exec_world = stat.S_IXUSR, stat.S_IXGRP, stat.S_IXOTH
+        clear_stat = exec_user | exec_group | exec_world
+        if user and user is not None:
+            next_stat |= exec_user
+        if group and group is not None:
+            next_stat |= exec_group
+        if world and world is not None:
+            next_stat |= exec_world
+        chmod(path, cur_stat ^ clear_stat | next_stat)

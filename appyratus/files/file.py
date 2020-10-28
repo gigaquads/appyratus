@@ -19,7 +19,7 @@ class File(BaseFile):
         return {}
 
     @classmethod
-    def read(cls, path: Text, **kwargs):
+    def read(cls, path: Text, is_binary: bool = None, **kwargs):
         if not cls.exists(path):
             return
 
@@ -35,12 +35,12 @@ class File(BaseFile):
             except Exception as exc:
                 pass
 
+        # try to read a binary encoded file
         if not is_read_success:
             with open(path, mode='rb') as contents:
                 rawdata = contents.read()
                 data = ''.join([chr(int(x)) for x in rawdata])
                 is_read_success = True
-
 
         if not is_read_success:
             raise IOError(
