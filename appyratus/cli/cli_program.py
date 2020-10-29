@@ -168,21 +168,24 @@ class CliProgram(Parser):
         unknown_args = []
         unknown_kwargs = {}
 
-        last_arg_id = 0
-        for i in range(0, len(cli_unknown_args) - 1):
-            v = cli_unknown_args[i]
-            if v[0] == '-':
-                last_arg_id = i
-                break
-            unknown_args.append(v)
-
-        for i in range(last_arg_id, len(cli_unknown_args), 2):
+        skip_next = False
+        for i in range(0, len(cli_unknown_args)):
             k = cli_unknown_args[i]
-            try:
-                v = cli_unknown_args[i + 1]
-                unknown_kwargs[k.lstrip('-')] = v
-            except Exception as err:
-                logger.info(f'unmatched arg "{k}"')
+            kid = k.lstrip('-')
+            has_dash = k[0] == '-'
+            is_arg = not has_dash and not skip_next
+            if skip_next:
+                skip_next = False
+                continue
+            if is_arg:
+                unknown_args.append(k)
+            else:
+                try:
+                    v = cli_unknown_args[i + 1]
+                    unknown_kwargs[kid] = v
+                    skip_next = True
+                except Exception as err:
+                    logger.info(f'unmatched kwarg "{kid}"')
 
         if merge_unknown:
             # and any unknown args pairs will get added
