@@ -79,7 +79,7 @@ class ConsoleLoggerInterface(LoggerInterface):
             elif self._style == 'yaml':
                 dumped_data = self._to_yaml(data)
             else:
-                raise ValueError(f'unrcognized log style: {self.style}')
+                raise ValueError(f'unrecognized log style: {self.style}')
         else:
             dumped_data = None
 

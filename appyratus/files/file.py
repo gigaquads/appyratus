@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from typing import Text
 
+from appyratus.logging import logger
 from appyratus.utils import PathUtils
 
 from .base import BaseFile
@@ -11,8 +12,7 @@ class File(BaseFile):
     """
     # File
     """
-
-    UTF_ENCODINGS = {'utf-8', 'utf-16'}
+    ENCODINGS = {'utf-8', 'utf-16', 'ascii', 'latin'}
 
     @staticmethod
     def extensions():
@@ -25,28 +25,36 @@ class File(BaseFile):
 
         data = None
         is_read_success = False
+        is_binary = True if is_binary else False
+        # todo look for binary file checker that supports utf/ascii/latin
+        do_read_binary = is_binary
 
-        for encoding in cls.UTF_ENCODINGS:
-            try:
-                with open(path, encoding=encoding) as contents:
-                    data = contents.read()
-                    is_read_success = True
+        if do_read_binary:
+            is_read_success, raw_data = cls.get_data(path, mode='rb')
+            is_decoded = None
+            if is_read_success:
+                for encoding in cls.ENCODINGS:
+                    is_decoded, data = cls.decode_data(raw_data, encoding)
+                    if is_decoded:
+                        break
+                if not is_decoded:
+                    raise IOError(
+                        'could not decode {}. the file must be '
+                        'encoded in any of the following formats: '
+                        '{}'.format(path, ', '.join(cls.ENCODINGS))
+                    )
+
+        else:
+            for encoding in cls.ENCODINGS:
+                is_read_success, data = cls.get_data(path, mode='r', encoding=encoding)
+                if is_read_success:
                     break
-            except Exception as exc:
-                pass
-
-        # try to read a binary encoded file
-        if not is_read_success:
-            with open(path, mode='rb') as contents:
-                rawdata = contents.read()
-                data = ''.join([chr(int(x)) for x in rawdata])
-                is_read_success = True
 
         if not is_read_success:
             raise IOError(
                 'could not open {}. the file must be '
                 'encoded in any of the following formats: '
-                '{}'.format(path, ', '.join(cls.UTF_ENCODINGS))
+                '{}'.format(path, ', '.join(cls.ENCODINGS))
             )
 
         return data
@@ -114,3 +122,26 @@ class FileObject(object):
     @property
     def dir_name(self):
         return PathUtils.get_dir_name(self.path)
+
+    @classmethod
+    def get_data(cls, path, **settings):
+        is_read_success = False
+        data = None
+        try:
+            with open(path, **settings) as contents:
+                data = contents.read()
+                is_read_success = True
+        except Exception as exc:
+            logger.warning(exc)
+        return is_read_success, data
+
+    @classmethod
+    def decode_data(cls, data, encoding):
+        result = None
+        is_decoded = False
+        try:
+            result = data.decode(encoding)
+            is_decoded = True
+        except Exception as exc:
+            logger.warning(exc)
+        return is_decoded, result
