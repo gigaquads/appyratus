@@ -19,6 +19,29 @@ class File(BaseFile):
         return {}
 
     @classmethod
+    def get_data(cls, path, **settings):
+        is_read_success = False
+        data = None
+        try:
+            with open(path, **settings) as contents:
+                data = contents.read()
+                is_read_success = True
+        except Exception as exc:
+            logger.warning(exc)
+        return is_read_success, data
+
+    @classmethod
+    def decode_data(cls, data, encoding):
+        result = None
+        is_decoded = False
+        try:
+            result = data.decode(encoding)
+            is_decoded = True
+        except Exception as exc:
+            logger.warning(exc)
+        return is_decoded, result
+
+    @classmethod
     def read(cls, path: Text, is_binary: bool = None, **kwargs):
         if not cls.exists(path):
             return
@@ -123,25 +146,3 @@ class FileObject(object):
     def dir_name(self):
         return PathUtils.get_dir_name(self.path)
 
-    @classmethod
-    def get_data(cls, path, **settings):
-        is_read_success = False
-        data = None
-        try:
-            with open(path, **settings) as contents:
-                data = contents.read()
-                is_read_success = True
-        except Exception as exc:
-            logger.warning(exc)
-        return is_read_success, data
-
-    @classmethod
-    def decode_data(cls, data, encoding):
-        result = None
-        is_decoded = False
-        try:
-            result = data.decode(encoding)
-            is_decoded = True
-        except Exception as exc:
-            logger.warning(exc)
-        return is_decoded, result
