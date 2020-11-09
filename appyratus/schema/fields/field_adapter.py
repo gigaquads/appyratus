@@ -12,8 +12,8 @@ class FieldAdapter(object):
         self,
         field_class: Type['Field'],
         on_adapt: Callable = None,
-        on_encode: Callable = None,
-        on_decode: Callable = None,
+        on_encode: Callable = lambda x: x,
+        on_decode: Callable = lambda x: x,
     ):
         self.field_class = field_class
         self.on_adapt = on_adapt
