@@ -67,7 +67,7 @@ class Field(object):
         source: Text = None,
         name: Text = None,
         required: bool = False,
-        nullable: bool = False,
+        nullable: bool = None,
         default: object = None,
         meta: typing.Dict = None,
         scalar: bool = True,
@@ -100,6 +100,9 @@ class Field(object):
         self.on_generate = on_generate or self.on_generate
         self.meta = meta or {}
         self.meta.update(kwargs)
+        self._has_constant_default = (
+            default is not None and not callable(default)
+        )
 
     def __repr__(self):
         info_str = ''
@@ -111,7 +114,7 @@ class Field(object):
 
     def copy(self):
         field_type = type(self)
-        field_copy = field_type(
+        return field_type(
             name=self.name,
             source=self.source,
             required=self.required,
@@ -128,6 +131,10 @@ class Field(object):
 
     def generate(self, *args, **kwargs):
         return self.generator.generate(self, *args, **kwargs)
+
+    @property
+    def has_constant_default(self):
+        return self._has_constant_default
 
     @classmethod
     def adapt(cls, on_adapt, **kwargs) -> FieldAdapter:
