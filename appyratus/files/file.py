@@ -12,34 +12,27 @@ class File(BaseFile):
     """
     # File
     """
-    ENCODINGS = {'utf-8', 'utf-16', 'ascii', 'latin'}
+    ENCODINGS = ('utf-8', 'utf-16', 'ascii', 'latin')
 
     @staticmethod
     def extensions():
         return {}
 
     @classmethod
-    def get_data(cls, path, **settings):
+    def get_data(cls, path, mode: Text = None, encoding: Text = None):
         is_read_success = False
         data = None
+        mode = mode if mode else 'r'
+        encoding = encoding if encoding else None
         try:
-            with open(path, **settings) as contents:
+            logger.info(f'loading {path} [{mode},{encoding}]')
+            with open(path, mode, encoding=encoding) as contents:
                 data = contents.read()
                 is_read_success = True
-        except Exception as exc:
-            logger.warning(exc)
+        except UnicodeDecodeError as exc:
+            logger.error(exc)
         return is_read_success, data
 
-    @classmethod
-    def decode_data(cls, data, encoding):
-        result = None
-        is_decoded = False
-        try:
-            result = data.decode(encoding)
-            is_decoded = True
-        except Exception as exc:
-            logger.warning(exc)
-        return is_decoded, result
 
     @classmethod
     def read(cls, path: Text, is_binary: bool = None, **kwargs):
@@ -52,26 +45,10 @@ class File(BaseFile):
         # todo look for binary file checker that supports utf/ascii/latin
         do_read_binary = is_binary
 
-        if do_read_binary:
-            is_read_success, raw_data = cls.get_data(path, mode='rb')
-            is_decoded = None
+        for encoding in cls.ENCODINGS:
+            is_read_success, data = cls.get_data(path, mode='r', encoding=encoding)
             if is_read_success:
-                for encoding in cls.ENCODINGS:
-                    is_decoded, data = cls.decode_data(raw_data, encoding)
-                    if is_decoded:
-                        break
-                if not is_decoded:
-                    raise IOError(
-                        'could not decode {}. the file must be '
-                        'encoded in any of the following formats: '
-                        '{}'.format(path, ', '.join(cls.ENCODINGS))
-                    )
-
-        else:
-            for encoding in cls.ENCODINGS:
-                is_read_success, data = cls.get_data(path, mode='r', encoding=encoding)
-                if is_read_success:
-                    break
+                break
 
         if not is_read_success:
             raise IOError(
