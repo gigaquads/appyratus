@@ -102,7 +102,9 @@ class OptionalArg(Arg):
         long_flag = True if long_flag is None else long_flag
         if flags is None:
             flags = []
-        if not flags:
+        if not isinstance(flags, list):
+            flags = [flags]
+        if not flags or short_flag or long_flag:
             if short_flag:
                 short_name = name
                 if short_flag is not True:

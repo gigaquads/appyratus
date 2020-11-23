@@ -6,4 +6,5 @@ from .ini import Ini
 from .json import Json
 from .python import PythonModule
 from .text import Text
+from .xml import Xml
 from .yaml import Yaml, YamlFileObject
