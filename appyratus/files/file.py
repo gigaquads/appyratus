@@ -19,36 +19,23 @@ class File(BaseFile):
         return {}
 
     @classmethod
-    def get_data(cls, path, mode: Text = None, encoding: Text = None):
-        is_read_success = False
-        data = None
-        mode = mode if mode else 'r'
-        encoding = encoding if encoding else None
-        try:
-            logger.info(f'loading {path} [{mode},{encoding}]')
-            with open(path, mode, encoding=encoding) as contents:
-                data = contents.read()
-                is_read_success = True
-        except UnicodeDecodeError as exc:
-            logger.error(exc)
-        return is_read_success, data
-
-
-    @classmethod
-    def read(cls, path: Text, is_binary: bool = None, **kwargs):
+    def read(cls, path: Text, mode: Text = None, **kwargs):
         if not cls.exists(path):
             return
 
         data = None
         is_read_success = False
-        is_binary = True if is_binary else False
-        # todo look for binary file checker that supports utf/ascii/latin
-        do_read_binary = is_binary
+        mode = mode if mode else 'r'
 
         for encoding in cls.ENCODINGS:
-            is_read_success, data = cls.get_data(path, mode='r', encoding=encoding)
-            if is_read_success:
+            try:
+                logger.info(f'loading {path} [{mode},{encoding}]')
+                with open(path, mode, encoding=encoding) as contents:
+                    data = contents.read()
+                is_read_success = True
                 break
+            except UnicodeError as exc:
+                logger.error(exc)
 
         if not is_read_success:
             raise IOError(
@@ -122,4 +109,3 @@ class FileObject(object):
     @property
     def dir_name(self):
         return PathUtils.get_dir_name(self.path)
-
