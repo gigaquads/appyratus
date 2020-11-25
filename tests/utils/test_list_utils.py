@@ -28,6 +28,25 @@ class TestListUtils(BaseTests):
             ([1, (2, 3)], [1, (2, 3)])
         ]
     )
-    def test__flatten(self, data, expected):
+    def test_flatten(self, data, expected):
         res = self.klass.flatten(data)
+        assert res == expected
+
+    @mark.params(
+        'data, size, expected',
+        [
+    # single list item zero depth
+            (['a'], 1, [['a']]),
+    # multiple list items zero depth
+            (['a', 'c'], 2, [['a'], ['c']]),
+    # multiple list items zero depth
+            (['a', 'b'], 1, [['a', 'b']]),
+    # loose ends
+            (['a', 'b', 'c'], 2, [['a', 'b'], ['c']]),
+    # if it cannot split into equal chunks then it will create empty items
+            (['a'], 3, [['a'], [], []]),
+        ]
+    )
+    def test_chunk(self, data, size, expected):
+        res = self.klass.chunk(data, size)
         assert res == expected
