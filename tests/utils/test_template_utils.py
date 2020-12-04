@@ -15,9 +15,9 @@ class TestTemplateUtils(BaseTests):
         return TemplateUtils
 
     def test_get_environment(self):
-        env = self.klass.get_environment()
+        env = self.klass.get_environment()()
         assert env is not None
-        env2 = self.klass.get_environment()
+        env2 = self.klass.get_environment()()
         assert env != env2
 
     @mark.params(

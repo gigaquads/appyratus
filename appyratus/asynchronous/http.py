@@ -16,7 +16,6 @@ from appyratus.memoize import memoized_property
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
-
 class AsyncHttpClientError(BaseError):
     pass
 
@@ -80,8 +79,7 @@ class AsyncHttpClient(object):
             """
             if not self.is_ok:
                 raise AsyncHttpClientError(
-                    message="HTTP status code '{}'".format(self.status_code),
-                    data={'error': self.json}
+                    message="HTTP status code '{}'".format(self.status_code), data={'error': self.json}
                 )
 
         @property
@@ -129,9 +127,7 @@ class AsyncHttpClient(object):
 
     async def _prepare_request(self, request: Request, loop=None):
         loop = loop or self._loop
-        async with aiohttp.ClientSession(
-            loop=loop, json_serialize=Json.dump
-        ) as session:
+        async with aiohttp.ClientSession(loop=loop, json_serialize=Json.dump) as session:
             return await self._do_request(session, request)
 
     async def _do_request(
@@ -172,6 +168,21 @@ class AsyncHttpClient(object):
         """
         Send the provided requests, returning the results
         """
+        if not isinstance(requests, (list, tuple)) and isinstance(requests, Request):
+            requests = [requests]
         coroutines = [self._prepare_request(request) for request in requests]
         results = self._loop.run_until_complete(asyncio.gather(*coroutines))
         return results
+
+    @classmethod
+    def from_url(cls, url):
+        host = None
+        scheme = None
+        path = None
+        client = cls(host=host, scheme=scheme)
+        request = cls.Request(path=path, method='get')
+        return (client, request)
+
+
+
+

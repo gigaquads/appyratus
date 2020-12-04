@@ -152,7 +152,11 @@ class ColorUtils(object):
                 rgb = cls.hex2rgb(hex_value)
 
         if rgb:
-            xyy = convert_color(sRGBColor(*rgb), xyYColor)
+            if isinstance(rgb, sRGBColor):
+                pass
+            else:
+                rgb = sRGBColor(*rgb)
+            xyy = convert_color(rgb, xyYColor)
             xy = [xyy.xyy_x, xyy.xyy_y]
         return xy
 

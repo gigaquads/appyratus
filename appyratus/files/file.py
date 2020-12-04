@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from typing import Text
 
+from appyratus.logging import logger
 from appyratus.utils import PathUtils
 
 from .base import BaseFile
@@ -11,35 +12,36 @@ class File(BaseFile):
     """
     # File
     """
-
-    UTF_ENCODINGS = {'utf-8', 'utf-16'}
+    ENCODINGS = ('utf-8', 'utf-16', 'ascii', 'latin')
 
     @staticmethod
     def extensions():
         return {}
 
     @classmethod
-    def read(cls, path: Text, **kwargs):
+    def read(cls, path: Text, mode: Text = None, **kwargs):
         if not cls.exists(path):
             return
 
         data = None
         is_read_success = False
+        mode = mode if mode else 'r'
 
-        for encoding in cls.UTF_ENCODINGS:
+        for encoding in cls.ENCODINGS:
             try:
-                with open(path, encoding=encoding) as contents:
+                logger.info(f'loading {path} [{mode},{encoding}]')
+                with open(path, mode, encoding=encoding) as contents:
                     data = contents.read()
-                    is_read_success = True
-                    break
-            except:
-                pass
+                is_read_success = True
+                break
+            except UnicodeError as exc:
+                logger.error(exc)
 
         if not is_read_success:
             raise IOError(
                 'could not open {}. the file must be '
                 'encoded in any of the following formats: '
-                '{}'.format(path, ', '.join(cls.UTF_ENCODINGS))
+                '{}'.format(path, ', '.join(cls.ENCODINGS))
             )
 
         return data

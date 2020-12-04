@@ -15,6 +15,7 @@ NIL = sys.maxsize
 
 
 class PythonNode(object):
+
     def __init__(self, ast=None, *args, **kwargs):
         self._ast = ast
 
@@ -63,9 +64,7 @@ class PythonNode(object):
     def prepend(self, obj) -> 'PythonNode':
         return self.insert(obj, index=0)
 
-    def build_nodes(
-        self, node_class: 'PythonNode', data: List, key: Text = None
-    ):
+    def build_nodes(self, node_class: 'PythonNode', data: List, key: Text = None):
         if not key:
             key = 'name'
         if not data:
@@ -75,6 +74,7 @@ class PythonNode(object):
 
 
 class NamedPythonNode(PythonNode):
+
     def __init__(self, name: Text, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._name = name
@@ -317,6 +317,7 @@ class PythonFunction(NamedPythonNode):
 
 
 class Arguments(object):
+
     def __init__(self, func: 'PythonFunction'):
         self._func = func
 
@@ -348,7 +349,6 @@ class Arguments(object):
         self._func._ast.args.defaults.insert(index, default)
 
 
-
 class PythonMethod(PythonFunction):
     """
     # Python Method
@@ -373,7 +373,7 @@ class PythonImport(PythonNode):
         module: Text,
         alias: Text = None,
         objects: List[Dict] = None,
-        ast = None,
+        ast=None,
     ):
         self._type = type
         self._module = module
@@ -419,7 +419,7 @@ class PythonDecorator(NamedPythonNode):
         self,
         fargs: List['PythonArgument'] = None,
         fkwargs: List['PythonKeywordArgument'] = None,
-        ast = None,
+        ast=None,
         *args,
         **kwargs
     ):
@@ -490,13 +490,3 @@ class PythonKeywordArgument(PythonNode):
         self._key = key
         self._value = value
         self._index = index
-
-
-if __name__ == '__main__':
-    class Person(object):
-        def talk(self):
-            print('talking')
-
-
-
-
