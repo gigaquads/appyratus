@@ -6,31 +6,19 @@ import time
 import typing
 import uuid
 
+from decimal import Decimal, getcontext as get_decimal_context
 from copy import deepcopy
-from datetime import (
-    date,
-    datetime,
-)
+from datetime import date, datetime, timedelta
 from functools import reduce
-from os.path import (
-    abspath,
-    expanduser,
-)
-from typing import (
-    Callable,
-    Dict,
-    Text,
-    Type,
-)
-from uuid import (
-    UUID,
-    uuid4,
-)
+from os.path import abspath, expanduser
+from typing import Callable, Dict, Text, Type
+from uuid import UUID, uuid4
 
 import bcrypt
 import dateutil.parser
 import inflect
 import pytz
+
 from faker import Faker
 
 from appyratus.utils import (
@@ -41,7 +29,6 @@ from appyratus.utils import (
 
 from .field_adapter import FieldAdapter
 from .value_generator import ValueGenerator, Bounds
-
 
 RE_BCRYPT_HASH = re.compile(r'^\$2[ayb]\$.{56}$')
 RE_FLOAT = re.compile(r'^-?\d*(\.\d*)?$')
@@ -597,6 +584,35 @@ class Bool(Field):
         return self.faker.boolean()
 
 
+class Numeric(Float):
+    def __init__(self, precision=None, **kwargs):
+        super().__init__(**kwargs)
+        self.precision = precision
+
+    def process(self, value):
+        result, error = super().process(value)
+        if not error:
+            if self.precision is not None:
+                get_decimal_context().prec = self.precision
+            return (Decimal(result, prec=self.precision), error)
+        else:
+            return (result, error)
+
+
+class TimeDelta(Field):
+    def __init__(self, unit='seconds', **kwargs):
+        super().__init__(**kwargs)
+        self.unit = unit
+
+    def process(self, value):
+        if isinstance(value, timedelta):
+            return (value, None)
+        if isinstance(value, (int, float)):
+            return (timedelta(**{self.unit: value}), None)
+        else:
+            return (None, 'unrecognized time delta value')
+
+
 class DateTime(Field):
     def __init__(self, tz=None, default=None, **kwargs):
         self.tz = tz or pytz.utc
@@ -903,7 +919,7 @@ class BcryptString(String):
         if error:
             return (None, error)
         elif RE_BCRYPT_HASH.match(value):
-            return (value, None)
+            return (self.hash_str(value), None)
 
         salt = bcrypt.gensalt(self.rounds)
         raw_hash_enc = bcrypt.hashpw(value.encode(self.encoding), salt)
