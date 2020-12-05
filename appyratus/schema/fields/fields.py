@@ -843,6 +843,7 @@ class Nested(Field):
 
 
 class Dict(Field):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.scalar = False
@@ -850,6 +851,16 @@ class Dict(Field):
     def process(self, value):
         if isinstance(value, dict):
             return (value, None)
+        elif isinstance(value, str):
+            # assume is JSON end decode it
+            from appyratus.json import JsonEncoder
+
+            json = JsonEncoder()
+            try:
+                value = json.decode(value)
+                return (value, None)
+            except Exception:
+                return (None, UNRECOGNIZED_VALUE)
         else:
             return (None, UNRECOGNIZED_VALUE)
 
