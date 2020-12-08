@@ -1,13 +1,15 @@
 from __future__ import absolute_import
 
-import json
 import logging
 import yaml
 
 from logging import Formatter, StreamHandler, INFO
 from typing import Text, Dict
 
+from appyratus.json import JsonEncoder
 from appyratus.utils import TimeUtils
+
+json = JsonEncoder()
 
 
 class LoggerInterface(object):
@@ -73,7 +75,7 @@ class ConsoleLoggerInterface(LoggerInterface):
         level = level.upper()[0]
 
         if data:
-            data = Json.load(Json.dump(data))
+            data = json.decode(json.encode(data))
             if self._style == 'json':
                 dumped_data = self._to_json(data)
             elif self._style == 'yaml':
@@ -89,7 +91,7 @@ class ConsoleLoggerInterface(LoggerInterface):
         return display_string
 
     def _to_json(self, data):
-        return json.dumps(data, indent=2, sort_keys=True)
+        return json.encode(data, indent=2, sort_keys=True)
 
     def _to_yaml(self, data):
         lines = yaml.dump(data, default_flow_style=False).split('\n')
