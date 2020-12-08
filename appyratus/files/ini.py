@@ -12,7 +12,7 @@ class Ini(File):
 
     @staticmethod
     def extensions():
-        return {'ini'}
+        return {'ini', 'cfg'}
 
     @classmethod
     def read(cls, path: Text):

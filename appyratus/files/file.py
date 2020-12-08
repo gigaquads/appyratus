@@ -19,6 +19,10 @@ class File(BaseFile):
         return {}
 
     @classmethod
+    def format_file_name(cls, basename):
+        return f'{basename}.{cls.extensions()[0]}'
+
+    @classmethod
     def read(cls, path: Text, mode: Text = None, **kwargs):
         if not cls.exists(path):
             return
