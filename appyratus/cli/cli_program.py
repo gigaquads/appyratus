@@ -1,9 +1,7 @@
 import argparse
+
 from inspect import isclass
-from typing import (
-    List,
-    Tuple,
-)
+from typing import List, Tuple, Text
 
 from appyratus.logging import logger
 from appyratus.utils import DictUtils
@@ -37,6 +35,7 @@ class CliProgram(Parser):
         defaults=None,
         cli_args=None,
         merge_unknown: bool = True,
+        unknown_prefix: Text = '_',
         *args,
         **kwargs
     ):
@@ -53,6 +52,7 @@ class CliProgram(Parser):
         self._func = None
         self._cli_args = None
         self._unknown_cli_args = None or cli_args
+        self._unknown_prefix = unknown_prefix or '_'
         self._raw_cli_args = cli_args
         self._merge_unknown = merge_unknown if merge_unknown is not None else True
 
@@ -168,6 +168,16 @@ class CliProgram(Parser):
         unknown_args = []
         unknown_kwargs = {}
 
+        for i, (k, v) in enumerate(zip(cli_unknown_args[:], cli_unknown_args[1:])):
+            if k.startswith('--'):
+                k_prefixed = f'{self._unknown_prefix}{k.lstrip("-")}'
+                if not v.startswith('--'):
+                    unknown_kwargs[k_prefixed] = v
+                    del cli_unknown_args[i:i+2]
+                else:
+                    unknown_kwargs[k_prefixed] = 'true'
+                    del cli_unknown_args[i]
+
         skip_next = False
         for i in range(0, len(cli_unknown_args)):
             k = cli_unknown_args[i]
@@ -179,13 +189,6 @@ class CliProgram(Parser):
                 continue
             if is_arg:
                 unknown_args.append(k)
-            else:
-                try:
-                    v = cli_unknown_args[i + 1]
-                    unknown_kwargs[kid] = v
-                    skip_next = True
-                except Exception as err:
-                    logger.info(f'unmatched kwarg "{kid}"')
 
         if merge_unknown:
             # and any unknown args pairs will get added
@@ -197,5 +200,6 @@ class CliProgram(Parser):
             args_dict = DictUtils.unflatten_keys(args_dict)
 
         arguments = type('Arguments', (object, ), args_dict)()
+        arguments.unknown = unknown_kwargs
 
         return arguments, cli_unknown_args
