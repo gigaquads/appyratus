@@ -21,6 +21,9 @@ from typing import (
 
 
 class PathUtils(object):
+    """
+    # Path Utils
+    """
 
     @classmethod
     def get_file_name(cls, path: Text) -> Text:

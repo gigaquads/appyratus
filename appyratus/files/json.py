@@ -16,8 +16,8 @@ class Json(File):
 
     _encoder = JsonEncoder.get_instance()
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {'json'}
 
     @classmethod
@@ -34,9 +34,15 @@ class Json(File):
     def load(cls, data):
         return cls._encoder.decode(data) if data else None
 
-
     @classmethod
-    def dump(cls, data, indent: int = 2, sort_keys: bool = True, prettify: bool = True, **kwargs):
+    def dump(
+        cls,
+        data,
+        indent: int = 2,
+        sort_keys: bool = True,
+        prettify: bool = True,
+        **kwargs
+    ):
         data = cls._encoder.encode(
             data,
             indent=indent,

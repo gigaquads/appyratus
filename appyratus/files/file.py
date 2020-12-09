@@ -10,13 +10,21 @@ from .base import BaseFile
 
 class File(BaseFile):
     """
-    # File
+    # Generic File Type
     """
     ENCODINGS = ('utf-8', 'utf-16', 'ascii', 'latin')
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {}
+
+    @classmethod
+    def default_extension(cls):
+        return [*cls.extensions()].pop(0)
+
+    @classmethod
+    def format_file_name(cls, basename):
+        return f'{basename}.{cls.default_extension()}'
 
     @classmethod
     def read(cls, path: Text, mode: Text = None, **kwargs):

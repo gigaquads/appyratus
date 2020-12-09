@@ -16,3 +16,4 @@ colormath
 yapf
 faker
 jsbeautifier
+mistune
