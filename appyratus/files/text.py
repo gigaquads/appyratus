@@ -4,7 +4,10 @@ from .file import File
 
 
 class Text(File):
+    """
+    # Text File Type
+    """
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {'txt'}

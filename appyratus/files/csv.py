@@ -9,8 +9,12 @@ from .file import File
 
 
 class Csv(File):
-    @staticmethod
-    def extensions():
+    """
+    # CSV File Type
+    """
+
+    @classmethod
+    def extensions(cls):
         return {'csv'}
 
     @classmethod

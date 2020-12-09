@@ -27,17 +27,13 @@ class Yaml(File):
     https://pyyaml.org/wiki/PyYAMLDocumentation
     """
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {v for v in EXTENSIONS}
 
-    @staticmethod
-    def default_extension():
-        return EXTENSIONS.YML
-
     @classmethod
-    def format_file_name(cls, basename):
-        return f'{basename}.yml'
+    def default_extension(cls):
+        return EXTENSIONS.YML
 
     @classmethod
     def read(cls, path: Text, multi=False):

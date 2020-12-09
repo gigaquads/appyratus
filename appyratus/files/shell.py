@@ -1,14 +1,15 @@
 from typing import Text
 
-import mistune
-
 from .file import File
 
 
 class Shell(File):
+    """
+    # Shell File Type
+    """
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {'sh'}
 
     @classmethod

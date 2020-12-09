@@ -9,9 +9,12 @@ from .file import File
 
 
 class Ini(File):
+    """
+    # Ini File Type
+    """
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {'ini', 'cfg'}
 
     @classmethod

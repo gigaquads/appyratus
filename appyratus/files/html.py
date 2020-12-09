@@ -9,13 +9,13 @@ from .file import File
 
 
 class Html(File):
-    @staticmethod
-    def extensions():
-        return {'htm', 'html'}
+    """
+    # HTML File Type
+    """
 
     @classmethod
-    def format_file_name(cls, basename):
-        return f'{basename}.html'
+    def extensions(cls):
+        return {'html', 'htm'}
 
     @classmethod
     def read(cls, path: Text):
@@ -24,7 +24,7 @@ class Html(File):
 
     @classmethod
     def write(cls, path: Text, data=None, **kwargs):
-        file_data= cls.dump(data) if data else ''
+        file_data = cls.dump(data) if data else ''
         super().write(path=path, data=file_data, **kwargs)
 
     @classmethod

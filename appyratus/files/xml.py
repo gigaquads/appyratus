@@ -8,9 +8,12 @@ from .file import File
 
 
 class Xml(File):
+    """
+    # XML File Type
+    """
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {'xml'}
 
     @classmethod

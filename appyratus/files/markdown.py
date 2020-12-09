@@ -7,8 +7,8 @@ from .file import File
 
 class Markdown(File):
 
-    @staticmethod
-    def extensions():
+    @classmethod
+    def extensions(cls):
         return {'md'}
 
     @classmethod
