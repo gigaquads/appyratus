@@ -37,7 +37,7 @@ class File(BaseFile):
 
         for encoding in cls.ENCODINGS:
             try:
-                logger.info(f'loading {path} [{mode},{encoding}]')
+                logger.debug(f'loading {path} [{mode},{encoding}]')
                 with open(path, mode, encoding=encoding) as contents:
                     data = contents.read()
                 is_read_success = True

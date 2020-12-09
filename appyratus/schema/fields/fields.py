@@ -48,6 +48,7 @@ class Field(object):
 
     faker = Faker()
     generator = ValueGenerator()
+    np_dtype = 'O'
 
     def __init__(
         self,
@@ -58,6 +59,7 @@ class Field(object):
         default: object = None,
         meta: typing.Dict = None,
         scalar: bool = True,
+        np_dtype = 'object',
         on_create: object = None,
         pre_process: object = None,
         post_process: object = None,
@@ -69,6 +71,7 @@ class Field(object):
         - `source`: key in source data if different from declared field name.
         - `name`: name of the field as declared on the host Schema class.
         - `required`: key must exist in source data if set.
+        - `np_dtype`: numpy dtype name
         - `nullable`: if key exists, it can be None/null if this is set.
         - `default`: a constant or callable the returns a default value.
         - `on_create`: generic method to run upon init of host schema class.
@@ -90,6 +93,10 @@ class Field(object):
         self._has_constant_default = (
             default is not None and not callable(default)
         )
+
+        if np_dtype:
+            self.np_dtype = np_dtype
+        # otherwise, default to np_dtype class attr
 
     def __repr__(self):
         info_str = ''
@@ -169,7 +176,10 @@ class Enum(Field):
     def __init__(self, nested: Field, values, **kwargs):
         self.nested = nested
         self.values = set(values)
+
         super().__init__(**kwargs)
+
+        self.np_dtype = nested.np_dtype
 
     def process(self, value):
         if value is None and self.nullable:
@@ -187,6 +197,7 @@ class Enum(Field):
 
 
 class String(Field):
+    np_dtype = '<U1'
 
     generator = Field.Generator(
         callbacks={
@@ -344,6 +355,8 @@ class String(Field):
 
 
 class Bytes(Field):
+    np_dtype = 'S1'
+
     def __init__(self, encoding='utf-8', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.encoding = encoding
@@ -368,6 +381,7 @@ class FormatString(String):
 
 
 class Int(Field):
+    np_dtype = 'int64'
 
     generator = ValueGenerator(
         callbacks={
@@ -431,6 +445,8 @@ class Int(Field):
 
 
 class Uint(Int):
+    np_dtype = 'uint64'
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
@@ -439,26 +455,35 @@ class Uint(Int):
 
 
 class Uint32(Uint):
+    np_dtype = 'uint32'
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
 
 class Uint64(Uint):
+    np_dtype = 'uint64'
+
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
 
 
-class Sint32(Int):
+class Int32(Int):
+    np_dtype = 'int32'
+
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
 
 
-class Sint64(Int):
+class Uint64(Int):
+    np_dtype = 'int64'
+
     def __init__(self, **kwargs):
         super().__init__(signed=True, **kwargs)
 
 
 class Float(Field):
+    np_dtype = 'float64'
 
     generator = ValueGenerator(
         callbacks={
@@ -563,6 +588,7 @@ class UuidString(String):
 
 
 class Bool(Field):
+    np_dtype = 'bool'
     truthy = {True, 'T', 't', 'TRUE', 'True', 'true', 1, '1'}
     falsey = {False, 'F', 'f', 'FALSE', 'False', 'false', 0, '0'}
 
@@ -685,6 +711,8 @@ class DateTimeString(String):
 
 
 class Timestamp(Field):
+    np_dtype = 'int64'
+
     def process(self, value):
         if isinstance(value, (int, float)):
             return (value, None)
@@ -708,6 +736,7 @@ class List(Field):
             singular_name = StringUtils.singular(self.name)
             self.nested.name = singular_name
             self.nested.source = singular_name
+            self.np_dtype = self.nested.np_dtype
             on_create_custom = kwargs.pop('on_create', None)
             if on_create_custom:
                 on_create_custom()
@@ -858,6 +887,8 @@ class Dict(Field):
             json = JsonEncoder()
             try:
                 value = json.decode(value)
+                if not isinstance(value, dict):
+                    return (None, UNRECOGNIZED_VALUE)
                 return (value, None)
             except Exception:
                 return (None, UNRECOGNIZED_VALUE)
