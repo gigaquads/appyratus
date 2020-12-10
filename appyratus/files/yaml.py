@@ -65,11 +65,20 @@ class Yaml(File):
             return yaml.load(data, **load_args)
 
     @classmethod
-    def dump(cls, data, multi: bool = False):
+    def dump(
+        cls,
+        data,
+        multi: bool = False,
+        default_flow_style: bool = None,
+        explicit_start: bool = None,
+        explicit_end: bool = None,
+        indent: int = None
+    ):
         dump_args = {
-            'default_flow_style': False,
-            'explicit_start': True,
-            'explicit_end': True
+            'default_flow_style': default_flow_style if default_flow_style else False,
+            'explicit_start': explicit_start if explicit_start is not None else True,
+            'explicit_end': explicit_end if explicit_end is not None else True,
+            'indent': indent if indent is not None else 2,
         }
         # here as a last defense we should check if this data is yaml construct
         # otherwise a string of yaml erroneously dumped will result in a
