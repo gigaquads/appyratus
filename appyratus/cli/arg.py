@@ -1,9 +1,7 @@
 from typing import List
 
-from appyratus.utils import (
-    DictUtils,
-    StringUtils,
-)
+from appyratus.utils.dict_utils import DictUtils
+from appyratus.utils.string_utils import StringUtils
 
 
 class Arg(object):

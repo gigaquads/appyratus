@@ -4,7 +4,7 @@ from abc import abstractmethod
 
 from appyratus import files
 from appyratus.memoize import memoized_property
-from appyratus.utils import PathUtils
+from appyratus.utils.path_utils import PathUtils
 
 
 class Parser(object):

@@ -3,7 +3,7 @@ from typing import Text
 import io
 import configparser
 
-from appyratus.utils import DictUtils
+from appyratus.utils.dict_utils import DictUtils
 
 from .file import File
 

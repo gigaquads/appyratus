@@ -21,11 +21,9 @@ import pytz
 
 from faker import Faker
 
-from appyratus.utils import (
-    DictUtils,
-    StringUtils,
-    TimeUtils,
-)
+from appyratus.utils.time_utils import TimeUtils
+from appyratus.utils.string_utils import StringUtils
+from appyratus.utils.dict_utils import DictUtils
 
 from .field_adapter import FieldAdapter
 from .value_generator import ValueGenerator, Bounds

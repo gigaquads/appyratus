@@ -4,7 +4,7 @@ from inspect import isclass
 from typing import List, Tuple, Text
 
 from appyratus.logging import logger
-from appyratus.utils import DictUtils
+from appyratus.utils.dict_utils import DictUtils
 
 from .parser import Parser
 

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from typing import Text
 
 from appyratus.logging import logger
-from appyratus.utils import PathUtils
+from appyratus.utils.path_utils import PathUtils
 
 from .base import BaseFile
 
