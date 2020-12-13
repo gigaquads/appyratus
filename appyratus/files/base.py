@@ -5,7 +5,7 @@ from typing import (
     Text,
 )
 
-from appyratus.utils import PathUtils
+from appyratus.utils.path_utils import PathUtils
 
 
 

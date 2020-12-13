@@ -6,10 +6,8 @@ from typing import (
 
 from appyratus.exc import BaseError
 from appyratus.schema import Schema
-from appyratus.utils import (
-    DictUtils,
-    StringUtils,
-)
+from appyratus.utils.dict_utils import DictUtils
+from appyratus.utils.string_utils import StringUtils
 
 
 class UsageError(BaseError):

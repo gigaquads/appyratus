@@ -9,7 +9,7 @@ from uuid import UUID
 
 import rapidjson
 
-from appyratus.utils import TimeUtils
+from appyratus.utils.time_utils import TimeUtils
 
 
 class JsonEncoder(object):

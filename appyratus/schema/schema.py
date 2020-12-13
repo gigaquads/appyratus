@@ -15,7 +15,7 @@ from typing import (
 
 from faker import Faker
 
-from appyratus.utils import StringUtils
+from appyratus.utils.string_utils import StringUtils
 
 from . import fields
 from .exc import ValidationError

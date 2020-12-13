@@ -7,10 +7,8 @@ from typing import Text
 from IPython.core import ultratb
 
 from appyratus.files import File
-from appyratus.utils import (
-    PathUtils,
-    TimeUtils,
-)
+from appyratus.utils.path_utils import PathUtils
+from appyratus.utils.time_utils import TimeUtils
 
 
 class SysUtils(object):
@@ -62,7 +60,7 @@ class SysUtils(object):
     @classmethod
     def raise_exception(cls, exception, level: int = None):
         if not level:
-            logger.exception(f'!!! An error occured, {exception}')
+            logger.exception(f'an error occured, {exception}')
         else:
             if level == 1:
                 sys.excepthook = ultratb.ColorTB(tb_offset=-5)
