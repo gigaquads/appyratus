@@ -2,7 +2,7 @@ from typing import Text
 
 import mistune
 
-from .file import File
+from appyratus.files.file import File
 
 
 class Markdown(File):

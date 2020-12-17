@@ -2,7 +2,7 @@ from .csv import Csv
 from .base import BaseFile
 from .file import File, FileObject
 from .html import Html
-from .markdown import Markdown
+from .markdown.markdown_file import Markdown
 from .css import Css
 from .ini import Ini
 from .json import Json
