@@ -1,8 +1,12 @@
 import mistune
 
 
+class HtmlRenderer(object):
+    pass
+
+
 class Markdown2Html(object):
-    encoder = mistune.Markdown(renderer=mistune.HTMLRenderer())
+    encoder = mistune.Markdown(renderer=mistune.HTMLRenderer(escape=False))
 
     def perform(self, value):
         if value is None:
