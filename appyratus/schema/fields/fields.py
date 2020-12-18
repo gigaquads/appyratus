@@ -24,6 +24,7 @@ from faker import Faker
 from appyratus.utils.time_utils import TimeUtils
 from appyratus.utils.string_utils import StringUtils
 from appyratus.utils.dict_utils import DictUtils
+from appyratus.enum import Enum as EnumObject
 
 from .field_adapter import FieldAdapter
 from .value_generator import ValueGenerator, Bounds
@@ -174,6 +175,9 @@ class Enum(Field):
     def __init__(self, nested: Field, values, **kwargs):
         self.nested = nested
         self.values = set(values)
+
+        if 'default' not in kwargs and isinstance(values, EnumObject):
+            kwargs['default'] = values.default
 
         super().__init__(**kwargs)
 
@@ -633,8 +637,24 @@ class TimeDelta(Field):
             return (value, None)
         if isinstance(value, (int, float)):
             return (timedelta(**{self.unit: value}), None)
-        else:
-            return (None, 'unrecognized time delta value')
+        if isinstance(value, str):
+            n_parts = value.count(':') + 1
+            values = value.split(':')
+            keys = ['hours', 'minutes', 'seconds', 'milliseconds']
+            kwargs = {}
+            for k, v in zip(keys[:len(values)], values):
+                kwargs[k] = float(v)
+            try:
+                return (timedelta(**kwargs), None)
+            except:
+                pass
+        if isinstance(value, dict):
+            kwargs = value
+            try:
+                return (timedelta(**kwargs), None)
+            except:
+                pass
+        return (None, 'invalid timedelta')
 
 
 class DateTime(Field):

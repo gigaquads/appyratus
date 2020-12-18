@@ -1,10 +1,11 @@
+import time
 import os
 import shlex
 import subprocess
 import sys
-from typing import Text
 
-from IPython.core import ultratb
+from datetime import timedelta
+from typing import Text, Union
 
 from appyratus.files import File
 from appyratus.utils.path_utils import PathUtils
@@ -58,17 +59,18 @@ class SysUtils(object):
             SysUtils.raise_exception(exc, level=debug_level)
 
     @classmethod
-    def raise_exception(cls, exception, level: int = None):
-        if not level:
-            logger.exception(f'an error occured, {exception}')
-        else:
-            if level == 1:
-                sys.excepthook = ultratb.ColorTB(tb_offset=-5)
-            if level == 2:
-                sys.excepthook = ultratb.ColorTB()
-            elif level == 3:
-                sys.excepthook = ultratb.VerboseTB()
-            raise exception
+    def raise_exception(cls, exception, level: int = 1):
+        # NOTE: ultratb is imported locally to avoid cyclic imports with, say,
+        # ipdb or anything else that has an IPython dependency.
+        from IPython.core import ultratb 
+
+        if level == 1:
+            sys.excepthook = ultratb.ColorTB(tb_offset=-5)
+        if level == 2:
+            sys.excepthook = ultratb.ColorTB()
+        elif level == 3:
+            sys.excepthook = ultratb.VerboseTB()
+        raise exception
 
     @classmethod
     def resolve_bin(cls, bin_file: Text):
@@ -87,3 +89,10 @@ class SysUtils(object):
         File.write(file_path, f"#!/usr/bin/env bash\n{command}")
         PathUtils.make_executable(file_path, user=True)
         return file_path
+
+    @classmethod
+    def sleep(cls, interval: Union[float, timedelta]):
+        if isinstance(interval, timedelta):
+            time.sleep(interval.total_seconds())
+        else:
+            time.sleep(interval)

@@ -19,3 +19,9 @@ class FieldAdapter(object):
         self.on_adapt = on_adapt
         self.on_encode = on_encode
         self.on_decode = on_decode
+
+    def encode(self, obj):
+        return self.on_encode(obj)
+
+    def decode(self, obj):
+        return self.on_decode(obj)
