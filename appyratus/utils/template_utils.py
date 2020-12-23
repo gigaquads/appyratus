@@ -10,6 +10,8 @@ import jinja2
 from jinja2 import meta
 
 from .string_utils import StringUtils
+from appyratus.files.python.python_utils import PythonUtils
+from appyratus.files.markdown.markdown_utils import MarkdownUtils
 
 # TODO: Scan for filters rather than using init
 #  Use inspect.getmembers(env, predicate=inspect.ismethod)
@@ -50,6 +52,83 @@ class Template(object):
         base_context = deepcopy(self._context)
         base_context.update(context)
         return self._template_obj.render(**base_context)
+
+
+class TemplateFilter(object):
+
+    def __call__(self, value=None):
+        return self.perform(value)
+
+    def perform(self, value=None):
+        raise NotImplementedError()
+
+
+from jinja2 import nodes
+from jinja2.ext import Extension
+from jinja2 import Markup
+
+
+class IncludeRawExtension(Extension):
+    tags = {"include_raw"}
+
+    def parse(self, parser):
+        lineno = parser.stream.expect("name:include_raw").lineno
+        filename = nodes.Const(parser.parse_expression().value)
+        result = self.call_method("_render", [filename], lineno=lineno)
+        return nodes.Output([result], lineno=lineno)
+
+    def _render(self, filename):
+        return Markup(self.environment.loader.get_source(self.environment, filename)[0])
+
+
+class Markdown2HtmlFilter(TemplateFilter):
+    """
+    # Markdown2HTML
+    With provided markdown, convert to html
+    """
+
+    def perform(self, value: Text) -> Text:
+        if value is None:
+            return
+        return MarkdownUtils.to_html(value)
+
+
+class FormatPythonFilter(TemplateFilter):
+    """
+    # Python Format Filter
+    Format python source code
+    """
+
+    def perform(self, value: Text) -> Text:
+        return PythonUtils.format_python(value)
+
+
+class Python2HtmlFilter(TemplateFilter):
+    """
+    # Python2HTML Filter
+    Convert Python source to Html 
+    """
+
+    def perform(self, value: Text) -> Text:
+        if isinstance(value, Markup):
+            # jinja will provide a Markupsafe class to escape characters.. we
+            # don't want this at this point
+            value = value.unescape()
+        return PythonUtils.to_html(value)
+
+
+class IncludeFileFilter(TemplateFilter):
+    """
+    # Include File Filter
+    Include a file directly into the template
+    """
+
+    def __init__(self, loader, env):
+        self._loader = loader
+        self._env = env
+
+    def perform(self, value: Text) -> Text:
+        return jinja2.Markup(self._loader.get_source(self._env, value)[0])
 
 
 class BaseTemplateEnvironment(object):
@@ -114,6 +193,9 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         'singular': StringUtils.singular,
         'alphanumeric': StringUtils.alphanumeric,
         'constant': StringUtils.constant,
+        'format_python': FormatPythonFilter(),
+        'python2html': Python2HtmlFilter(),
+        'markdown2html': Markdown2HtmlFilter(),
         'dot': StringUtils.dot,
         'wrap': StringUtils.wrap,
         'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
@@ -166,16 +248,21 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
                 loaders.append(jinja2.DictLoader(self.templates))
             if self.search_path:
                 loaders.append(jinja2.FileSystemLoader(self.search_path))
+            package_loader = jinja2.PackageLoader(__name__, self.search_path)
+            loaders.append(package_loader)
         else:
             loaders.append(loader)
 
         self._loaders = loaders
 
+        extensions = [IncludeRawExtension]
         env = jinja2.Environment(
             loader=jinja2.ChoiceLoader(loaders),
             autoescape=True,
             trim_blocks=True,
+            extensions=extensions,
         )
+        self._methods['include_file'] = IncludeFileFilter(package_loader, env)
         env.globals.update(self._methods)
 
         return env
@@ -204,12 +291,3 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
 class TemplateEnvironment(JinjaTemplateEnvironment):
     # XXX Temporary because of refactoring
     pass
-
-
-class TemplateFilter(object):
-
-    def __call__(self, value=None):
-        return self.perform(value)
-
-    def perform(self, value=None):
-        raise NotImplementedError()

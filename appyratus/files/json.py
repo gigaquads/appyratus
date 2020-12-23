@@ -4,9 +4,8 @@ from typing import Text
 
 import jsbeautifier
 
-from appyratus.json import JsonEncoder
-
 from .file import File
+from appyratus.json import JsonEncoder
 
 
 class Json(File):

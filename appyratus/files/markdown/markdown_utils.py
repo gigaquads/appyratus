@@ -5,10 +5,11 @@ class HtmlRenderer(object):
     pass
 
 
-class Markdown2Html(object):
+class MarkdownUtils(object):
     encoder = mistune.Markdown(renderer=mistune.HTMLRenderer(escape=False))
 
-    def perform(self, value):
+    @classmethod
+    def to_html(cls, value):
         if value is None:
             return
-        return self.encoder(value)
+        return cls.encoder(value)
