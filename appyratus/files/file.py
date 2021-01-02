@@ -35,13 +35,24 @@ class File(BaseFile):
         is_read_success = False
         mode = mode if mode else 'r'
 
-        for encoding in cls.ENCODINGS:
+        if mode == 'r':
+            for encoding in cls.ENCODINGS:
+                try:
+                    logger.debug(f'loading {path} [{mode},{encoding}]')
+                    with open(path, mode, encoding=encoding) as contents:
+                        data = contents.read()
+                    is_read_success = True
+                    break
+                except UnicodeError as exc:
+                    logger.error(exc)
+        elif mode == 'rb':
+            # when specifying binary mode (rb) the open command cannot
+            # accept an encoding argument
             try:
-                logger.debug(f'loading {path} [{mode},{encoding}]')
-                with open(path, mode, encoding=encoding) as contents:
+                logger.debug(f'loading {path} [{mode}]')
+                with open(path, mode) as contents:
                     data = contents.read()
                 is_read_success = True
-                break
             except UnicodeError as exc:
                 logger.error(exc)
 

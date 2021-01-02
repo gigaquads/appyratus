@@ -1,3 +1,4 @@
+import mimetypes
 import os
 import stat
 from os import (
@@ -245,3 +246,11 @@ class PathUtils(object):
         if world and world is not None:
             next_stat |= exec_world
         chmod(path, cur_stat ^ clear_stat | next_stat)
+
+    @classmethod
+    def get_mime_type(cls, path: Text):
+        """
+        Get the mime_type of a filepath
+        """
+        mime_type, _ = mimetypes.guess_type(path)
+        return mime_type
