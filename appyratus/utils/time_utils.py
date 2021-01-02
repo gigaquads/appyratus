@@ -1,6 +1,7 @@
-import pytz
+from typing import Callable, Tuple
+from datetime import datetime, timedelta
 
-from datetime import datetime
+import pytz
 
 from dateutil.parser import parse
 
@@ -64,3 +65,10 @@ class TimeUtils(object):
         Return the timestamp int as a UTC datetime object.
         """
         return datetime.fromtimestamp(timestamp, tz=timezone)
+
+    @classmethod
+    def timed(cls, func: Callable) -> Tuple[object, timedelta]:
+        start = cls.utc_now()
+        result = func()
+        end = cls.utc_now()
+        return (result, (end - start))
