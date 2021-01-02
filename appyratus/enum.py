@@ -1,6 +1,6 @@
 import re
 
-from typing import Set
+from typing import Set, Tuple
 from abc import ABCMeta, abstractmethod
 
 
@@ -70,6 +70,8 @@ class Enum(tuple):
     def name(self):
         return self._name
 
+    def to_tuple(self) -> Tuple:
+        return tuple(self._value_map.values())
 
 
 class EnumValueMeta(ABCMeta):
