@@ -4,6 +4,7 @@ import shlex
 import subprocess
 import sys
 
+from threading import current_thread
 from datetime import timedelta
 from typing import Text, Union
 
@@ -96,3 +97,7 @@ class SysUtils(object):
             time.sleep(interval.total_seconds())
         else:
             time.sleep(interval)
+
+    @classmethod
+    def set_thread_name(self, name: Text):
+        current_thread().name = name
