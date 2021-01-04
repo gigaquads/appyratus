@@ -1,6 +1,6 @@
 import re
 
-from typing import Set
+from typing import Set, Tuple
 from abc import ABCMeta, abstractmethod
 
 
@@ -13,7 +13,7 @@ class Enum(tuple):
     """
 
     @classmethod
-    def of_strings(cls, *keys, name=None):
+    def of_strings(cls, *keys, name=None, default=None):
         """
         Return an enum where the keys and values are mapped 1-1.
 
@@ -26,15 +26,24 @@ class Enum(tuple):
             assert isinstance(key, str)
             value_map[key.lower()] = key
 
-        return cls(value_map, name=name)
+        enum = cls(value_map, name=name)
+        enum.default = default
+        return enum
 
     def __new__(cls, value_map: dict=None, name=None, **value_map_kwargs):
         return super().__new__(cls,
             set((value_map or {}).values()) | set(value_map_kwargs.values())
         )
 
-    def __init__(self, value_map: dict=None, name=None, **value_map_kwargs):
+    def __init__(
+        self,
+        value_map: dict=None,
+        name=None,
+        default=None,
+        **value_map_kwargs
+    ):
         super().__init__()
+        self.default = default
         self._name = name
         self._value_map = value_map or {}
         self._value_map.update(value_map_kwargs)
@@ -61,6 +70,8 @@ class Enum(tuple):
     def name(self):
         return self._name
 
+    def to_tuple(self) -> Tuple:
+        return tuple(self._value_map.values())
 
 
 class EnumValueMeta(ABCMeta):

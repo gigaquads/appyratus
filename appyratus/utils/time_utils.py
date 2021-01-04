@@ -1,7 +1,9 @@
+from typing import Callable, Tuple
+from datetime import datetime, timedelta
+
 import pytz
 
-from datetime import datetime
-
+from dateutil.parser import parse
 
 class TimeUtils(object):
 
@@ -39,9 +41,34 @@ class TimeUtils(object):
         return int((datetime_obj - epoch).total_seconds())
 
     @classmethod
-    def from_timestamp(cls, timestamp, timezone=None) -> datetime:
+    def from_object(cls, obj, timezone=pytz.utc) -> datetime:
+        """
+        Convert the input object into a datetime object with a specified
+        timezone.
+        """
+        # convert obj to datetime
+        if isinstance(obj, datetime):
+            dt = obj
+        elif isinstance(obj, str):
+            dt = parse(obj)
+        elif isinstance(obj, (int, float)):
+            dt = cls.from_timestamp(obj)
+
+        # set the timezone on the new datetime
+        dt.replace(tzinfo=timezone)
+
+        return dt
+
+    @classmethod
+    def from_timestamp(cls, timestamp, timezone=pytz.utc) -> datetime:
         """
         Return the timestamp int as a UTC datetime object.
         """
-        timezone = pytz.utc
         return datetime.fromtimestamp(timestamp, tz=timezone)
+
+    @classmethod
+    def timed(cls, func: Callable) -> Tuple[object, timedelta]:
+        start = cls.utc_now()
+        result = func()
+        end = cls.utc_now()
+        return (result, (end - start))

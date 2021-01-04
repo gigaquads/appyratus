@@ -10,6 +10,7 @@ from uuid import UUID
 import rapidjson
 
 from appyratus.utils.time_utils import TimeUtils
+from appyratus.utils.dict_utils import DictObject
 
 
 class JsonEncoder(object):
@@ -24,6 +25,7 @@ class JsonEncoder(object):
             date: lambda x: TimeUtils.to_timestamp(x),
             UUID: lambda x: x.hex,
             set: lambda x: list(x),
+            DictObject: lambda x: x.to_dict(),
         }
         self.defaults.update(defaults or {})
 
@@ -55,4 +57,7 @@ class JsonEncoder(object):
         # Decode
         https://github.com/python-rapidjson/python-rapidjson/blob/master/docs/loads.rst
         """
-        return rapidjson.loads(*args, **kwargs)
+        if args[0] is None:
+            return None
+        else:
+            return rapidjson.loads(*args, **kwargs)

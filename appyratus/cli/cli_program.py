@@ -1,13 +1,17 @@
+from appyratus.schema.schema import Schema
 import argparse
 
-from inspect import isclass
-from typing import List, Tuple, Text
+from typing import (
+    List, Tuple, Text, Callable, Union, Dict, Optional
+)
 
 from appyratus.logging import logger
 from appyratus.utils.dict_utils import DictUtils
+from appyratus.schema import fields
+from appyratus.schema.fields import Field
 
 from .parser import Parser
-
+from .arg import ListArg, PositionalArg, FlagArg, OptionalArg
 
 class CliProgram(Parser):
     """
@@ -17,7 +21,7 @@ class CliProgram(Parser):
 
     # Example Usage
     from appyratus.cli import CliProgram, Args
-    ```
+    ```python
     class MyLameProgram(CliProgram):
         lame_positional_arg = PositionalArg()
         lame_optional_arg = OptionalArg()
@@ -28,13 +32,61 @@ class CliProgram(Parser):
     ```
     """
 
+    @classmethod
+    def from_schema(
+        cls,
+        func: Callable,
+        schema: Union['Schema', Dict[Text, Field]] = None,
+    ) -> 'CliProgram':
+
+        if schema is None:
+            schema = Schema(allow_additional=True)
+        elif not isinstance(schema, Schema):
+            fields_dict = schema
+            schema_class = Schema.factory('CliArgumentsSchema', fields_dict)
+            schema = schema_class(allow_additional=True)
+
+        arguments = []
+        for name, field in schema.fields.items():
+            if isinstance(field, fields.Bool):
+                arg = FlagArg(name)
+            elif isinstance(field, (fields.List, fields.Set)):
+                arg = ListArg(name)
+            elif field.required or not field.nullable:
+                if field.default is None:
+                    arg = PositionalArg(name)
+                else:
+                    arg = OptionalArg(name)
+            else:
+                arg = OptionalArg(name)
+
+            if field.default is not None:
+                if callable(field.default):
+                    arg.default = field.default()
+                else:
+                    arg.default = field.default
+
+            arguments.append(arg)
+
+        program_class = type('CliProgram', (cls, ), {
+            'perform': staticmethod(func),
+            'args': arguments,
+        })
+
+        return program_class(
+            func=func, schema=schema, expand_args=True
+        )
+
     def __init__(
         self,
         version=None,
         tagline=None,
         defaults=None,
+        func=None,
         cli_args=None,
         merge_unknown: bool = True,
+        expand_args: bool = False,
+        schema: Optional['Schema'] = None,
         unknown_prefix: Text = '_',
         *args,
         **kwargs
@@ -49,7 +101,9 @@ class CliProgram(Parser):
         self.version = version
         self.tagline = tagline
         self.defaults = defaults or {}
-        self._func = None
+        self._expand_args = expand_args
+        self._func = func
+        self._schema = schema
         self._cli_args = None
         self._unknown_cli_args = None or cli_args
         self._unknown_prefix = unknown_prefix or '_'
@@ -129,7 +183,14 @@ class CliProgram(Parser):
         if not self._perform:
             self.show_usage()
             return
-        res = self._perform(self)
+        if self._expand_args:
+            kwargs = {
+                arg.name: getattr(self.cli_args, arg.name)
+                for arg in self._args
+            }
+            res = self._perform(**kwargs)
+        else:
+            res = self._perform(self)
         return res
 
     def run(self):
@@ -168,16 +229,6 @@ class CliProgram(Parser):
         unknown_args = []
         unknown_kwargs = {}
 
-        for i, (k, v) in enumerate(zip(cli_unknown_args[:], cli_unknown_args[1:])):
-            if k.startswith('--'):
-                k_prefixed = f'{self._unknown_prefix}{k.lstrip("-")}'
-                if not v.startswith('--'):
-                    unknown_kwargs[k_prefixed] = v
-                    del cli_unknown_args[i:i+2]
-                else:
-                    unknown_kwargs[k_prefixed] = 'true'
-                    del cli_unknown_args[i]
-
         skip_next = False
         for i in range(0, len(cli_unknown_args)):
             k = cli_unknown_args[i]
@@ -189,6 +240,13 @@ class CliProgram(Parser):
                 continue
             if is_arg:
                 unknown_args.append(k)
+            else:
+                try:
+                    v = cli_unknown_args[i + 1]
+                    unknown_kwargs[kid] = v
+                    skip_next = True
+                except Exception as err:
+                    logger.info(f'unmatched kwarg "{kid}"')
 
         if merge_unknown:
             # and any unknown args pairs will get added
@@ -198,6 +256,13 @@ class CliProgram(Parser):
             # this will expand any keys that are dot notated with the
             # expectation of being a nested dictionary reference
             args_dict = DictUtils.unflatten_keys(args_dict)
+
+        if self._schema:
+            processed_args_dict = self._schema.process(
+                args_dict, strict=True
+            )
+            for k, v in processed_args_dict.items():
+                args_dict[k] = v
 
         arguments = type('Arguments', (object, ), args_dict)()
         arguments.unknown = unknown_kwargs

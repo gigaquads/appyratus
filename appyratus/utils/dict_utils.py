@@ -51,7 +51,7 @@ class DictObject(object):
         self._data[key] = value
 
     def __repr__(self):
-        return f'<DictObject({self._data})>'
+        return repr(self._data)
 
     def __iter__(self):
         return iter(self._data.items())

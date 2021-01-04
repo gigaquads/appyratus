@@ -1,7 +1,6 @@
 import operator
 import random
 import re
-import sys
 import time
 import typing
 import uuid
@@ -12,11 +11,10 @@ from datetime import date, datetime, timedelta
 from functools import reduce
 from os.path import abspath, expanduser
 from typing import Callable, Dict, Text, Type
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import bcrypt
 import dateutil.parser
-import inflect
 import pytz
 
 from faker import Faker
@@ -24,6 +22,7 @@ from faker import Faker
 from appyratus.utils.time_utils import TimeUtils
 from appyratus.utils.string_utils import StringUtils
 from appyratus.utils.dict_utils import DictUtils
+from appyratus.enum import Enum as EnumObject
 
 from .field_adapter import FieldAdapter
 from .value_generator import ValueGenerator, Bounds
@@ -59,8 +58,8 @@ class Field(object):
         scalar: bool = True,
         np_dtype = 'object',
         on_create: object = None,
-        pre_process: object = None,
-        post_process: object = None,
+        before: object = None,
+        after: object = None,
         on_generate: Callable = None,
         **kwargs,
     ):
@@ -73,7 +72,7 @@ class Field(object):
         - `nullable`: if key exists, it can be None/null if this is set.
         - `default`: a constant or callable the returns a default value.
         - `on_create`: generic method to run upon init of host schema class.
-        - `post_process`: generic method to run after fields are processed.
+        - `after`: generic method to run after fields are processed.
         - `meta`: additional data storage
         """
         self.name = name
@@ -83,11 +82,12 @@ class Field(object):
         self.default = default
         self.scalar = scalar
         self.on_create = on_create
-        self.pre_process = pre_process or self.pre_process
-        self.post_process = post_process or self.post_process
+        self.before = before or self.before
+        self.after = after or self.after
         self.on_generate = on_generate or self.on_generate
         self.meta = meta or {}
         self.meta.update(kwargs)
+        self.schema = None
         self._has_constant_default = (
             default is not None and not callable(default)
         )
@@ -98,9 +98,9 @@ class Field(object):
 
     def __repr__(self):
         info_str = ''
-        if self.source:
+        if self.source or not self.name:
             info_str = self.source
-        if self.source != self.name:
+        elif self.source != self.name:
             info_str += ' -> ' + self.name
         return f'{self.__class__.__name__}({info_str})'
 
@@ -113,8 +113,8 @@ class Field(object):
             default=self.default,
             scalar=self.scalar,
             on_create=self.on_create,
-            pre_process=self.pre_process,
-            post_process=self.post_process,
+            before=self.before,
+            after=self.after,
             meta=self.meta,
         )
 
@@ -133,7 +133,7 @@ class Field(object):
         return cls.Adapter(cls, on_adapt, **kwargs)
 
     @staticmethod
-    def pre_process(field, value, context: dict = None):
+    def before(field, value, context: dict = None):
         """
         This method is *intentionally* shadowed by the ctor keyword argument
         with the same name. This stub is just for declaring the expected
@@ -142,7 +142,7 @@ class Field(object):
         return (value, None)
 
     @staticmethod
-    def post_process(field, value, dest: dict, context=None):
+    def after(field, value, dest: dict, context=None):
         """
         This method is *intentionally* shadowed by the ctor keyword argument
         with the same name. This stub is just for declaring the expected
@@ -174,6 +174,9 @@ class Enum(Field):
     def __init__(self, nested: Field, values, **kwargs):
         self.nested = nested
         self.values = set(values)
+
+        if 'default' not in kwargs and isinstance(values, EnumObject):
+            kwargs['default'] = values.default
 
         super().__init__(**kwargs)
 
@@ -373,7 +376,7 @@ class Bytes(Field):
 class FormatString(String):
 
     @staticmethod
-    def post_process(field, fstr, data, context=None):
+    def after(field, fstr, data, context=None):
         value = fstr.format(**data)
         return (value, None)
 
@@ -454,13 +457,6 @@ class Uint(Int):
 
 class Uint32(Uint):
     np_dtype = 'uint32'
-
-    def __init__(self, **kwargs):
-        super().__init__(signed=False, **kwargs)
-
-
-class Uint64(Uint):
-    np_dtype = 'uint64'
 
     def __init__(self, **kwargs):
         super().__init__(signed=False, **kwargs)
@@ -582,7 +578,7 @@ class UuidString(String):
 
     @classmethod
     def next_id(cls):
-        return Uuid.next_id().hex
+        return UUID(int=random.getrandbits(128)).hex
 
 
 class Bool(Field):
@@ -615,10 +611,10 @@ class Numeric(Float):
 
     def process(self, value):
         result, error = super().process(value)
-        if not error:
+        if error is None and result is not None:
             if self.precision is not None:
                 get_decimal_context().prec = self.precision
-            return (Decimal(result, prec=self.precision), error)
+            return (Decimal(result), error)
         else:
             return (result, error)
 
@@ -633,8 +629,24 @@ class TimeDelta(Field):
             return (value, None)
         if isinstance(value, (int, float)):
             return (timedelta(**{self.unit: value}), None)
-        else:
-            return (None, 'unrecognized time delta value')
+        if isinstance(value, str):
+            n_parts = value.count(':') + 1
+            values = value.split(':')
+            keys = ['hours', 'minutes', 'seconds', 'milliseconds']
+            kwargs = {}
+            for k, v in zip(keys[:len(values)], values):
+                kwargs[k] = float(v)
+            try:
+                return (timedelta(**kwargs), None)
+            except:
+                pass
+        if isinstance(value, dict):
+            kwargs = value
+            try:
+                return (timedelta(**kwargs), None)
+            except:
+                pass
+        return (None, 'invalid timedelta')
 
 
 class DateTime(Field):
@@ -655,7 +667,7 @@ class DateTime(Field):
                 return (None, INVALID_VALUE)
         elif isinstance(value, date):
             new_value = datetime.combine(value, datetime.min.time())
-            new_value = new_value.replace(tzinfo=self.timezone)
+            new_value = new_value.replace(tzinfo=self.tz)
             return (new_value, None)
         elif isinstance(value, str):
             try:
@@ -703,7 +715,7 @@ class DateTimeString(String):
         if self.format_spec:
             return datetime.strftime(
                 self.faker.date_time_this_year(tzinfo=pytz.utc),
-                f.format_spec
+                self.format_spec
             )
         return self.faker.date_time_this_year(tzinfo=pytz.utc).isoformat()
 
@@ -759,7 +771,7 @@ class List(Field):
             self.nested = Schema()
 
     def __repr__(self):
-        if self.source != self.name:
+        if self.name and self.source != self.name:
             load_to = ' -> ' + self.name
         else:
             load_to = ''
@@ -802,7 +814,7 @@ class List(Field):
 class Set(List):
 
     def __repr__(self):
-        if self.source != self.name:
+        if self.name and self.source != self.name:
             load_to = ' -> ' + self.name
         else:
             load_to = ''
@@ -856,7 +868,7 @@ class Nested(Field):
             self.schema_type = type(self.schema)
 
     def __repr__(self):
-        if self.source != self.name:
+        if self.name and self.source != self.name:
             load_to = ' -> ' + self.name
         else:
             load_to = ''
@@ -1006,8 +1018,7 @@ class ItemGetter(Field):
 
         super().__init__(source=path[0], **kwargs)
 
-    @staticmethod
-    def post_process(field, fstr, data, context=None):
+    def after(self, field, fstr, data, context=None):
         """
         # Do Format
         The heavy lifting callable of the Item Getter, passed into pre-process
