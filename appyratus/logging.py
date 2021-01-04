@@ -7,7 +7,7 @@ from logging import Formatter, StreamHandler, INFO
 from typing import Text, Dict
 
 from appyratus.json import JsonEncoder
-from appyratus.utils import TimeUtils
+from appyratus.utils.time_utils import TimeUtils
 
 json = JsonEncoder()
 

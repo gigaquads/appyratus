@@ -1,3 +1,4 @@
+from appyratus.utils.dict_utils import DictObject
 from uuid import UUID
 from inspect import getmembers
 from datetime import datetime, date
@@ -15,15 +16,12 @@ from typing import (
 
 from faker import Faker
 
-from appyratus.utils import StringUtils
+from appyratus.utils.string_utils import StringUtils
+from appyratus.utils.dict_utils import DictObject
 
 from . import fields
 from .exc import ValidationError
-from .fields import (
-    Field,
-    List,
-    Nested,
-)
+from .fields import Field, List, Nested
 
 
 class schema_type(type):
@@ -102,7 +100,7 @@ class schema_type(type):
 
 class Schema(Field, metaclass=schema_type):
 
-    fields = None
+    fields = {}
     children = None
     _is_schema_class = True
 
@@ -131,21 +129,24 @@ class Schema(Field, metaclass=schema_type):
         strict=False,
         ignore_required=False,
         ignore_nullable=False,
-        pre_process=None,
-        post_process=None,
+        before=None,
+        after=None,
     ):
         """
         Marshal each value in the "source" dict into a new "dest" dict.
         """
         errors = {}
-        context = context or {}
+
+        context = DictObject(context or {})
+        context.schema = self
+        context.source = source
 
         if self.allow_additional:
-            dest = deepcopy(source)
+            dest = source.copy()
         else:
             dest = {}
 
-        post_process_fields = []
+        after_fields = []
 
         def generate_default(field):
             # generate default val from either
@@ -155,6 +156,8 @@ class Schema(Field, metaclass=schema_type):
             else:
                 source_val = deepcopy(field.default)
             return source_val
+
+        self.before(source, context)
 
         for field in self.fields.values():
             # is key simply present in source?
@@ -169,10 +172,8 @@ class Schema(Field, metaclass=schema_type):
 
             # pre-process some fields, first by the schema if provided, then by
             # the field itself if provided
-            if pre_process:
-                source_val = pre_process(field, source_val, context=context)
-            if field.pre_process:
-                source_val, source_err = field.pre_process(
+            if field.before:
+                source_val, source_err = field.before(
                     field, source_val, context=context
                 )
                 if source_err:
@@ -225,17 +226,20 @@ class Schema(Field, metaclass=schema_type):
             else:
                 errors[field.name] = field_err
 
-            if field.post_process is not None:
-                post_process_fields.append(field)
+            if field.after is not None:
+                after_fields.append(field)
 
         # call all post-process callbacks
-        for field in post_process_fields:
+        for field in after_fields:
             dest_val = dest.pop(field.name, None)
-            field_val, field_err = field.post_process(
+            field_val, field_err = field.after(
                 field, dest_val, dest, context=context
             )
             # now recheck nullity of the post-processed field value
-            if ((dest_val is None) and (not field.nullable and not ignore_nullable)):
+            if (
+                (dest_val is None) and
+                (not field.nullable and not ignore_nullable)
+            ):
                 errors[field.name] = f'{field.name} not nullable'
             elif not field_err:
                 dest[field.name] = field_val
@@ -243,11 +247,22 @@ class Schema(Field, metaclass=schema_type):
                 errors[field.name] = field_err
 
         # "strict" means we raise an exception
-        if errors and strict:
-            raise ValidationError(self, errors)
+        # or return just the processed dict
+        if strict:
+            if errors:
+                raise ValidationError(self, errors)
+            else:
+                return dest
 
+        self.after(dest, context)
         results = self.tuple_factory(dest, errors)
         return results
+
+    def before(self, source: Dict, context):
+        pass
+
+    def after(self, data: Dict, context):
+        pass
 
     def translate_source(self, data: Dict) -> Dict:
         """
@@ -315,7 +330,7 @@ class Schema(Field, metaclass=schema_type):
         name: Text = None,
         predicate: Callable = None,
         depth: int = 0,
-    ) -> 'Schema':
+    ) -> Type['Schema']:
         """
         Return a new Schema class that mirrors the structure of the input target
         object, as best as possible.
@@ -358,7 +373,7 @@ class Schema(Field, metaclass=schema_type):
                         predicate=predicate,
                         depth=(depth - 1)
                     )()
-            return field.Field()
+            return fields.Field()
 
 
         for k, v in  target.items():
@@ -407,5 +422,4 @@ class Schema(Field, metaclass=schema_type):
                         name=k, source=k, example=v
                     )
 
-        new_schema_type = type(name, (cls, ), acc)
-        return new_schema_type
+        return type(name, (cls, ), acc)

@@ -4,7 +4,7 @@ from abc import abstractmethod
 
 from appyratus import files
 from appyratus.memoize import memoized_property
-from appyratus.utils import PathUtils
+from appyratus.utils.path_utils import PathUtils
 
 
 class Parser(object):
@@ -24,8 +24,11 @@ class Parser(object):
         self._subparser = None
         # args
         self._args = []
-        if hasattr(self, 'args') and callable(self.args):
-            self._args.extend(self.args())
+        if hasattr(self, 'args'):
+            if callable(self.args):
+                self._args.extend(self.args())
+            else:
+                self._args.extend(self.args)
         if args:
             self._args.extend(args)
         # subparsers

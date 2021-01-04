@@ -7,7 +7,7 @@ import sys
 
 from typing import Text, List, Dict
 from appyratus.files import File
-from appyratus.utils import DictObject
+from appyratus.utils.dict_utils import DictObject
 
 from .ast_parser import AstParser
 

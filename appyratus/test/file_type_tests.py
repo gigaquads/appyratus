@@ -7,10 +7,8 @@ from typing import (
 
 from appyratus.files import File
 from appyratus.test import BaseTests
-from appyratus.utils import (
-    PathUtils,
-    StringUtils,
-)
+from appyratus.utils.path_utils import PathUtils
+from appyratus.utils.string_utils import StringUtils
 
 
 class FileTypeTests(BaseTests):
