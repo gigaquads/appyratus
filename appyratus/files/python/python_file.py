@@ -11,7 +11,7 @@ from typing import (
 import astor
 from yapf.yapflib.yapf_api import FormatCode
 
-from .file import (
+from appyratus.files.file import (
     File,
     FileObject,
 )

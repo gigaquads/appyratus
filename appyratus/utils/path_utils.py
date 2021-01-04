@@ -1,3 +1,4 @@
+import mimetypes
 import os
 import stat
 from os import (
@@ -12,6 +13,7 @@ from os.path import (
     join,
     realpath,
     splitext,
+    relpath,
 )
 from shlex import shlex
 from typing import (
@@ -89,11 +91,29 @@ class PathUtils(object):
         return cls.join(path[:name_pos], f'{name}.{extension}')
 
     @classmethod
+    def remove_extension(cls, path: Text) -> Text:
+        """
+        # Remove Extension
+        With the provided file path, replace its extension with
+        """
+        name = cls.get_name(path)
+        name_pos = path.rfind(name)
+        return cls.join(path[:name_pos], f'{name}')
+
+    @classmethod
     def exists(cls, path: Text) -> Text:
         """
         # Exists
         """
         return exists(path)
+
+    @classmethod
+    def relative_path(cls, path: Text, relative_path: Text) -> Text:
+        """
+        # Relative Path
+        Returns the path relative to the provide relative path
+        """
+        return relpath(path, relative_path)
 
     @classmethod
     def join(cls, path: Text, *paths) -> Text:
@@ -226,3 +246,11 @@ class PathUtils(object):
         if world and world is not None:
             next_stat |= exec_world
         chmod(path, cur_stat ^ clear_stat | next_stat)
+
+    @classmethod
+    def get_mime_type(cls, path: Text):
+        """
+        Get the mime_type of a filepath
+        """
+        mime_type, _ = mimetypes.guess_type(path)
+        return mime_type

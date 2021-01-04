@@ -4,7 +4,7 @@ from abc import abstractmethod
 from mock import patch, MagicMock
 from contextlib import contextmanager
 
-from appyratus.utils import DictUtils
+from appyratus.utils.dict_utils import DictUtils
 
 
 class BaseTests(object):
