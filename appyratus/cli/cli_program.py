@@ -13,6 +13,7 @@ from appyratus.schema.fields import Field
 from .parser import Parser
 from .arg import ListArg, PositionalArg, FlagArg, OptionalArg
 
+
 class CliProgram(Parser):
     """
     # Command-line interface program
@@ -233,7 +234,7 @@ class CliProgram(Parser):
         for i in range(0, len(cli_unknown_args)):
             k = cli_unknown_args[i]
             kid = k.lstrip('-')
-            has_dash = k[0] == '-'
+            has_dash = (k[0] == '-') if k else False
             is_arg = not has_dash and not skip_next
             if skip_next:
                 skip_next = False
