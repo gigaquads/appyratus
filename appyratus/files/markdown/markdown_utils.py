@@ -16,6 +16,8 @@ class MarkdownUtils(object):
         regex = r"^<!--\n(.*?)-->"
         # extract the metadata for processing and convert it to yaml
         match = re.match(regex, value, re.S)
+        if not match:
+            return {}, value
         raw_metadata = match.group(1)
         metadata = Yaml.load(raw_metadata)
         # now remove the metadata from the original value
