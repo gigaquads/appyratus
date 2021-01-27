@@ -7,11 +7,12 @@ from typing import Dict, List, Text
 
 import jinja2
 
-from jinja2 import meta
+from jinja2 import meta, Markup
 
 from .string_utils import StringUtils
 from appyratus.files.python.python_utils import PythonUtils
 from appyratus.files.markdown.markdown_utils import MarkdownUtils
+from appyratus.files import File
 
 # TODO: Scan for filters rather than using init
 #  Use inspect.getmembers(env, predicate=inspect.ismethod)
@@ -56,8 +57,14 @@ class Template(object):
 
 class TemplateFilter(object):
 
-    def __call__(self, value=None):
-        return self.perform(value)
+    def safe(self, value):
+        return Markup(value)
+
+    def is_safe(self, value):
+        return isinstance(value, Markup)
+
+    def __call__(self, *args, **kwargs):
+        return self.perform(*args, **kwargs)
 
     def perform(self, value=None):
         raise NotImplementedError()
@@ -65,10 +72,13 @@ class TemplateFilter(object):
 
 from jinja2 import nodes
 from jinja2.ext import Extension
-from jinja2 import Markup
 
 
-class IncludeRawExtension(Extension):
+class TemplateExtension(Extension):
+    pass
+
+
+class IncludeRawExtension(TemplateExtension):
     tags = {"include_raw"}
 
     def parse(self, parser):
@@ -128,7 +138,21 @@ class IncludeFileFilter(TemplateFilter):
         self._env = env
 
     def perform(self, value: Text) -> Text:
-        return jinja2.Markup(self._loader.get_source(self._env, value)[0])
+        return self.safe(self._loader.get_source(self._env, value)[0])
+
+
+class IncludeExternalFileFilter(TemplateFilter):
+    """
+    # Include File Filter
+    Include a file directly into the template
+    """
+
+    def __init__(self, loader, env):
+        self._loader = loader
+        self._env = env
+
+    def perform(self, value: Text) -> Text:
+        return File.read(value)
 
 
 class BaseTemplateEnvironment(object):
@@ -148,12 +172,14 @@ class BaseTemplateEnvironment(object):
         search_path: Text = None,
         templates: Dict = None,
         methods: Dict = None,
+        context: Dict = None,
         *args,
         **kwargs
     ):
         self.search_path = search_path
         self.templates = templates or {}
         self._methods = methods if methods is not None else {}
+        self.context = context if context else {}
         #class_filters = self.resolve_class_filters()
 
     def resolve_class_filters(self, klass):
@@ -183,33 +209,43 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
     """
     # Jinja Template Environment
     """
-    BASE_FILTERS = {
-        'snake': StringUtils.snake,
-        'dash': StringUtils.dash,
-        'title': StringUtils.title,
-        'camel': StringUtils.camel,
-        'camel_lower': lambda x: StringUtils.camel(x, lower=True),
-        'plural': StringUtils.plural,
-        'singular': StringUtils.singular,
-        'alphanumeric': StringUtils.alphanumeric,
-        'constant': StringUtils.constant,
-        'format_python': FormatPythonFilter(),
-        'python2html': Python2HtmlFilter(),
-        'markdown2html': Markdown2HtmlFilter(),
-        'dot': StringUtils.dot,
-        'wrap': StringUtils.wrap,
-        'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
-        'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx),
-        'jinja_exp': lambda x: "{{ " + x + " }}",
-        'jinja_stmt': lambda x: "{% " + x + " %}",
-    }
+
+    @classmethod
+    def build_base_filters(cls):
+        from appyratus.files import Json
+        return {
+            'snake': StringUtils.snake,
+            'dash': StringUtils.dash,
+            'title': StringUtils.title,
+            'camel': StringUtils.camel,
+            'camel_lower': lambda x: StringUtils.camel(x, lower=True),
+            'plural': StringUtils.plural,
+            'singular': StringUtils.singular,
+            'alphanumeric': StringUtils.alphanumeric,
+            'constant': StringUtils.constant,
+            'format_python': FormatPythonFilter(),
+            'python2html': Python2HtmlFilter(),
+            'markdown2html': Markdown2HtmlFilter(),
+            'dot': StringUtils.dot,
+            'wrap': StringUtils.wrap,
+            'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
+            'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx),
+            'jinja_exp': lambda x: "{{ " + x + " }}",
+            'jinja_stmt': lambda x: "{% " + x + " %}",
+        }
+
+    @classmethod
+    def build_base_extensions(cls):
+        return [IncludeRawExtension]
 
     def __init__(
         self,
         search_path: Text = None,
         filters: Dict = None,
+        extensions: List = None,
         templates: Dict = None,
-        **kwargs
+        env_data: Dict = None,
+        **kwargs,
     ):
         """
         Initialize the necessities of a template environment, including the
@@ -221,16 +257,21 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         the templating engine.  They could also be optional.
         """
         # XXX imported here as it causes circular depedency
-        from appyratus.files import Json
+        self._extensions = []
+        self._env_data = env_data or {}
+        self.add_extensions(self.build_base_extensions())
+        if extensions:
+            self.add_extensions(extensions)
+
+        self._filters = {}
+        self.add_filters(self.build_base_filters())
+        if filters:
+            self.add_filters(filters)
 
         super().__init__(search_path=search_path, templates=templates, **kwargs)
 
         self._env = None
         self._loaders = None
-
-        self.add_filters(self.BASE_FILTERS)
-        if filters:
-            self.add_filters(filters)
 
     @property
     def env(self):
@@ -255,14 +296,17 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
 
         self._loaders = loaders
 
-        extensions = [IncludeRawExtension]
         env = jinja2.Environment(
             loader=jinja2.ChoiceLoader(loaders),
             autoescape=True,
             trim_blocks=True,
-            extensions=extensions,
+            extensions=self._extensions,
         )
+        env.filters.update(self._filters)
+        for k, v in self._env_data.items():
+            setattr(env, k, v)
         self._methods['include_file'] = IncludeFileFilter(package_loader, env)
+        self._methods['include_external_file'] = IncludeExternalFileFilter(package_loader, env)
         env.globals.update(self._methods)
 
         return env
@@ -271,13 +315,21 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
         """
         Apply filters
         """
-        self.env.filters.update(filters)
+        self._filters.update(filters)
 
-    def from_string(self, value: Text, context: Dict = None):
+    def add_extensions(self, extensions: List, Dict=None):
+        """
+        Apply Extensions 
+        """
+        self._extensions.extend(extensions)
+
+    def from_string(self, value: Text, context: Dict = None, **kwargs):
         """
         Providing a string, return a template
         """
-        jtpl = self.env.from_string(value)
+        all_context = deepcopy(self.context)
+        all_context.update(context if context else {})
+        jtpl = self.env.from_string(value, all_context, **kwargs)
         return Template(jtpl, env=self, context=context)
 
     def from_filename(self, filename: Text, context: Dict = None):
