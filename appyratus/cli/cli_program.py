@@ -62,7 +62,7 @@ class CliProgram(Parser):
                 arg = OptionalArg(name)
 
             if field.default is not None:
-                if callable(field.default):
+                if not isinstance(field.default, type) and callable(field.default):
                     arg.default = field.default()
                 else:
                     arg.default = field.default
@@ -89,6 +89,7 @@ class CliProgram(Parser):
         expand_args: bool = False,
         schema: Optional['Schema'] = None,
         unknown_prefix: Text = '_',
+        custom_dtype_converter: Callable = None,
         *args,
         **kwargs
     ):
@@ -110,6 +111,7 @@ class CliProgram(Parser):
         self._unknown_prefix = unknown_prefix or '_'
         self._raw_cli_args = cli_args
         self._merge_unknown = merge_unknown if merge_unknown is not None else True
+        self._custom_dtype_converter = custom_dtype_converter
 
     @property
     def cli_args(self):
@@ -198,7 +200,7 @@ class CliProgram(Parser):
         """
         # Run this program and return the results
         """
-        self.build()
+        self.build(custom_dtype_converter=self._custom_dtype_converter)
         action_res = self.route_action()
         return action_res
 

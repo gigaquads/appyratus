@@ -244,7 +244,6 @@ class DictUtils(object):
         """
         if not separator:
             separator = '.'
-        save_data = deepcopy(data)
         next_data = {}
         # data is a dictionary
         for k, v in data.items():

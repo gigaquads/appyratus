@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 
 from appyratus.utils.dict_utils import DictUtils
 from appyratus.utils.string_utils import StringUtils
@@ -51,7 +51,7 @@ class Arg(object):
             'choices': self.choices,
         }
 
-    def build(self, parent):
+    def build(self, parent, custom_dtype_converter: Callable = None):
         """
         """
         # add arguments
@@ -61,6 +61,8 @@ class Arg(object):
         # conjunction with another Args' kwargs
         kwargs = DictUtils.remove_keys(self.kwargs, values=[None])
         dtype = kwargs.get('type')
+        if custom_dtype_converter:
+            dtype = custom_dtype_converter(dtype)
         if dtype:
             # in cases when an unknown type is provided, like perhaps a class,
             # then assume a str type

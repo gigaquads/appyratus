@@ -3,6 +3,8 @@ import re
 from typing import Set, Tuple
 from abc import ABCMeta, abstractmethod
 
+from appyratus.utils.type_utils import TypeUtils
+
 
 class Enum(tuple):
     """
@@ -51,6 +53,10 @@ class Enum(tuple):
             self._normalize_key(k): v for k, v in self._value_map.items()
         }
 
+    def __repr__(self):
+        name = self._name or TypeUtils.get_class_name(self)
+        return f'Enum({name})'
+
     def __getattr__(self, key: str):
         if key.startswith('__'):
             raise AttributeError(key)
@@ -61,6 +67,11 @@ class Enum(tuple):
 
     def __contains__(self, key: str):
         return self._normalize_key(key) in self._value_map.values()
+
+    def validate(self, value):
+        if value not in self:
+            raise ValueError(f'{self} does not recognize value: {value}')
+        return value
 
     @staticmethod
     def _normalize_key(key):
