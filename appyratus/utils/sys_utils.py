@@ -99,5 +99,5 @@ class SysUtils(object):
             time.sleep(interval)
 
     @classmethod
-    def set_thread_name(self, name: Text):
+    def set_thread_name(cls, name: Text):
         current_thread().name = name

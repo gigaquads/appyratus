@@ -620,6 +620,27 @@ class Numeric(Float):
 
 
 class TimeDelta(Field):
+
+    RE_PATTERN_1 = re.compile(
+        r'(?P<days>[-\d]+) day[s]*, (?P<hours>\d+):'
+        r'(?P<minutes>\d+):(?P<seconds>\d[\.\d+]*)'
+    )
+
+    RE_PATTERN_2 = re.compile(
+        r'(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d[\.\d+]*)'
+    )
+
+    def parse(self, text):
+        if 'day' in text:
+            match = self.RE_PATTERN_1.match(text)
+        else:
+            match = self.RE_PATTERN_2.match(text)
+        if match: 
+            return timedelta(**{
+                key: float(val) for key, val in match.groupdict().items()
+            })
+        return
+
     def __init__(self, unit='seconds', **kwargs):
         super().__init__(**kwargs)
         self.unit = unit
@@ -630,16 +651,11 @@ class TimeDelta(Field):
         if isinstance(value, (int, float)):
             return (timedelta(**{self.unit: value}), None)
         if isinstance(value, str):
-            n_parts = value.count(':') + 1
-            values = value.split(':')
-            keys = ['hours', 'minutes', 'seconds', 'milliseconds']
-            kwargs = {}
-            for k, v in zip(keys[:len(values)], values):
-                kwargs[k] = float(v)
-            try:
-                return (timedelta(**kwargs), None)
-            except:
-                pass
+            td = self.parse(value) 
+            if td is not None:
+                return (td, None)
+            else:
+                return (None, 'unrecognized timedelta format')
         if isinstance(value, dict):
             kwargs = value
             try:
@@ -662,7 +678,9 @@ class DateTime(Field):
             return (value.replace(tzinfo=self.tz), None)
         elif isinstance(value, (int, float)):
             try:
-                return (TimeUtils.from_timestamp(value), None)
+                return (
+                    TimeUtils.from_timestamp(value).replace(tzinfo=self.tz), None
+                )
             except ValueError:
                 return (None, INVALID_VALUE)
         elif isinstance(value, date):
@@ -671,14 +689,16 @@ class DateTime(Field):
             return (new_value, None)
         elif isinstance(value, str):
             try:
-                return (dateutil.parser.parse(value), None)
+                return (
+                    dateutil.parser.parse(value).replace(tzinfo=self.tz), None
+                )
             except:
                 return (None, INVALID_VALUE)
         else:
             return (None, UNRECOGNIZED_VALUE)
 
     def on_generate(self, **kwargs):
-        return self.faker.date_time_this_year(tzinfo=pytz.utc)
+        return self.faker.date_time_this_year(tzinfo=self.tz)
 
 
 class DateTimeString(String):

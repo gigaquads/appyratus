@@ -8,6 +8,7 @@ from typing import (
 
 import yaml
 
+from yaml import FullLoader
 from appyratus.enum import Enum
 
 from .file import (
@@ -36,14 +37,19 @@ class Yaml(File):
         return EXTENSIONS.YML
 
     @classmethod
-    def read(cls, path: Text, multi=False):
+    def read(cls, path: Text, multi=False, loader_class=FullLoader):
         try:
-            data = super().read(path)
-            return cls.load(data, multi=multi)
+            with open(path) as yaml_file:
+                return cls.load(
+                    yaml_file, multi=multi, loader_class=loader_class
+                )
         except yaml.composer.ComposerError:
             # this should occur when you attempt to load in a yaml file that
             # that contains multiple documents and you did not specify multiple
-            return cls.load(data, multi=True)
+            with open(path) as yaml_file:
+                return cls.load(
+                    yaml_file, multi=True, loader_class=loader_class
+                )
 
     @classmethod
     def write(cls, path: Text, data=None, multi=False, **kwargs):
@@ -51,8 +57,8 @@ class Yaml(File):
         super().write(path=path, data=file_data, **kwargs)
 
     @classmethod
-    def load(cls, data=None, multi: bool = False):
-        load_args = {'Loader': yaml.FullLoader}
+    def load(cls, data=None, multi: bool = False, loader_class=FullLoader):
+        load_args = {'Loader': loader_class}
         if data is None:
             return
         if multi:

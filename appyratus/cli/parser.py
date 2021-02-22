@@ -1,5 +1,7 @@
 import inspect
 import re
+
+from typing import Callable
 from abc import abstractmethod
 
 from appyratus import files
@@ -45,7 +47,12 @@ class Parser(object):
         else:
             self._perform = None
 
-    def build(self, parent=None, *args, **kwargs):
+    def build(
+        self,
+        parent=None,
+        custom_dtype_converter: Callable = None,
+        *args, **kwargs
+    ):
         """
         Build
         """
@@ -55,7 +62,7 @@ class Parser(object):
         if self._subparsers:
             self._subparser = self.build_subparser()
         self.build_subparsers()
-        self.build_args()
+        self.build_args(custom_dtype_converter=custom_dtype_converter)
 
     def register_custom_types(self, parser):
         """
@@ -130,14 +137,14 @@ class Parser(object):
     def add_argument(self, *args, **kwargs):
         self._parser.add_argument(*args, **kwargs)
 
-    def build_args(self):
+    def build_args(self, custom_dtype_converter: Callable = None):
         """
         Build parser arguments
         """
         if not self._args:
             return
         for arg in self._args:
-            arg.build(self)
+            arg.build(self, custom_dtype_converter=custom_dtype_converter)
 
 
     def subparsers(self):
