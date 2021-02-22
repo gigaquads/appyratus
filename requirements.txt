@@ -16,5 +16,5 @@ colormath
 yapf
 faker
 jsbeautifier
-mistune
+mistune==2.0.0rc1
 python-dateutil
