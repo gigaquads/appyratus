@@ -155,6 +155,43 @@ class IncludeExternalFileFilter(TemplateFilter):
         return File.read(value)
 
 
+class DateTimeFilter(TemplateFilter):
+    """
+    # Date Time Filter
+    """
+
+    def perform(self, value: Text, style: Text = None, separator: Text = None) -> Text:
+        if not style:
+            style = 'medium'
+        if style == 'full':
+            style = "EEEE, d. MMMM y 'at' HH:mm"
+        elif style == 'medium':
+            style = '%A %B %d, %Y'
+        elif style == 'gregorian':
+            style = '%Y/%m/%d'
+        if hasattr(value, 'strftime'):
+            return value.strftime(style)
+        return value
+
+
+class KeywordFilter(TemplateFilter):
+    """
+    # Keyword Filter
+    Present keywords in an extensible way
+    """
+
+    def perform(self, value: Text, style: Text = None) -> Text:
+        res = value
+        if not style:
+            style = 'hashtag'
+        if style == 'hashtag':
+            hashtag = StringUtils.contiguous(value)
+            res = f"#{hashtag}"
+        elif style == 'capitalize':
+            res = StringUtils.title(value)
+        return res
+
+
 class BaseTemplateEnvironment(object):
     """
     # Template Environment
@@ -222,16 +259,19 @@ class JinjaTemplateEnvironment(BaseTemplateEnvironment):
             'plural': StringUtils.plural,
             'singular': StringUtils.singular,
             'alphanumeric': StringUtils.alphanumeric,
+            'contiguous': StringUtils.contiguous,
             'constant': StringUtils.constant,
             'format_python': FormatPythonFilter(),
             'python2html': Python2HtmlFilter(),
             'markdown2html': Markdown2HtmlFilter(),
+            'keyword': KeywordFilter(),
             'dot': StringUtils.dot,
             'wrap': StringUtils.wrap,
             'json': lambda obj: (Json.dump(obj, indent=2, sort_keys=True)),
             'jinja': lambda tpl, ctx: self.env.from_string(tpl).render(ctx),
             'jinja_exp': lambda x: "{{ " + x + " }}",
             'jinja_stmt': lambda x: "{% " + x + " %}",
+            'datetime': DateTimeFilter(),
         }
 
     @classmethod
