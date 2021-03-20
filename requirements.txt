@@ -6,7 +6,7 @@ pytz
 uvloop
 jinja2
 python-rapidjson
-aiohttp==3.6.2
+aiohttp==3.7.4
 bcrypt
 inflect
 beautifulsoup4
