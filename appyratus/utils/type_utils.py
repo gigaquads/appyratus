@@ -22,6 +22,8 @@ class TypeUtils:
             return obj.__name__
         elif inspect.ismethod(obj):
             return obj.__func__.__name__
+        elif inspect.isawaitable(obj):
+            return obj.__qualname__
         else:
             return None
 
