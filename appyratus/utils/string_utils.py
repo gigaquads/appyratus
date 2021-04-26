@@ -147,9 +147,9 @@ class StringUtils(object):
         return cls.separator(value=cls.normalize(value), separator='.')
 
     @classmethod
-    def unbound(cls, value):
+    def contiguous(cls, value):
         """
-        Unbound, void of all separation, `suchasthis`
+        Contiguous, normalized values that share a common border, `suchasthis`
         """
         return cls.separator(value=cls.normalize(value), separator='')
 

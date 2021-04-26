@@ -67,6 +67,7 @@ class MetaData(object):
         revisit_after=None,
         charset=None,
         content_type=None,
+        created_at=None,
         **kwargs
     ):
         charset = charset or 'utf-8'
@@ -74,11 +75,12 @@ class MetaData(object):
             'title': title or '',
             'description': description or '',
             'author': author or '',
-            'keywords': keywords or [],
+            'keywords': keywords if keywords is not None else [],
             'language': language or 'English',
             'robots': robots or {'index', 'follow'},
             'revisit_after': revisit_after or '90 days',
             'charset': charset,
+            'created_at': created_at,
             'content_type': content_type or f'text/html; charset={charset}',
         }
         data.update(kwargs)

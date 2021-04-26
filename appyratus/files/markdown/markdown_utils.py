@@ -1,4 +1,5 @@
 import mistune
+from mistune import HTMLRenderer
 import re
 
 from appyratus.files.yaml import Yaml
@@ -9,13 +10,15 @@ class HtmlRenderer(object):
 
 
 class MarkdownUtils(object):
-    encoder = mistune.Markdown(renderer=mistune.HTMLRenderer(escape=False))
+    encoder = mistune.Markdown(renderer=HTMLRenderer(escape=False))
 
     @classmethod
     def extract_metadata(cls, value):
         regex = r"^<!--\n(.*?)-->"
         # extract the metadata for processing and convert it to yaml
         match = re.match(regex, value, re.S)
+        if not match:
+            return {}, value
         raw_metadata = match.group(1)
         metadata = Yaml.load(raw_metadata)
         # now remove the metadata from the original value
