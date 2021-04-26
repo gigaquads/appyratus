@@ -42,6 +42,10 @@ class LoggerInterface(object):
     def logger(self):
         return self._logger
 
+    def set_level(self, level):
+        self._level = level
+        self._logger.setLevel(level)
+
     def process_message(self, level: Text, message: Text, data: Dict) -> Text:
         return message
 
