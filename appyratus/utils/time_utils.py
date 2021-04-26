@@ -76,6 +76,21 @@ class TimeUtils(object):
     ) -> Optional[datetime]:
         return cls.from_object(obj)
 
+    @classmethod
+    def pprint_timedelta(cls, delta) -> str:
+        delta = cls.parse_timedelta(delta)
+        s_total = round(delta.total_seconds())
+        h, remainder = divmod(s_total, 3600)
+        m, s = divmod(remainder, 60)
+        chunks = []
+        if h:
+            chunks.append(f'{h}h')
+        if m:
+            chunks.append(f'{m}m')
+        if s:
+            chunks.append(f'{s}s')
+        return ', '.join(chunks)
+
     @staticmethod
     def parse_timedelta(
         obj: Union[Text, timedelta]
