@@ -38,6 +38,9 @@ class DictObject(object):
 
         self.__dict__['_data'] = data
 
+    def copy(self) -> 'DictObject':
+        return type(self)(self._data)
+
     def __getitem__(self, key):
         return self._data[key]
 
@@ -61,6 +64,9 @@ class DictObject(object):
 
     def __len__(self):
         return len(self._data)
+
+    def clear(self):
+        self._data.clear()
 
     def update(self, mapping):
         self._data.update(mapping)

@@ -24,7 +24,7 @@ class TimeUtils(object):
     @classmethod
     def to_timestamp(cls, obj: Union[datetime, date, str]) -> float:
         """
-        From datetime object to UTC integer timestamp (seconds)
+        From datetime object to UTC timestamp (seconds)
         """
         if obj is None:
             return None
