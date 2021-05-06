@@ -41,6 +41,9 @@ class DictObject(object):
     def copy(self) -> 'DictObject':
         return type(self)(self._data)
 
+    def setdefault(self, key, value):
+        return self._data.setdefault(key, value)
+
     def __getitem__(self, key):
         return self._data[key]
 
