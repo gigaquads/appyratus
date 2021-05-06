@@ -51,6 +51,9 @@ class DictObject(object):
         self._data[key] = value
 
     def __getattr__(self, key):
+        if key.startswith('__'):
+            # dict object keys can not look like magic methods.
+            raise AttributeError(key)
         return self._data.get(key)
 
     def __setattr__(self, key, value):
