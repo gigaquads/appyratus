@@ -68,9 +68,14 @@ class Enum(tuple):
     def __contains__(self, key: str):
         return self._normalize_key(key) in self._value_map.values()
 
-    def validate(self, value):
-        if value not in self:
-            raise ValueError(f'{self} does not recognize value: {value}')
+    def validate(self, value, ignore_case=True):
+        if ignore_case and isinstance(value, str):
+            value = value.upper()
+            if value not in {x.upper() for x in self._value_map}:
+                raise ValueError(f'{self} does not recognize value: {value}')
+        else:
+            if value not in self:
+                raise ValueError(f'{self} does not recognize value: {value}')
         return value
 
     @staticmethod
