@@ -1,9 +1,7 @@
 from appyratus.schema.schema import Schema
 import argparse
 
-from typing import (
-    List, Tuple, Text, Callable, Union, Dict, Optional
-)
+from typing import (List, Tuple, Text, Callable, Union, Dict, Optional)
 
 from appyratus.logging import logger
 from appyratus.utils.dict_utils import DictUtils
@@ -69,14 +67,14 @@ class CliProgram(Parser):
 
             arguments.append(arg)
 
-        program_class = type('CliProgram', (cls, ), {
-            'perform': staticmethod(func),
-            'args': arguments,
-        })
-
-        return program_class(
-            func=func, schema=schema, expand_args=True
+        program_class = type(
+            'CliProgram', (cls, ), {
+                'perform': staticmethod(func),
+                'args': arguments,
+            }
         )
+
+        return program_class(func=func, schema=schema, expand_args=True)
 
     def __init__(
         self,
@@ -146,7 +144,7 @@ class CliProgram(Parser):
         """
         subparser = self._parser.add_subparsers(
             title='{} sub-commands'.format(self.name),
-            help='{} sub-command help'.format(self.name)
+            help='{} sub-command help'.format(self.name),
         )
         return subparser
 
@@ -183,14 +181,10 @@ class CliProgram(Parser):
 
         The default action is to print usage.
         """
+        kwargs = {arg.name: getattr(self.cli_args, arg.name) for arg in self._args}
         if not self._perform:
-            self.show_usage()
-            return
-        if self._expand_args:
-            kwargs = {
-                arg.name: getattr(self.cli_args, arg.name)
-                for arg in self._args
-            }
+            res = self.show_usage()
+        elif self._expand_args:
             res = self._perform(**kwargs)
         else:
             res = self._perform(self)
@@ -261,9 +255,7 @@ class CliProgram(Parser):
             args_dict = DictUtils.unflatten_keys(args_dict)
 
         if self._schema:
-            processed_args_dict = self._schema.process(
-                args_dict, strict=True
-            )
+            processed_args_dict = self._schema.process(args_dict, strict=True)
             for k, v in processed_args_dict.items():
                 args_dict[k] = v
 
