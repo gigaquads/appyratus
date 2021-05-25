@@ -1,4 +1,7 @@
-from typing import List, Callable
+from typing import (
+    Callable,
+    List,
+)
 
 from appyratus.utils.dict_utils import DictUtils
 from appyratus.utils.string_utils import StringUtils
@@ -80,10 +83,25 @@ class PositionalArg(Arg):
     to match the provided name of the argument.
     """
 
-    def __init__(self, name=None, flags=None, usage=None, dtype=None, action=None):
+    def __init__(
+        self,
+        name=None,
+        flags=None,
+        usage=None,
+        dtype=None,
+        action=None,
+        choices=None,
+    ):
         if name and not flags:
             flags = (name, )
-        super().__init__(name=name, flags=flags, usage=usage, dtype=dtype, action=action)
+        super().__init__(
+            name=name,
+            flags=flags,
+            usage=usage,
+            dtype=dtype,
+            action=action,
+            choices=choices
+        )
 
 
 class OptionalArg(Arg):
