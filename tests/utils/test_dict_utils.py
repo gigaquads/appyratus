@@ -1,7 +1,10 @@
-from appyratus.test import mark, BaseTests
-from appyratus.utils import DictUtils
-
 from collections import namedtuple
+
+from appyratus.test import (
+    BaseTests,
+    mark,
+)
+from appyratus.utils.dict_utils import DictUtils
 
 
 @mark.unit
@@ -11,7 +14,7 @@ class TestDictUtils(BaseTests):
     def klass(self):
         return DictUtils
 
-    @mark.params(
+    @mark.parametrize(
         'actual, expected',
         [
     # hey
@@ -21,13 +24,12 @@ class TestDictUtils(BaseTests):
                     'tanagra[1].name': 'jalad',
                     'tanagra[1].weird': 'culture',
                 }, {
-                    'tanagra':
-                        [{
-                            'name': 'darmok',
-                        }, {
-                            'name': 'jalad',
-                            'weird': 'culture',
-                        }]
+                    'tanagra': [{
+                        'name': 'darmok',
+                    }, {
+                        'name': 'jalad',
+                        'weird': 'culture',
+                    }]
                 }
             ),
     # lists at the trailing end are taken into consideration
@@ -107,7 +109,7 @@ class TestDictUtils(BaseTests):
         diff_result = self.klass.diff(expected, result)
         assert not diff_result
 
-    @mark.params(
+    @mark.parametrize(
         'actual, expected, whatever',
         [
     # a basic nested dictionary
@@ -175,7 +177,7 @@ class TestDictUtils(BaseTests):
         diff_res = self.klass.diff(expected, result)
         assert not diff_res
 
-    @mark.params(
+    @mark.parametrize(
         'data, other, expected',
         [
     # unique keys are merged
@@ -212,7 +214,7 @@ class TestDictUtils(BaseTests):
         diff_result = self.klass.diff(data=result, other=expected)
         assert not diff_result
 
-    @mark.params(
+    @mark.parametrize(
         'data, other, is_changed',
         [
     # list in a dict key is comparable
@@ -275,7 +277,7 @@ class TestDictUtils(BaseTests):
         has_no_change = (not result)
         assert has_no_change is not is_changed
 
-    @mark.params(
+    @mark.parametrize(
         'data, keys, values, empty_values, expected',
         [
     # remove a key by name
@@ -324,14 +326,12 @@ class TestDictUtils(BaseTests):
                 'a': []
             }),
     # remove multiple keys by value type
-            (
-                {
-                    'a': [],
-                    'b': '',
-                    'c': {},
-                    'd': None,
-                }, None, None, (list, str, dict, type(None)), {}
-            ),
+            ({
+                'a': [],
+                'b': '',
+                'c': {},
+                'd': None,
+            }, None, None, (list, str, dict, type(None)), {}),
     # non-set operations can be provided
             ({
                 'a': [],
@@ -344,7 +344,7 @@ class TestDictUtils(BaseTests):
         result = self.klass.remove_keys(data, keys, values, empty_values)
         assert result == expected
 
-    @mark.params(
+    @mark.parametrize(
         'data, keys, expected',
         [
     # providing a key will return the entire value
@@ -382,7 +382,9 @@ class TestDictUtils(BaseTests):
                 },
                 ['a[1].c'],
                 {
-                    'a': [{'c': 2}]
+                    'a': [{
+                        'c': 2
+                    }]
                 },
             ),
         ]

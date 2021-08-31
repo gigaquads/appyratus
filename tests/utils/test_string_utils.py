@@ -1,6 +1,5 @@
-import pytest
-
-from appyratus.utils import StringUtils
+from appyratus.utils.string_utils import StringUtils
+from appyratus.test import mark
 
 SU = StringUtils
 
@@ -14,7 +13,7 @@ SPACE_STR = '  this   is   too  much   space    '
 
 class TestStringUtils(object):
 
-    @pytest.mark.parametrize(
+    @mark.parametrize(
         'value_was, value_is', [
             (MIXED_CASE, 'So help Me god'),
             (CAMEL_CASE, 'Save A Plant'),
@@ -27,7 +26,7 @@ class TestStringUtils(object):
     def test_normalize(self, value_was, value_is):
         assert SU.normalize(value_was) == value_is
 
-    @pytest.mark.parametrize(
+    @mark.parametrize(
         'value_was, value_is',
         [
             ('resource', 'resources'),
@@ -41,12 +40,10 @@ class TestStringUtils(object):
     def test_plural(self, value_was, value_is):
         assert SU.plural(value_was) == value_is
 
-    @pytest.mark.parametrize(
-        'value_was, value_is', [
-            ('resources', 'resource'),
-            ('resource', 'resource'),
-        ]
-    )
+    @mark.parametrize('value_was, value_is', [
+        ('resources', 'resource'),
+        ('resource', 'resource'),
+    ])
     def test_singular(self, value_was, value_is):
         assert SU.singular(value_was) == value_is
 
@@ -59,7 +56,7 @@ class TestStringUtils(object):
     def test_reduce_spacing(self):
         assert SU.reduce_spacing(SPACE_STR) == 'this is too much space'
 
-    @pytest.mark.parametrize(
+    @mark.parametrize(
         'value_was, value_is', [
             (MIXED_CASE, 'so_help_me_god'),
             (CAMEL_CASE, 'save_a_plant'),
@@ -72,7 +69,7 @@ class TestStringUtils(object):
     def test_snake(self, value_was, value_is):
         assert SU.snake(value_was) == value_is
 
-    @pytest.mark.parametrize(
+    @mark.parametrize(
         'value_was, value_is', [
             (MIXED_CASE, 'so-help-me-god'),
             (CAMEL_CASE, 'save-a-plant'),

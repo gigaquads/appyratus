@@ -35,7 +35,7 @@ class FileTypeTests(BaseTests):
             TestJsonFileType.parameterize(metafunc)
         ```
         """
-        spec = inspect.getargspec(metafunc.function)
+        spec = inspect.getfullargspec(metafunc.function)
 
         def apply_arg(sample_type, sample_path_arg):
             idlist = []
@@ -63,8 +63,7 @@ class FileTypeTests(BaseTests):
         """
 
         return PathUtils.join(
-            PathUtils.get_dir_path(__file__), 'sample',
-            StringUtils.dash(cls.get_klass().__name__),
+            PathUtils.get_dir_path(__file__), 'sample', StringUtils.dash(cls.get_klass().__name__),
             sample_type if sample_type is not None else 'valid'
         )
 

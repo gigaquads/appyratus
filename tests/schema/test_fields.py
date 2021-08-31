@@ -1,9 +1,10 @@
 from uuid import UUID
+from pytest import mark
 
 from appyratus.test import mark, BaseTests
 from appyratus.schema import Schema
 from appyratus.schema.fields import fields
-from appyratus.utils import TimeUtils
+from appyratus.utils.time_utils import TimeUtils
 
 # TODO
 # Bytes
@@ -30,43 +31,35 @@ class TestEnumField(BaseTests):
     def klass(self):
         return fields.Enum
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Value exists in enum
-            (
-                'klingon', {
-                    'nested': fields.String(),
-                    'values': {'klingon'}
-                }, 'klingon', None
-            ),
+            ('klingon', {
+                'nested': fields.String(),
+                'values': {'klingon'}
+            }, 'klingon', None),
     # None value is a valid value by Field default
             (None, {
                 'nested': fields.String(),
                 'values': {None}
             }, None, None),
     # Value is invalid when enum is not nullable
-            (
-                None, {
-                    'nested': fields.String(),
-                    'nullable': False,
-                    'values': {None}
-                }, None, fields.UNRECOGNIZED_VALUE
-            ),
+            (None, {
+                'nested': fields.String(),
+                'nullable': False,
+                'values': {None}
+            }, None, fields.UNRECOGNIZED_VALUE),
     # Enum respects nested field type and will error on invalid values
-            (
-                [], {
-                    'nested': fields.String(),
-                    'values': {None}
-                }, None, fields.UNRECOGNIZED_VALUE
-            ),
+            ([], {
+                'nested': fields.String(),
+                'values': {None}
+            }, None, fields.UNRECOGNIZED_VALUE),
     # Value is invalid does not exist in enum
-            (
-                'ferengi', {
-                    'nested': fields.String(),
-                    'values': {'klingon'}
-                }, None, fields.UNRECOGNIZED_VALUE
-            )
+            ('ferengi', {
+                'nested': fields.String(),
+                'values': {'klingon'}
+            }, None, fields.UNRECOGNIZED_VALUE)
         ]
     )
     def test_process(self, value, kwargs, result, error):
@@ -82,7 +75,7 @@ class TestStringField(BaseTests):
     def klass(self):
         return fields.String
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid strings
@@ -113,7 +106,7 @@ class TestIntField(BaseTests):
     def klass(self):
         return fields.Int
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # 0 is an valid unsigned integer
@@ -153,7 +146,7 @@ class TestFloatField(BaseTests):
     def klass(self):
         return fields.Float
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid floats
@@ -187,35 +180,20 @@ class TestUuidField(BaseTests):
     def klass(self):
         return fields.Uuid
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid UUIDs
     ## A dash separated uuid string is valid
-            (
-                'deadbeef-dead-beef-dead-beef-deadbeef', {},
-                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
-            ),
+            ('deadbeef-dead-beef-dead-beef-deadbeef', {}, UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None),
     ## A non-separated uuid string is valid
-            (
-                'deadbeefdeadbeefdeadbeefdeadbeef', {},
-                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
-            ),
+            ('deadbeefdeadbeefdeadbeefdeadbeef', {}, UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None),
     ## A uuid string of numbers is valid
-            (
-                '12345678901234567890123456789012', {},
-                UUID('12345678901234567890123456789012'), None
-            ),
+            ('12345678901234567890123456789012', {}, UUID('12345678901234567890123456789012'), None),
     ## A uuid object is valid
-            (
-                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), {},
-                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
-            ),
+            (UUID('deadbeef-dead-beef-dead-beef-deadbeef'), {}, UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None),
     ## An integer is a valid uuid
-            (
-                295990755083049101712519384020072382191, {},
-                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None
-            ),
+            (295990755083049101712519384020072382191, {}, UUID('deadbeef-dead-beef-dead-beef-deadbeef'), None),
     # Invalid UUIDs
     ## Characters outside the UUID range A-F are invalid
             ('deadtarg-dead-targ-dead-targ-deadtarg', {}, None, fields.INVALID_VALUE),
@@ -241,35 +219,20 @@ class TestUuidStringField(BaseTests):
     def klass(self):
         return fields.UuidString
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid UUIDs
     ## A dash separated uuid string is valid
-            (
-                'deadbeef-dead-beef-dead-beef-deadbeef', {},
-                'deadbeefdeadbeefdeadbeefdeadbeef', None
-            ),
+            ('deadbeef-dead-beef-dead-beef-deadbeef', {}, 'deadbeefdeadbeefdeadbeefdeadbeef', None),
     ## A non-separated uuid string is valid
-            (
-                'deadbeefdeadbeefdeadbeefdeadbeef', {},
-                'deadbeefdeadbeefdeadbeefdeadbeef', None
-            ),
+            ('deadbeefdeadbeefdeadbeefdeadbeef', {}, 'deadbeefdeadbeefdeadbeefdeadbeef', None),
     ## A uuid string of numbers is valid
-            (
-                '12345678901234567890123456789012', {},
-                '12345678901234567890123456789012', None
-            ),
+            ('12345678901234567890123456789012', {}, '12345678901234567890123456789012', None),
     ## A uuid object is valid
-            (
-                UUID('deadbeef-dead-beef-dead-beef-deadbeef'), {},
-                'deadbeefdeadbeefdeadbeefdeadbeef', None
-            ),
+            (UUID('deadbeef-dead-beef-dead-beef-deadbeef'), {}, 'deadbeefdeadbeefdeadbeefdeadbeef', None),
     ## An integer is a valid uuid
-            (
-                295990755083049101712519384020072382191, {},
-                'deadbeefdeadbeefdeadbeefdeadbeef', None
-            ),
+            (295990755083049101712519384020072382191, {}, 'deadbeefdeadbeefdeadbeefdeadbeef', None),
     # Invalid UUIDs
     ## Characters outside the UUID range A-F are invalid
             ('deadtarg-dead-targ-dead-targ-deadtarg', {}, None, fields.INVALID_VALUE),
@@ -293,7 +256,7 @@ class TestBoolField(BaseTests):
     def klass(self):
         return fields.Bool
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Truthy
@@ -342,7 +305,7 @@ class TestDateTimeField(BaseTests):
     def klass(self):
         return fields.DateTime
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid datetimes
@@ -422,11 +385,13 @@ class TestSetField(BaseTests):
     def klass(self):
         return fields.Set
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid sets
-            (None, {}, None, {}),
+            (None, {
+                'nullable': True
+            }, None, {}),
             (['klingon'], {
                 'nested': fields.String()
             }, {'klingon'}, {}),
@@ -455,11 +420,13 @@ class TestListField(BaseTests):
     def klass(self):
         return fields.List
 
-    @mark.params(
+    @mark.parametrize(
         'value, kwargs, result, error',
         [
     # Valid lists
-            (None, {}, None, {}),
+            (None, {
+                'nullable': True
+            }, None, {}),
             (['klingon'], {
                 'nested': fields.String()
             }, ['klingon'], {}),
@@ -469,7 +436,7 @@ class TestListField(BaseTests):
             ({}, {}, None, {}),
 
     # Unrecognized lists
-            (None, {}, None, {}),
+    #(None, {}, None, {}),
         ]
     )
     def test_process(self, value, kwargs, result, error):
@@ -482,24 +449,14 @@ class TestListField(BaseTests):
         assert err == error
 
     def test_list_of_nested(self):
+
         class ListOfNestedSchema(Schema):
             ferengi = fields.Nested({
                 'lobes': fields.String(),
             })
             rules = fields.List(fields.Nested({'number': fields.String()}))
 
-        res = ListOfNestedSchema().process(
-            {
-                'ferengi': {
-                    'lobes': 'yes'
-                },
-                'rules': [{
-                    'number': '1'
-                }, {
-                    'number': '2'
-                }]
-            }
-        )
+        res = ListOfNestedSchema().process({'ferengi': {'lobes': 'yes'}, 'rules': [{'number': '1'}, {'number': '2'}]})
         assert res.data['rules'][0] != {}
 
 
