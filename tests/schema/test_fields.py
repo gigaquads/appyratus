@@ -39,11 +39,11 @@ class TestEnumField(BaseTests):
                 'nested': fields.String(),
                 'values': {'klingon'}
             }, 'klingon', None),
-    # None value is a valid value by Field default
+    # None value is an unrecognized value
             (None, {
                 'nested': fields.String(),
                 'values': {None}
-            }, None, None),
+            }, None, fields.UNRECOGNIZED_VALUE),
     # Value is invalid when enum is not nullable
             (None, {
                 'nested': fields.String(),
@@ -392,13 +392,16 @@ class TestSetField(BaseTests):
             (None, {
                 'nullable': True
             }, None, {}),
+    ##
             (['klingon'], {
                 'nested': fields.String()
             }, {'klingon'}, {}),
+    ##
             ({'klingon'}, {
                 'nested': fields.String()
             }, {'klingon'}, {}),
-            ({}, {}, None, {}),
+    ##
+            ({}, {}, [], {}),
 
     # Unrecognized sets
         ]
@@ -427,13 +430,16 @@ class TestListField(BaseTests):
             (None, {
                 'nullable': True
             }, None, {}),
+    ## providing a list will produce a list
             (['klingon'], {
                 'nested': fields.String()
             }, ['klingon'], {}),
+    ## providing a set will produce a list
             ({'klingon'}, {
                 'nested': fields.String()
             }, ['klingon'], {}),
-            ({}, {}, None, {}),
+    ## providing an empty list will produce a list
+            ([], {}, [], {}),
 
     # Unrecognized lists
     #(None, {}, None, {}),
