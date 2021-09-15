@@ -100,6 +100,15 @@ class TestPathUtils(BaseTests):
     def test_split(self, path: Text, split_path: Text, separator):
         assert split_path == self.klass.split(path, separator)
 
+    @mark.parametrize(
+        'path, expanded_path', [
+            ('~/hello', '/home/jeff/hello'),
+            ('/home/jeff/goodbye', '/home/jeff/goodbye'),
+        ]
+    )
+    def test_expand_path(self, path: Text, expanded_path: Text):
+        assert self.klass.expand_path(path) == expanded_path
+
     @mark.skip('need fs')
     @mark.parametrize('path, depth, file_ext', [
         ('', '', ''),
