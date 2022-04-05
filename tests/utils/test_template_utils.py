@@ -4,7 +4,7 @@ from appyratus.test import (
     BaseTests,
     mark,
 )
-from appyratus.utils import TemplateUtils
+from appyratus.utils.template_utils import TemplateUtils
 
 
 @mark.unit
@@ -20,11 +20,12 @@ class TestTemplateUtils(BaseTests):
         env2 = self.klass.get_environment()()
         assert env != env2
 
-    @mark.params(
+    @mark.parametrize(
         'path, file_name', [
             ('{{ a }} {{ b }}', {'a', 'b'}),
             ('{% for w in wat %}{{ w }}{% endfor %}', {'wat'}),
         ]
     )
     def test_get_template_variables(self, path: Text, file_name: Text):
-        assert file_name == self.klass.get_template_variables(path)
+        res = self.klass.get_template_variables(path)
+        assert file_name == res

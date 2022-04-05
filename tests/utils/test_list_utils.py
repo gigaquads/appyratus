@@ -1,7 +1,10 @@
-from appyratus.test import mark, BaseTests
-from appyratus.utils import ListUtils
-
 from collections import namedtuple
+
+from appyratus.test import (
+    BaseTests,
+    mark,
+)
+from appyratus.utils.list_utils import ListUtils
 
 
 @mark.unit
@@ -11,7 +14,7 @@ class TestListUtils(BaseTests):
     def klass(self):
         return ListUtils
 
-    @mark.params(
+    @mark.parametrize(
         'data, expected',
         [
     # single list item zero depth
@@ -32,7 +35,7 @@ class TestListUtils(BaseTests):
         res = self.klass.flatten(data)
         assert res == expected
 
-    @mark.params(
+    @mark.parametrize(
         'data, size, expected',
         [
     # single list item zero depth

@@ -1,4 +1,7 @@
-from typing import Text, List
+from typing import (
+    List,
+    Text,
+)
 from urllib.parse import (
     parse_qs,
     unquote,
@@ -14,7 +17,7 @@ class UrlUtils(object):
         if not relative and '//' not in url:
             # urlparse will not interpret the host "netloc" if "//" is not
             # provided (as per rfc1808), so we will add them only if it is
-            # requested to be relative 
+            # requested to be relative
             url = '//' + url
         parsed_url = urlparse(url)
         return {

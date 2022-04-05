@@ -1,26 +1,27 @@
-from appyratus.reflection.ast_parser import AstParser
+from collections import namedtuple
+
 from appyratus.reflection import python_ast
+from appyratus.reflection.ast_parser import AstParser
 from appyratus.reflection.python_ast import (
-    PythonModule,
+    PythonArgument,
+    PythonAttribute,
+    PythonCall,
     PythonClass,
+    PythonDecorator,
     PythonFunction,
     PythonImport,
     PythonImportFrom,
-    PythonDecorator,
-    PythonCall,
-    PythonAttribute,
-    PythonArgument,
     PythonKeywordArgument,
+    PythonModule,
 )
-from appyratus.test import mark, BaseTests
-from appyratus.utils import DictUtils
-
-from collections import namedtuple
+from appyratus.test import BaseTests, mark
+from appyratus.utils.dict_utils import DictUtils
 
 
 @mark.unit
 @mark.skip(reason='needs work')
 class TestAstParser(BaseTests):
+
     @property
     def klass(self):
         return AstParser
@@ -34,6 +35,7 @@ class TestAstParser(BaseTests):
 @mark.unit
 @mark.skip(reason='needs work')
 class TestPythonModule(BaseTests):
+
     @property
     def klass(self):
         return PythonModule

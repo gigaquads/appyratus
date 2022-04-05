@@ -29,7 +29,8 @@ class TemplateUtils(object):
     @classmethod
     def get_template_variables(cls, template: Text = None):
         env = cls.get_environment()
-        parsed_content = env()._env.parse(template)
+        renv = env().env
+        parsed_content = renv.parse(template)
         return meta.find_undeclared_variables(parsed_content)
 
 
@@ -213,7 +214,7 @@ class BaseTemplateEnvironment(object):
         *args,
         **kwargs
     ):
-        self.search_path = search_path
+        self.search_path = search_path or ''
         self.templates = templates or {}
         self._methods = methods if methods is not None else {}
         self.context = context if context else {}

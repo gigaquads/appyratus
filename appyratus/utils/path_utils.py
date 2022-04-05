@@ -12,6 +12,7 @@ from os.path import (
     exists,
     join,
     realpath,
+    expanduser,
     splitext,
     relpath,
 )
@@ -226,9 +227,7 @@ class PathUtils(object):
         return rpath
 
     @classmethod
-    def make_executable(
-        cls, path, user: bool = None, group: bool = None, world: bool = None
-    ):
+    def make_executable(cls, path, user: bool = None, group: bool = None, world: bool = None):
         """
         Make a path executable
         """
@@ -254,3 +253,12 @@ class PathUtils(object):
         """
         mime_type, _ = mimetypes.guess_type(path)
         return mime_type
+
+    @classmethod
+    def expand_path(cls, path: Text) -> Text:
+        """
+        # Expand a path
+        """
+        if path.startswith('~'):
+            path = expanduser(path)
+        return path

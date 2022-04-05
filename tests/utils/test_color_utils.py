@@ -4,7 +4,7 @@ from appyratus.test import (
     BaseTests,
     mark,
 )
-from appyratus.utils import ColorUtils
+from appyratus.utils.color_utils import ColorUtils
 
 HEX_COLORS = []
 RGB_COLORS = []
@@ -19,7 +19,7 @@ class TestColorUtils(BaseTests):
     def __klass__(cls):
         return ColorUtils
 
-    @mark.params(
+    @mark.parametrize(
         'color, closest_name', [
             ('ffffff', 'white'),
             ('fefefe', 'white'),
@@ -33,20 +33,20 @@ class TestColorUtils(BaseTests):
         assert closest_name == self.klass.closest_name(color)
 
     @mark.skip('needs work')
-    @mark.params('color, name', [
+    @mark.parametrize('color, name', [
         ('ffcc00', 'orange'),
     ])
     def test_get_name(self, color, name):
         assert name == self.klass.get_name(color)
 
     @mark.skip('needs work')
-    @mark.params('color, hex_color', [
+    @mark.parametrize('color, hex_color', [
         ((1, 1, 1), 'ffffcc'),
     ])
     def test_to_hex(self, color, hex_color):
         assert hex_color == self.klass.to_hex(color)
 
-    @mark.params(
+    @mark.parametrize(
         'color, rgb_color', [
             ('ffffff', (255, 255, 255)),
             ('#000000', (0, 0, 0)),
@@ -57,7 +57,7 @@ class TestColorUtils(BaseTests):
     def test_hex2rgb(self, color, rgb_color):
         assert rgb_color == self.klass.hex2rgb(color)
 
-    @mark.params(
+    @mark.parametrize(
         'color, hex_color, with_hash', [
             ('ffffff', 'ffffff', None),
             ('#000000', '#000000', None),
@@ -71,17 +71,15 @@ class TestColorUtils(BaseTests):
     def test_detect_hex(self, color: Text, hex_color, with_hash: bool):
         assert hex_color == self.klass.detect_hex(color, with_hash=with_hash)
 
-    @mark.params(
-        'color, hex_color', [
-            ('bLaCk', '000000'),
-            ('Red', 'ff0000'),
-            ('orange', 'ffa500'),
-        ]
-    )
+    @mark.parametrize('color, hex_color', [
+        ('bLaCk', '000000'),
+        ('Red', 'ff0000'),
+        ('orange', 'ffa500'),
+    ])
     def test_name2hex(self, color: Text, hex_color: Text):
         assert hex_color == self.klass.name2hex(color)
 
-    @mark.params(
+    @mark.parametrize(
         'color, xy_color', [
             ([0, 0, 0], [0.0, 0.0]),
             ((255, 255, 255), [0.3127116346585353, 0.3290082765355151]),
@@ -90,7 +88,7 @@ class TestColorUtils(BaseTests):
     def test_detect_xy(self, color, xy_color):
         assert xy_color == self.klass.detect_xy(color)
 
-    @mark.params(
+    @mark.parametrize(
         'xy_color, rgb_color', [
             ([0.0, 0.0], (0, 0, 0)),
             ([0.0, 0], (0, 0, 0)),
