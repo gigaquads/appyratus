@@ -17,3 +17,4 @@ yapf==0.30.0
 faker==5.0.1
 jsbeautifier==1.13.0
 mistune==2.0.0rc1
+MarkupSafe==2.0.1
