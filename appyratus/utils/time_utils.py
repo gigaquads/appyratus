@@ -5,6 +5,7 @@ import pytz
 
 from dateutil.parser import parse
 
+
 class TimeUtils(object):
 
     @classmethod
@@ -71,9 +72,10 @@ class TimeUtils(object):
         return datetime.fromtimestamp(timestamp, tz=timezone)
 
     @classmethod
-    def parse_datetime(
-        cls, obj: Union[Text, datetime, date]
-    ) -> Optional[datetime]:
+    def parse_datetime(cls, obj: Union[Text, datetime, date]) -> Optional[datetime]:
+        """
+        Provided a datetime value of varying type return a datetime object
+        """
         return cls.from_object(obj)
 
     @classmethod
@@ -92,9 +94,7 @@ class TimeUtils(object):
         return ', '.join(chunks)
 
     @staticmethod
-    def parse_timedelta(
-        obj: Union[Text, timedelta]
-    ) -> Optional[timedelta]:
+    def parse_timedelta(obj: Union[Text, timedelta]) -> Optional[timedelta]:
         """
         Normalize an object of some type to a datetime.timedelta object.
         """
@@ -102,26 +102,28 @@ class TimeUtils(object):
             return obj
         elif isinstance(obj, str):
             h, m, s = obj.split(':')
-            return timedelta(
-                hours=int(h), minutes=int(m), seconds=int(s)
-            )
+            return timedelta(hours=int(h), minutes=int(m), seconds=int(s))
         return
 
     @classmethod
     def set_timezone(cls, time: datetime, tz='utc') -> datetime:
+        """
+        Set the timezone on the provided datetime object
+        """
         return time.replace(tzinfo=getattr(pytz, tz))
 
     @classmethod
     def timed(cls, func: Callable) -> Tuple[object, timedelta]:
+        """
+        Provided a callable this method will calculate the time taken to run
+        """
         start = cls.utc_now()
         result = func()
         end = cls.utc_now()
         return (result, (end - start))
 
     @classmethod
-    def datetime_range(
-        cls, start: datetime, stop: datetime, step: timedelta
-    ) -> List[datetime]:
+    def datetime_range(cls, start: datetime, stop: datetime, step: timedelta) -> List[datetime]:
         """
         Create an array of equally spaced datetime objects that include the
         start time but exclude the stop time.
